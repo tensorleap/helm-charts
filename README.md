@@ -1,4 +1,4 @@
-# Helm Test Repository
+# Tensorleap Helm Charts
 
 To install tensorleap on your local machine run:
 
