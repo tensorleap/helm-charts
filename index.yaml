@@ -1,0 +1,58 @@
+apiVersion: v1
+entries:
+  tensorleap:
+  - apiVersion: v2
+    created: "2022-06-06T15:37:19.148545723Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: elasticsearch
+      repository: https://helm.elastic.co
+      version: 7.10.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: rabbitmq
+      repository: https://charts.bitnami.com/bitnami
+      version: 9.1.3
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    - name: mongodb
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.1.15
+    digest: 25bcf9b8975bc6b67b98d734d1d2e862815e0311f5a0172d746b5bb30a3bac4f
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.0/tensorleap-1.0.0.tgz
+    version: 1.0.0
+  tensorleap-engine:
+  - apiVersion: v2
+    created: "2022-06-06T15:37:19.345802628Z"
+    digest: db980c472bda2688a45f463ce999b9becfa4872e75c999e46a511d91eef26584
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.0/tensorleap-engine-1.0.0.tgz
+    version: 1.0.0
+  tensorleap-node-server:
+  - apiVersion: v2
+    created: "2022-06-06T15:37:19.528915889Z"
+    digest: 2eaf292c115a2902187fb4bc64512564bbf664744e1a8316fc53e2da9ec67306
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
+    version: 1.0.0
+  tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-06-06T15:37:19.715846135Z"
+    digest: fd55cd5c9024e9d81ae36aaba6c6631158bdf32565f47c74b03f22c75f417c63
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.0/tensorleap-web-ui-1.0.0.tgz
+    version: 1.0.0
+generated: "2022-06-06T15:37:18.770622396Z"
