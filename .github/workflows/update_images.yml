@@ -1,0 +1,112 @@
+name: Update Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: engine-values
+        with:
+          path: "charts/engine/values.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: node-server-values
+        with:
+          path: "charts/node-server/values.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: web-ui-values
+        with:
+          path: "charts/web-ui/values.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: engine-chart
+        with:
+          path: "charts/engine/Chart.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: node-server-chart
+        with:
+          path: "charts/node-server/Chart.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: web-ui-chart
+        with:
+          path: "charts/web-ui/Chart.yaml"
+          from: "yaml"
+          to: "json"
+      - uses: fabasoad/yaml-json-xml-converter-action@main
+        id: tensorleap-chart
+        with:
+          path: "charts/tensorleap/Chart.yaml"
+          from: "yaml"
+          to: "json"
+      - name: Update charts
+        uses: actions/github-script@v6
+        env:
+          ENGINE_VALUES: ${{steps.engine-values.outputs.data}}
+          NODE_SERVER_VALUES: ${{steps.node-server-values.outputs.data}}
+          WEB_UI_VALUES: ${{steps.web-ui-values.outputs.data}}
+          ENGINE_CHART: ${{steps.engine-chart.outputs.data}}
+          NODE_SERVER_CHART: ${{steps.node-server-chart.outputs.data}}
+          WEB_UI_CHART: ${{steps.web-ui-chart.outputs.data}}
+          TENSORLEAP_CHART: ${{steps.tensorleap-chart.outputs.data}}
+        with:
+          github-token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let updated = false;
+            for (let repo of ['engine', 'node-server', 'web-ui']) {
+              const { data: { sha } } = await github.rest.repos.getCommit({
+                owner: 'tensorleap',
+                repo,
+                ref: 'master'
+              });
+              const imageTag = `master-${sha.substring(0,8)}-stable`;
+              const { image_tag: currentImageTag } = JSON.parse(process.env[`${repo.replaceAll('-', '_').toUpperCase()}_VALUES`]);
+              if (currentImageTag !== imageTag) {
+                const valuesPath = `charts/${repo}/values.yaml`;
+                const updateValues = fs.readFileSync(valuesPath, 'utf-8').replace(`image_tag: ${currentImageTag}`, `image_tag: ${imageTag}`);
+                fs.writeFileSync(valuesPath, updateValues);
+
+                const { version } = JSON.parse(process.env[`${repo.replaceAll('-', '_').toUpperCase()}_CHART`]);
+                const versionParts = version.split('.')
+                versionParts[2] = (parseInt(versionParts[2])+1).toString();
+                const newVersion = versionParts.join('.');
+                const chartPath = `charts/${repo}/Chart.yaml`;
+                const updatedChart = fs.readFileSync(chartPath, 'utf-8').replace(`version: ${version}`, `version: ${newVersion}`);
+                fs.writeFileSync(chartPath, updatedChart);
+
+                updated = true;
+              }
+              if (updated) {
+                const { version } = JSON.parse(process.env.TENSORLEAP_CHART);
+                const versionParts = version.split('.')
+                versionParts[2] = (parseInt(versionParts[2])+1).toString();
+                const newVersion = versionParts.join('.');
+                const chartPath = 'charts/tensorleap/Chart.yaml';
+                const updatedChart = fs.readFileSync(chartPath, 'utf-8').replace(`version: ${version}`, `version: ${newVersion}`);
+                fs.writeFileSync(chartPath, updatedChart);
+              }
+            }
+      - name: Commit
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Update image tags"
