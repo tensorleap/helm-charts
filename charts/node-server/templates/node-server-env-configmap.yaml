@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorleap-node-server-env-configmap
+data:
+  NODE_ENV: production
+  KIBANA_URL: http://kibana:5601
+  JOB_TOPIC: pytop-k80
+  JOB_TOPIC_AUG: pytop-svcs
+  MONGO_URI: mongodb://mongodb/tensorleap?tls=false&ssl=false
+  RABBIT_URI: "amqp://user:3e3abae2-6325-11ec-90d6-0242ac120003@rabbitmq-headless"
+  BUCKET_NAME: session
+  SUBSCRIBER_TOPIC: feedback
+  AUTO_ACTIVATE_USER: "true"
+  INSECURE_COOKIE: "true"
+  STORAGE_USE_SSL: "false"
+  STORAGE_PORT: "9000"
+  STORAGE_ENDPOINT: "tensorleap-minio"
+  SIGNED_URL_HOST_REPLACEMENT: "true"
+  DISABLE_ENGINE_WARMUP: "true"
+  SINGLE_USER_MODE: "true"

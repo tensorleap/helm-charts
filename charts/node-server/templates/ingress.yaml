@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tensorleap-web
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: tensorleap-node-server
+                port:
+                  name: http
+            path: /api
+            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: tensorleap-node-server
+                port:
+                  name: http
+            path: /kibana
+            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: kibana
+                port:
+                  number: 5601
+            path: /kibana/bundles
+            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: kibana
+                port:
+                  number: 5601
+            path: /kibana/built_assets
+            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: tensorleap-node-server
+                port:
+                  name: http
+            path: /socket.io
+            pathType: ImplementationSpecific

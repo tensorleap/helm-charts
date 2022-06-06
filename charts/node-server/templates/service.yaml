@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: tensorleap-node-server
+  name: tensorleap-node-server
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: tensorleap-node-server
+  sessionAffinity: None
+  type: NodePort

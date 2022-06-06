@@ -1,0 +1,6 @@
+image_tag: master-8b302eec-stable
+
+mongodb:
+  fullnameOverride: mongodb
+  auth:
+    enabled: false

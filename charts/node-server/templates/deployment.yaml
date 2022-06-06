@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorleap-node-server
+spec:
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: tensorleap-node-server
+  template:
+    metadata:
+      labels:
+        app: tensorleap-node-server
+        revision: {{ .Values.image_tag }}
+    spec:
+      serviceAccountName: node-server-sa
+      initContainers:
+        - name: db-migration-files
+          image: gcr.io/tensorleap/node-server:{{ .Values.image_tag }}
+          command:
+            [
+              "sh",
+              "-c",
+              "mkdir -p /mnt/shared/migrations && cp -r migrations/* /mnt/shared/migrations && mkdir -p /mnt/shared/node_modules && cp -r node_modules/* /mnt/shared/node_modules",
+            ]
+          volumeMounts:
+            - mountPath: /mnt/shared
+              name: shared
+        - name: db-migration
+          image: mongo
+          command:
+            - bash
+            - "-c"
+            - |
+              set -euo pipefail
+
+              echo 'Verifying db schema version...'
+
+              CURRNET_VERSION=$(mongosh $MONGO_URI --eval '(db.db_metadata.findOne({ _id: 1 }) || { schemaVersion: 0 }).schemaVersion' --quiet)
+              echo "Current schemaVersion: $CURRNET_VERSION"
+              cd /mnt/shared/migrations
+              LATEST_VERSION=$(ls *.js | sed 's/-.*$//' | sort -r | head -1)
+              echo "Latest schemaVersion: $LATEST_VERSION"
+
+              test $CURRNET_VERSION -ge $LATEST_VERSION && exit 0
+
+              if [ $CURRNET_VERSION -eq 0 ]
+              then
+                echo "Setting initial schemaVersion to $LATEST_VERSION"
+                mongosh $MONGO_URI --eval "db.db_metadata.insertOne({ _id: 1, schemaVersion: $LATEST_VERSION })" --quiet
+                exit 0
+              fi
+
+              echo "Locking DB"
+              FAILED_TO_GET_LOCK=$(mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1, schemaVersion: $CURRNET_VERSION, lock: { \$exists: false }}, { \$set: { lock: 'Migration from $CURRNET_VERSION to $LATEST_VERSION' }}) == null" --quiet)
+              if [ $FAILED_TO_GET_LOCK == 'true' ]
+              then
+                echo "Failed to lock DB! (Could be failed migration or backup), waiting for lock to clear before restarting"
+                LOCK_TEXT=$(mongosh $MONGO_URI --eval "db.db_metadata.findOne({ _id: 1 }).lock" --quiet)
+                until [ -z "$LOCK_TEXT" ]
+                do
+                  echo "DB Still locked: $LOCK_TEXT"
+                  echo "To see previous run logs run: kubectl logs $POD_NAME -c db-migration --previous"
+                  echo "To release the lock run: kubectl exec -it mongodb-0 -- mongo mongodb://127.0.0.1:27017/tensorleap --eval 'db.db_metadata.update({_id:1}, {\$unset: {lock: true}})'"
+                  sleep 30
+                  LOCK_TEXT=$(mongosh $MONGO_URI --eval "db.db_metadata.findOne({ _id: 1 }).lock" --quiet)
+                done
+                echo 'DB Unlocked! restarting...'
+                exit -1
+              fi
+
+              TIMESTAMP=$(date +%s)
+              BACKUP_DB_NAME="tensorleap-backup-$CURRNET_VERSION-before-$LATEST_VERSION-$TIMESTAMP"
+              echo "Backing up database to $BACKUP_DB_NAME"
+              mongodump --archive --db=tensorleap $MONGO_URI | mongorestore --archive --stopOnError --nsFrom='tensorleap.*' --nsTo="$BACKUP_DB_NAME.*" $MONGO_URI
+              for file in $(ls *.js | sort); do
+                VERSION=$(echo $file | sed 's/-.*$//')
+                if [ $VERSION -gt $CURRNET_VERSION ]
+                then
+                  echo "Running $file"
+                  mongosh $MONGO_URI -f $file --quiet
+                  echo "Upating schemaVersion to $VERSION"
+                  mongosh $MONGO_URI --eval "db.db_metadata.updateOne({ _id: 1 }, { \$set: { schemaVersion: $VERSION }}, { upsert: true })" --quiet
+                fi
+              done
+
+              echo "Unlocking DB"
+              mongosh $MONGO_URI --eval "db.db_metadata.updateOne({ _id: 1 },{ \$unset: { lock: true }})" --quiet
+          volumeMounts:
+            - mountPath: /mnt/shared
+              name: shared
+          envFrom:
+            - configMapRef:
+                name: tensorleap-node-server-env-configmap
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+      containers:
+        - name: tensorleap-node-server
+          image: gcr.io/tensorleap/node-server:{{ .Values.image_tag }}
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: tensorleap-node-server-env-configmap
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HMAC_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootUser
+            - name: HMAC_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootPassword
+      volumes:
+        - name: shared
+          emptyDir: {}

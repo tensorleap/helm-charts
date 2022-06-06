@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorleap-web-ui
+spec:
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: tensorleap-web-ui
+  template:
+    metadata:
+      labels:
+        app: tensorleap-web-ui
+        revision: {{ .Values.image_tag }}
+    spec:
+      containers:
+        - name: web-ui
+          image: gcr.io/tensorleap/web-ui:{{ .Values.image_tag }}
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: NODE_ENV
+              value: production

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engine-job-template-pytop-svcs
+data:
+  job: |
+    metadata:
+      labels:
+        engineJob: "true"
+        suffix: svcs
+    spec:
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tensorleap/engine:{{ .Values.image_tag }}
+              name: engine
+              env:
+                - name: JOB_PAYLOAD
+              envFrom:
+                - configMapRef:
+                    name: engine-cm
+              volumeMounts:
+                - name: engine-pvc
+                  mountPath: /nfs/
+{{ if .Values.localDataDirectory }}
+                - name: local-user-data
+                  mountPath: {{ .Values.localDataDirectory }}
+{{ end }}
+          restartPolicy: Never
+          volumes:
+            - name: engine-pvc
+              hostPath:
+                path: /engine-data
+                type: DirectoryOrCreate
+{{ if .Values.localDataDirectory }}
+            - name: local-user-data
+              hostPath:
+                mountPath: {{ .Values.localDataDirectory }}
+                type: DirectoryOrCreate
+{{ end }}
