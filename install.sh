@@ -44,6 +44,7 @@ else
     then
       echo "Enter the path on the container: (leave empty to use same path):"
       read CONTAINER_PATH
+      LOCAL_PATH=$(cd $LOCAL_PATH && pwd)
       VOLUME="$LOCAL_PATH:${CONTAINER_PATH:=$LOCAL_PATH}"
     fi
   fi
