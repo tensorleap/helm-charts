@@ -38,6 +38,6 @@ data:
 {{ if .Values.localDataDirectory }}
             - name: local-user-data
               hostPath:
-                mountPath: {{ .Values.localDataDirectory }}
+                path: {{ .Values.localDataDirectory }}
                 type: DirectoryOrCreate
 {{ end }}
