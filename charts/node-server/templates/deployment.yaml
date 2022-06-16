@@ -74,7 +74,7 @@ spec:
               echo "Backing up database to $BACKUP_FILE_NAME"
               mongodump --archive=/mnt/backups/$BACKUP_FILE_NAME --db=tensorleap $MONGO_URI
               for file in $(ls *.js | sort); do
-                VERSION=$(echo $file | sed 's/-.*$//')
+                VERSION=$(echo $file | sed 's/-.*$//' | sed 's/^0*//')
                 if [ $VERSION -gt $CURRNET_VERSION ]
                 then
                   echo "Updating lock description..."
