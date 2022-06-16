@@ -1,15 +1,14 @@
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: engine-jobs-cleanup
-  labels:
-    cleanupJob: "true"
 spec:
   schedule: "0 * * * *"
   jobTemplate:
     spec:
       template:
         spec:
+          serviceAccountName: jobs-cleanup
           containers:
             - name: engine-jobs-cleanup
               image: gcr.io/tensorleap/tensorleap-ops
@@ -20,15 +19,7 @@ spec:
                   set -euo pipefail
                   kubectl get jobs --selector engineJob=true -o json | \
                     jq -r '.items[]
-                          | select(.status.succeeded > 0 )
-                          | select(.status.completionTime | fromdateiso8601 < now - 90*60)
+                          | select(.status | .succeeded > 0 or .faild > 0 )
                           | .metadata.name' | \
-                    xargs -I JOBNAME kubectl delete jobs/JOBNAME
-
-                  kubectl get jobs --selector cleanupJob=true -o json | \
-                    jq -r '.items[]
-                          | select(.status.succeeded > 0 )
-                          | select(.status.completionTime | fromdateiso8601 < now - 90*60)
-                          | .metadata.name' | \
-                    xargs -I JOBNAME kubectl delete jobs/JOBNAME
+                    xargs -P0 -I JOBNAME kubectl delete jobs/JOBNAME
           restartPolicy: OnFailure

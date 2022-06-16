@@ -14,9 +14,6 @@ data:
           containers:
             - image: gcr.io/tensorleap/engine:{{ .Values.image_tag }}
               name: engine
-              resources:
-                limits:
-                  nvidia.com/gpu: 1
               env:
                 - name: JOB_PAYLOAD
               envFrom:
@@ -38,6 +35,6 @@ data:
 {{ if .Values.localDataDirectory }}
             - name: local-user-data
               hostPath:
-                mountPath: {{ .Values.localDataDirectory }}
+                path: {{ .Values.localDataDirectory }}
                 type: DirectoryOrCreate
 {{ end }}
