@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: engine-image-download
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/tensorleap/engine:{{ .Values.image_tag }}
+          name: main
+          command:
+            - echo
+            - "Downloaded engine image: $IMAGE_TAG"
+          env:
+            - name: IMAGE_TAG
+              value: {{ .Values.image_tag }}
+      restartPolicy: OnFailure
