@@ -42,6 +42,43 @@ then
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}" &> /dev/null &
   echo 'Done! (note that images could still be downloading in the background...)'
 else
+
+  echo Checking docker storage and memory limits...
+
+  REQUIRED_MEMORY=6227000000
+  REQUIRED_MEMORY_PRETTY=6Gb
+  DOCKER_MEMORY=$(docker info -f '{{json .MemTotal}}')
+  DOCKER_MEMORY_PRETTY="$(echo "scale=2; $DOCKER_MEMORY /1024/1024/1024" | bc -l)Gb"
+
+  REQUIRED_STORAGE_KB=41943040
+  REQUIRED_STORAGE_PRETTY=40Gb
+  docker pull -q alpine &> /dev/null
+  DF_OUTPUT=$(docker run --rm -it alpine df -t overlay -P | grep overlay | sed 's/  */:/g')
+  DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
+  DOCKER_TOTAL_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_TOTAL_STORAGE_KB /1024/1024" | bc -l)Gb"
+  DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
+  DOCKER_FREE_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_FREE_STORAGE_KB /1024/1024" | bc -l)Gb"
+
+  NO_RESOURCES=''
+  if [ $DOCKER_MEMORY -lt $REQUIRED_MEMORY ];
+  then
+    echo "Please increase docker memory limit to $REQUIRED_MEMORY_PRETTY (Current limit is $DOCKER_MEMORY_PRETTY)"
+    NO_RESOURCES=true
+  fi
+
+  if [ $DOCKER_FREE_STORAGE_KB -lt $REQUIRED_STORAGE_KB ];
+  then
+    echo "Please increase docker storage limit, tensorleap required at least $REQUIRED_STORAGE_PRETTY free storage (Currently $DOCKER_FREE_STORAGE_PRETTY is available, total $DOCKER_TOTAL_STORAGE_PRETTY)"
+    NO_RESOURCES=true
+  fi
+
+  if [ -n "$NO_RESOURCES" ];
+  then
+    curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-no-resources\",\"installId\":\"$INSTALL_ID\",\"totalMemory\":\"$DOCKER_MEMORY_PRETTY\",\"totalStorage\":\"$DOCKER_TOTAL_STORAGE_PRETTY\",\"freeStorage\":\"$DOCKER_FREE_STORAGE_PRETTY\"}" &> /dev/null &
+    echo Please retry installation after updating your docker config.
+    exit -1
+  fi
+
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
   VOLUME=${TENSORLEAP_VOLUME:=}
