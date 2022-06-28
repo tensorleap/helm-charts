@@ -17,6 +17,7 @@ if !(docker container list &> /dev/null);
 then
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}" &> /dev/null &
   echo Docker is not running!
+  echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
   exit -1
 fi
 
