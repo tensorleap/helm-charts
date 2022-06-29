@@ -8,7 +8,7 @@ ARCHITECTURE=$(uname -m)
 if [ "$ARCHITECTURE" == "arm64" ];
 then
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}" &> /dev/null &
-  echo 'Sorry, Apple silicon is not supported yet!'
+  echo 'Apple M1 support will be available soon. Drop us a line at \033[1minfo@tensorleap.ai\033[0m and we will notify you as soon as it is ready.'
   exit -1
 fi
 
