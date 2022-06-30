@@ -4,6 +4,14 @@ INSTALL_ID=$RANDOM$RANDOM
 UNAME=$(uname -a)
 curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$UNAME\"}" &> /dev/null &
 
+ARCHITECTURE=$(uname -m)
+if [ "$ARCHITECTURE" == "arm64" ];
+then
+  curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}" &> /dev/null &
+  echo 'Apple M1 support will be available soon. Drop us a line at \033[1minfo@tensorleap.ai\033[0m and we will notify you as soon as it is ready.'
+  exit -1
+fi
+
 # Install k3d
 echo Checking k3d installation
 if !(k3d version);
