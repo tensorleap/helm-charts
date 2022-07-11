@@ -1,4 +1,4 @@
 apiVersion: v2
 name: tensorleap-node-server
 type: application
-version: 1.0.19
+version: 1.0.20
