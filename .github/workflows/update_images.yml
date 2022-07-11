@@ -93,6 +93,7 @@ jobs:
                 const chartPath = `charts/${repo}/Chart.yaml`;
                 const updatedChart = fs.readFileSync(chartPath, 'utf-8').replace(`version: ${version}`, `version: ${newVersion}`);
                 fs.writeFileSync(chartPath, updatedChart);
+                fs.writeFileSync(`${repo}-latest-image`, `gcr.io/tensorleap/${repo}:${imageTag}`)
 
                 updated = true;
               }
