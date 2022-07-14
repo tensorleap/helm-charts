@@ -1,4 +1,4 @@
-image_tag: master-00d93ea5-stable
+image_tag: master-0895e8fb-stable
 
 mongodb:
   fullnameOverride: mongodb
