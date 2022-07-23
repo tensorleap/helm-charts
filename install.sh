@@ -33,11 +33,17 @@ function check_k3d() {
 }
 
 function check_docker() {
+  if !(which docker &> /dev/null);
+  then
+    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\"}"
+    echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
+    exit -1
+  fi
+
   if !(docker container list &> /dev/null);
   then
     report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
-    echo Docker is not running!
-    echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
+    echo 'Docker is not running! (could also be missing permissions)'
     exit -1
   fi
 }
