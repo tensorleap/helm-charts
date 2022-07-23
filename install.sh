@@ -44,6 +44,10 @@ get_latest_chart_version() {
   echo $LATEST_CHART_VERSION
 }
 
+run_in_docker() {
+  docker exec -it k3d-tensorleap-server-0 $*
+}
+
 install_new_tensorleap_cluster() {
   echo Checking docker storage and memory limits...
 
@@ -157,11 +161,11 @@ EOF
 
   # Download engine latest image
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  docker exec -it k3d-tensorleap-server-0 kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
 
   echo 'Waiting for images to download and install... (This can take up to 15 minutes depends on network speed)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  if !(docker exec -it k3d-tensorleap-server-0 kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
+  if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
   then
     report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
     echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
@@ -169,7 +173,7 @@ EOF
   fi
   echo 'Waiting for containers to initialize... (Just a few more minutes!)'
   report_status "{\"type\":\"install-script-deployment-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  if !(docker exec -it k3d-tensorleap-server-0 kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
+  if !(run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
   then
     report_status "{\"type\":\"install-script-deployment-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
     echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
@@ -181,7 +185,7 @@ EOF
 }
 
 update_existing_chart() {
-  INSTALLED_CHART_VERSION=$(docker exec -it k3d-tensorleap-server-0 kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+  INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
     report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
@@ -192,12 +196,12 @@ update_existing_chart() {
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
   echo Installed Version: $INSTALLED_CHART_VERSION
   echo Updating to latest version...
-  docker exec -it k3d-tensorleap-server-0 kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
   # Download engine latest image
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  docker exec -it k3d-tensorleap-server-0 kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
 
   echo 'Done! (note that images could still be downloading in the background...)'
 }
