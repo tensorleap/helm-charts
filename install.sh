@@ -4,11 +4,11 @@ set -euo pipefail
 INSTALL_ID=$RANDOM$RANDOM
 UNAME=$(uname -a)
 
-report_status() {
+function report_status() {
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
 }
 
-check_apple_silicon() {
+function check_apple_silicon() {
   ARCHITECTURE=$(uname -m)
   if [ "$ARCHITECTURE" == "arm64" ];
   then
@@ -18,7 +18,7 @@ check_apple_silicon() {
   fi
 }
 
-check_k3d() {
+function check_k3d() {
   echo Checking k3d installation
   if !(k3d version);
   then
@@ -28,7 +28,7 @@ check_k3d() {
   fi
 }
 
-check_docker() {
+function check_docker() {
   if !(docker container list &> /dev/null);
   then
     report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
@@ -38,17 +38,17 @@ check_docker() {
   fi
 }
 
-get_latest_chart_version() {
+function get_latest_chart_version() {
   echo Getting latest version...
   LATEST_CHART_VERSION=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
   echo $LATEST_CHART_VERSION
 }
 
-run_in_docker() {
+function run_in_docker() {
   docker exec -it k3d-tensorleap-server-0 $*
 }
 
-install_new_tensorleap_cluster() {
+function install_new_tensorleap_cluster() {
   echo Checking docker storage and memory limits...
 
   REQUIRED_MEMORY=6227000000
@@ -184,7 +184,7 @@ EOF
   echo Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT
 }
 
-update_existing_chart() {
+function update_existing_chart() {
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
