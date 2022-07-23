@@ -3,65 +3,48 @@ set -euo pipefail
 
 INSTALL_ID=$RANDOM$RANDOM
 UNAME=$(uname -a)
-ARCHITECTURE=$(uname -m)
 
 report_status() {
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
 }
-report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$UNAME\"}"
 
-if [ "$ARCHITECTURE" == "arm64" ];
-then
-  report_status "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}"
-  echo 'Apple M1 support will be available soon. Drop us a line at \033[1minfo@tensorleap.ai\033[0m and we will notify you as soon as it is ready.'
-  exit -1
-fi
-
-# Install k3d
-echo Checking k3d installation
-if !(k3d version);
-then
-  echo Installing k3d...
-  report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
-  curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-fi
-
-if !(docker container list &> /dev/null);
-then
-  report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
-  echo Docker is not running!
-  echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
-  exit -1
-fi
-
-echo Getting latest version...
-LATEST_CHART_VERSION=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
-echo $LATEST_CHART_VERSION
-
-if k3d cluster list tensorleap &> /dev/null;
-then
-  echo Detected existing tensorleap installation
-  INSTALLED_CHART_VERSION=$(docker exec -it k3d-tensorleap-server-0 kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
-  if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
+check_apple_silicon() {
+  ARCHITECTURE=$(uname -m)
+  if [ "$ARCHITECTURE" == "arm64" ];
   then
-    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo Installation in up to date!
-    exit 0
+    report_status "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}"
+    echo 'Apple M1 support will be available soon. Drop us a line at \033[1minfo@tensorleap.ai\033[0m and we will notify you as soon as it is ready.'
+    exit -1
   fi
+}
 
-  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
-  echo Installed Version: $INSTALLED_CHART_VERSION
-  echo Updating to latest version...
-  docker exec -it k3d-tensorleap-server-0 kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
-  report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+check_k3d() {
+  echo Checking k3d installation
+  if !(k3d version);
+  then
+    echo Installing k3d...
+    report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
+    curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+  fi
+}
 
-  # Download engine latest image
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  docker exec -it k3d-tensorleap-server-0 kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+check_docker() {
+  if !(docker container list &> /dev/null);
+  then
+    report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
+    echo Docker is not running!
+    echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
+    exit -1
+  fi
+}
 
-  echo 'Done! (note that images could still be downloading in the background...)'
-else
+get_latest_chart_version() {
+  echo Getting latest version...
+  LATEST_CHART_VERSION=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
+  echo $LATEST_CHART_VERSION
+}
 
+install_new_tensorleap_cluster() {
   echo Checking docker storage and memory limits...
 
   REQUIRED_MEMORY=6227000000
@@ -195,4 +178,44 @@ EOF
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   echo Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT
-fi
+}
+
+update_existing_chart() {
+  INSTALLED_CHART_VERSION=$(docker exec -it k3d-tensorleap-server-0 kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+  if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
+  then
+    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    echo Installation in up to date!
+    exit 0
+  fi
+
+  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+  echo Installed Version: $INSTALLED_CHART_VERSION
+  echo Updating to latest version...
+  docker exec -it k3d-tensorleap-server-0 kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+
+  # Download engine latest image
+  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
+  docker exec -it k3d-tensorleap-server-0 kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+
+  echo 'Done! (note that images could still be downloading in the background...)'
+}
+
+function main() {
+  report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$UNAME\"}"
+  check_apple_silicon
+  check_docker
+  check_k3d
+  get_latest_chart_version
+
+  if k3d cluster list tensorleap &> /dev/null;
+  then
+    echo Detected existing tensorleap installation
+    update_existing_chart
+  else
+    install_new_tensorleap_cluster
+  fi
+}
+
+main
