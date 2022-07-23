@@ -79,7 +79,9 @@ function install_new_tensorleap_cluster() {
   REQUIRED_STORAGE_KB=41943040
   REQUIRED_STORAGE_PRETTY=40Gb
   $DOCKER pull -q alpine &> /dev/null
-  DF_OUTPUT=$($DOCKER run --rm -it alpine df -t overlay -P | grep overlay | sed 's/  */:/g')
+  DF_TMP_FILE=$(mktemp)
+  $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
+  DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
   DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
   DOCKER_TOTAL_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_TOTAL_STORAGE_KB /1024/1024" | bc -l)Gb"
   DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
