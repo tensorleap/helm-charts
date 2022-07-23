@@ -3,9 +3,13 @@ set -euo pipefail
 
 INSTALL_ID=$RANDOM$RANDOM
 UNAME=$(uname -a)
+DISABLE_REPORTING=${DISABLE_REPORTING:=}
 
 function report_status() {
-  curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
+  if [ "$DISABLE_REPORTING" != "true" ]
+  then
+    curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
+  fi
 }
 
 function check_apple_silicon() {
