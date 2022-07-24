@@ -1,10 +1,8 @@
 set -euo pipefail
 
-
-INSTALL_ID=$RANDOM$RANDOM
-UNAME=$(uname -a)
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
 
+INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
 
@@ -229,7 +227,7 @@ function update_existing_chart() {
 }
 
 function main() {
-  report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$UNAME\"}"
+  report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_apple_silicon
   check_docker
   check_k3d
