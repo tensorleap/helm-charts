@@ -109,14 +109,36 @@ else
     fi
   fi
 
-  VALUES_CONTENT=$([ -z $VOLUME ] && echo '' || cat << EOF
-  valuesContent: |-
-    tensorleap-engine:
-      localDataDirectory: ${VOLUME/*:/}
-EOF
-)
+  VOLUME_ENGINE_VALUES=""
+  if [ -n "$VOLUME" ]
+  then
+    VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
+  fi
 
   VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME")
+
+  USE_GPU=${USE_GPU:=}
+  GPU_CLUSTER_PARAMS=""
+  GPU_ENGINE_VALUES=""
+  if [ "$USE_GPU" == "true" ]
+  then
+    GPU_CLUSTER_PARAMS='--image gcr.io/tensorleap/k3s:v1.23.8-k3s1-cuda --gpus all'
+    GPU_ENGINE_VALUES='gpu: true'
+  fi
+
+  VALUES_CONTENT=""
+  if [ -n "$VOLUME_ENGINE_VALUES$GPU_ENGINE_VALUES" ]
+  then
+    VALUES_CONTENT=$(cat << EOF
+  valuesContent: |-
+    tensorleap-engine:
+      ${VOLUME_ENGINE_VALUES}
+      ${GPU_ENGINE_VALUES}
+EOF
+)
+  fi
+
+
   mkdir -p $HOME/.config/tensorleap/manifests
 
   cat << EOF > $HOME/.config/tensorleap/manifests/tensorleap.yaml
@@ -141,7 +163,7 @@ EOF
   echo Creating tensorleap k3d cluster...
   curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}" &> /dev/null &
   k3d cluster create tensorleap \
-    --k3s-arg='--disable=traefik@server:0' \
+    --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
     -v $HOME/.config/tensorleap/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
 
