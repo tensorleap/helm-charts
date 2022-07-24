@@ -1,10 +1,8 @@
 set -euo pipefail
 
-
-INSTALL_ID=$RANDOM$RANDOM
-UNAME=$(uname -a)
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
 
+INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
 
@@ -36,19 +34,27 @@ function check_k3d() {
 }
 
 function check_docker() {
+  OS_NAME=$(uname -s)
   echo Checking docker installation
   if !(which docker &> /dev/null);
   then
-    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\"}"
-    echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
-    exit -1
+    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
+    if [ "$OS_NAME" == "Linux" ];
+    then
+      echo Running docker community installation script...
+      curl -s https://get.docker.com | sh \
+        && sleep 2
+    else
+      echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
+      exit -1
+    fi
   fi
 
   if !(docker ps &> /dev/null);
   then
     if !(sudo docker ps &> /dev/null);
     then
-      report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
+      report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo 'Docker is not running!'
       exit -1
     fi
@@ -229,7 +235,7 @@ function update_existing_chart() {
 }
 
 function main() {
-  report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$UNAME\"}"
+  report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_apple_silicon
   check_docker
   check_k3d
