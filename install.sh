@@ -5,6 +5,9 @@ INSTALL_ID=$RANDOM$RANDOM
 UNAME=$(uname -a)
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
 
+DOCKER=docker
+K3D=k3d
+
 function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
   then
@@ -33,12 +36,25 @@ function check_k3d() {
 }
 
 function check_docker() {
-  if !(docker container list &> /dev/null);
+  echo Checking docker installation
+  if !(which docker &> /dev/null);
   then
-    report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
-    echo Docker is not running!
+    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\"}"
     echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
     exit -1
+  fi
+
+  if !(docker ps &> /dev/null);
+  then
+    if !(sudo docker ps &> /dev/null);
+    then
+      report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
+      echo 'Docker is not running!'
+      exit -1
+    fi
+
+    DOCKER='sudo docker'
+    K3D='sudo k3d'
   fi
 }
 
@@ -49,7 +65,7 @@ function get_latest_chart_version() {
 }
 
 function run_in_docker() {
-  docker exec -it k3d-tensorleap-server-0 $*
+  $DOCKER exec -it k3d-tensorleap-server-0 $*
 }
 
 function install_new_tensorleap_cluster() {
@@ -57,13 +73,15 @@ function install_new_tensorleap_cluster() {
 
   REQUIRED_MEMORY=6227000000
   REQUIRED_MEMORY_PRETTY=6Gb
-  DOCKER_MEMORY=$(docker info -f '{{json .MemTotal}}')
+  DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
   DOCKER_MEMORY_PRETTY="$(echo "scale=2; $DOCKER_MEMORY /1024/1024/1024" | bc -l)Gb"
 
   REQUIRED_STORAGE_KB=41943040
   REQUIRED_STORAGE_PRETTY=40Gb
-  docker pull -q alpine &> /dev/null
-  DF_OUTPUT=$(docker run --rm -it alpine df -t overlay -P | grep overlay | sed 's/  */:/g')
+  $DOCKER pull -q alpine &> /dev/null
+  DF_TMP_FILE=$(mktemp)
+  $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
+  DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
   DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
   DOCKER_TOTAL_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_TOTAL_STORAGE_KB /1024/1024" | bc -l)Gb"
   DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
@@ -158,7 +176,7 @@ EOF
 
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  k3d cluster create tensorleap \
+  $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
     -v $HOME/.config/tensorleap/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
