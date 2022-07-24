@@ -34,10 +34,11 @@ function check_k3d() {
 }
 
 function check_docker() {
+  OS_NAME=$(uname -s)
   echo Checking docker installation
   if !(which docker &> /dev/null);
   then
-    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\"}"
+    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
     echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
     exit -1
   fi
@@ -46,7 +47,7 @@ function check_docker() {
   then
     if !(sudo docker ps &> /dev/null);
     then
-      report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\"}"
+      report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo 'Docker is not running!'
       exit -1
     fi
