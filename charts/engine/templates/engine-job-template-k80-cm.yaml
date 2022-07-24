@@ -14,6 +14,11 @@ data:
           containers:
             - image: gcr.io/tensorleap/engine:{{ .Values.image_tag }}
               name: engine
+{{ if .Values.gpu }}
+              resources:
+                limits:
+                  nvidia.com/gpu: 1
+{{ end }}
               env:
                 - name: JOB_PAYLOAD
               envFrom:
