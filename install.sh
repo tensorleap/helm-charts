@@ -39,8 +39,15 @@ function check_docker() {
   if !(which docker &> /dev/null);
   then
     report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
-    echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
-    exit -1
+    if [ "$OS_NAME" == "Linux" ];
+    then
+      echo Running docker community installation script...
+      curl -s https://get.docker.com | sh \
+        && sleep 2
+    else
+      echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
+      exit -1
+    fi
   fi
 
   if !(docker ps &> /dev/null);
