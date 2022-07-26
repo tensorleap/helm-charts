@@ -130,6 +130,4 @@ spec:
         - name: shared
           emptyDir: {}
         - name: backups
-          hostPath:
-            path: /mongodb-backups
-            type: DirectoryOrCreate
+          emptyDir: {}
