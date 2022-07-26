@@ -74,6 +74,10 @@ function run_in_docker() {
   $DOCKER exec -it k3d-tensorleap-server-0 $*
 }
 
+function create_docker_backups_folder() {
+  run_in_docker mkdir -m 777 /mongodb-backups &> /dev/null || run_in_docker chmod -R 777 /mongodb-backups
+}
+
 function install_new_tensorleap_cluster() {
   echo Checking docker storage and memory limits...
 
@@ -191,6 +195,8 @@ EOF
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
   run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
 
+  create_docker_backups_folder
+
   echo 'Waiting for images to download and install... (This can take up to 15 minutes depends on network speed)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
@@ -213,6 +219,8 @@ EOF
 }
 
 function update_existing_chart() {
+  create_docker_backups_folder
+
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
@@ -222,6 +230,7 @@ function update_existing_chart() {
   fi
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+
   echo Installed Version: $INSTALLED_CHART_VERSION
   echo Updating to latest version...
   run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
