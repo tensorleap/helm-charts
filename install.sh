@@ -38,13 +38,30 @@ function check_docker() {
   echo Checking docker installation
   if !(which docker &> /dev/null);
   then
-    report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
     if [ "$OS_NAME" == "Linux" ];
     then
+      report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo Running docker community installation script...
       curl -s https://get.docker.com | sh \
         && sleep 2
+    elif [ "$OS_NAME" == "Darwin" ];
+    then
+      report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
+      TEMP_DIR=$(mktemp -d)
+      echo Downloading docker...
+      curl -s https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
+      echo Installing docker...
+      sudo hdiutil attach $TEMP_DIR/Docker.dmg \
+        && sudo /Volumes/Docker/Docker.app/Contents/MacOS/install \
+        && sudo hdiutil detach /Volumes/Docker \
+        && sleep 2 \
+        && open -a Docker
+
+      echo "Waiting for docker to start... (You may be asked to allow privileged access to docker)"
+      until docker ps &> /dev/null; do sleep 2; done
+
     else
+      report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
       exit -1
     fi
