@@ -1,4 +1,4 @@
 apiVersion: v2
 name: tensorleap-web-ui
 type: application
-version: 1.0.33
+version: 1.0.34
