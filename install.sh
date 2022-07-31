@@ -137,9 +137,10 @@ function install_new_tensorleap_cluster() {
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
   VOLUME=${TENSORLEAP_VOLUME:=}
+  DEFAULT_VOLUME="$HOME/tensorleap/data"
   if [ -z "$VOLUME" ]
   then
-    echo "Enter a path to be mounted and accessible by scripts (leave empty to skip):"
+    echo "Enter a path to be mounted and accessible by scripts (default: $DEFAULT_VOLUME):"
     read LOCAL_PATH
     if [ -n "$LOCAL_PATH" ]
     then
@@ -147,6 +148,9 @@ function install_new_tensorleap_cluster() {
       read CONTAINER_PATH
       LOCAL_PATH=$(cd $LOCAL_PATH && pwd)
       VOLUME="$LOCAL_PATH:${CONTAINER_PATH:=$LOCAL_PATH}"
+    else
+      mkdir -p $DEFAULT_VOLUME
+      VOLUME="$DEFAULT_VOLUME:$DEFAULT_VOLUME"
     fi
   fi
 
