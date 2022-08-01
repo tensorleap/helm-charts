@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongodb-data
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  hostPath:
+    path: /var/lib/tensorleap/standalone/storage/mongodb
+    type: DirectoryOrCreate
+  claimRef:
+    name: mongodb-data
+    namespace: {{ .Release.Namespace }}
