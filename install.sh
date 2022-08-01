@@ -189,6 +189,7 @@ EOF
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
+  mkdir -p $VAR_DIR/storage
 
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
@@ -214,6 +215,7 @@ EOF
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
+    -v $VAR_DIR:$VAR_DIR \
     -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
 
   # Download engine latest image
