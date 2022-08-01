@@ -183,10 +183,14 @@ EOF
 )
   fi
 
+  VAR_DIR='/var/lib/tensorleap/standalone'
+  K3S_VAR_DIR='/var/lib/rancher/k3s'
 
-  mkdir -p $HOME/.config/tensorleap/manifests
+  sudo mkdir -p $VAR_DIR
+  sudo chmod -R 777 $VAR_DIR
+  mkdir -p $VAR_DIR/manifests
 
-  cat << EOF > $HOME/.config/tensorleap/manifests/tensorleap.yaml
+  cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -210,7 +214,7 @@ EOF
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
-    -v $HOME/.config/tensorleap/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
+    -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
 
   # Download engine latest image
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
