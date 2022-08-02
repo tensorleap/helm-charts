@@ -6,6 +6,10 @@ INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
 
+VAR_DIR='/var/lib/tensorleap/standalone'
+K3S_VAR_DIR='/var/lib/rancher/k3s'
+
+
 function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
   then
@@ -183,9 +187,6 @@ EOF
 )
   fi
 
-  VAR_DIR='/var/lib/tensorleap/standalone'
-  K3S_VAR_DIR='/var/lib/rancher/k3s'
-
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
@@ -254,6 +255,13 @@ function update_existing_chart() {
     report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
     echo Installation in up to date!
     exit 0
+  fi
+
+  if [ ! -d "$VAR_DIR" ]
+  then
+    report_status "{\"type\":\"install-script-update-prevented\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+    echo "Upgrade is not supported, please uninstall by running: k3d cluster delete tensorleap"
+    exit -1
   fi
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
