@@ -6,6 +6,10 @@ INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
 
+VAR_DIR='/var/lib/tensorleap/standalone'
+K3S_VAR_DIR='/var/lib/rancher/k3s'
+
+
 function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
   then
@@ -183,10 +187,12 @@ EOF
 )
   fi
 
+  sudo mkdir -p $VAR_DIR
+  sudo chmod -R 777 $VAR_DIR
+  mkdir -p $VAR_DIR/manifests
+  mkdir -p $VAR_DIR/storage
 
-  mkdir -p $HOME/.config/tensorleap/manifests
-
-  cat << EOF > $HOME/.config/tensorleap/manifests/tensorleap.yaml
+  cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -210,7 +216,8 @@ EOF
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
-    -v $HOME/.config/tensorleap/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
+    -v $VAR_DIR:$VAR_DIR \
+    -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
 
   # Download engine latest image
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
@@ -248,6 +255,13 @@ function update_existing_chart() {
     report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
     echo Installation in up to date!
     exit 0
+  fi
+
+  if [ ! -d "$VAR_DIR" ]
+  then
+    report_status "{\"type\":\"install-script-update-prevented\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+    echo "Upgrade is not supported, please uninstall by running: k3d cluster delete tensorleap"
+    exit -1
   fi
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
