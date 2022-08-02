@@ -56,6 +56,7 @@ minio:
     type: NodePort
   persistence:
     size: 2Gi
+    VolumeName: minio-data
   resources:
     requests:
       memory: 500Mi
@@ -67,3 +68,5 @@ mongodb:
   fullnameOverride: mongodb
   auth:
     enabled: false
+  persistence:
+    existingClaim: mongodb-data
