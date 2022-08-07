@@ -191,6 +191,7 @@ EOF
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
   mkdir -p $VAR_DIR/storage
+  mkdir -p $VAR_DIR/scripts
 
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
@@ -211,12 +212,56 @@ metadata:
   name: tensorleap
 EOF
 
+# this file can be removed once https://github.com/k3d-io/k3d/pull/1119 is merged
+  cat << 'EOF' > $VAR_DIR/scripts/k3d-entrypoint.sh
+#!/bin/sh
+
+set -o errexit
+set -o nounset
+
+LOGFILE="/var/log/k3d-entrypoints_$(date "+%y%m%d%H%M%S").log"
+
+touch "$LOGFILE"
+
+echo "[$(date -Iseconds)] Running k3d entrypoints..." >> "$LOGFILE"
+
+for entrypoint in /bin/k3d-entrypoint-*.sh ; do
+  echo "[$(date -Iseconds)] Running $entrypoint"  >> "$LOGFILE"
+  "$entrypoint"  >> "$LOGFILE" 2>&1 || exit 1
+done
+
+echo "[$(date -Iseconds)] Finished k3d entrypoint scripts!" >> "$LOGFILE"
+
+/bin/k3s "$@" &
+k3s_pid=$!
+
+until kubectl uncordon $HOSTNAME; do sleep 3; done
+
+function cleanup() {
+  echo Draining node...
+  kubectl drain $HOSTNAME --force --delete-emptydir-data
+  echo Sending SIGTERM to k3s...
+  kill -15 $k3s_pid
+  echo Waiting for k3s to close...
+  wait $k3s_pid
+  echo Bye!
+}
+
+trap cleanup SIGTERM SIGINT SIGQUIT SIGHUP
+
+wait $k3s_pid
+echo Bye!
+EOF
+
+  chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
     -v $VAR_DIR:$VAR_DIR \
+    -v $VAR_DIR/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh \
     -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
 
   # Download engine latest image
