@@ -22,7 +22,7 @@ function check_apple_silicon() {
   if [ "$ARCHITECTURE" == "arm64" ];
   then
     report_status "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}"
-    echo 'Apple M1 support will be available soon. Drop us a line at \033[1minfo@tensorleap.ai\033[0m and we will notify you as soon as it is ready.'
+    echo "Apple M1 support will be available soon. Drop us a line at $(tput bold)info@tensorleap.ai$(tput sgr0) and we will notify you as soon as it is ready."
     exit -1
   fi
 }
