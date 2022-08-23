@@ -63,10 +63,3 @@ minio:
   buckets:
     - name: session
       policy: public
-
-mongodb:
-  fullnameOverride: mongodb
-  auth:
-    enabled: false
-  persistence:
-    existingClaim: mongodb-data
