@@ -14,3 +14,15 @@ spec:
   claimRef:
     name: mongodb-data
     namespace: {{ .Release.Namespace }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mongodb-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  volumeName: mongodb-data

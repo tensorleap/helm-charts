@@ -27,6 +27,8 @@ spec:
             - mountPath: /mnt/shared
               name: shared
         - name: db-migration
+          securityContext:
+            runAsUser: 0
           image: docker.io/bitnami/mongodb:5.0.9-debian-11-r3
           command:
             - bash
