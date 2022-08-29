@@ -41,7 +41,7 @@ spec:
               CURRNET_VERSION=$(mongosh $MONGO_URI --eval '(db.db_metadata.findOne({ _id: 1 }) || { schemaVersion: 0 }).schemaVersion' --quiet)
               echo "Current schemaVersion: $CURRNET_VERSION"
               cd /mnt/shared/migrations
-              LATEST_VERSION=$(ls *.js | sed 's/-.*$//' | sort -r | head -1)
+              LATEST_VERSION=$(ls *.js | sed 's/-.*$//' | sort -r | head -1 | sed 's/^0*//')
               echo "Latest schemaVersion: $LATEST_VERSION"
 
               test $CURRNET_VERSION -ge $LATEST_VERSION && exit 0
