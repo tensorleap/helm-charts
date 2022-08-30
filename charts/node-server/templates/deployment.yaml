@@ -103,6 +103,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: HMAC_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootUser
+            - name: HMAC_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootPassword
       containers:
         - name: tensorleap-node-server
           image: gcr.io/tensorleap/node-server:{{ .Values.image_tag }}
