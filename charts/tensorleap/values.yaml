@@ -45,6 +45,8 @@ minio:
   existingSecret: minio-secret
   service:
     type: NodePort
+  securityContext:
+    enabled: false
   persistence:
     size: 2Gi
     VolumeName: minio-data
