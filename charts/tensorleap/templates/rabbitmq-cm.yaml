@@ -9,4 +9,5 @@ data:
     log.file.level = debug
     log.console = true
     log.console.level = debug
+    cluster_formation.k8s.address_type = hostname
   erlangCookie: 3e3abae2-6325-11ec-90d6-0242ac120003
