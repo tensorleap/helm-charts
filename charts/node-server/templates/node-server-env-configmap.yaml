@@ -8,7 +8,7 @@ data:
   JOB_TOPIC: pytop-k80
   JOB_TOPIC_AUG: pytop-svcs
   MONGO_URI: mongodb://mongodb/tensorleap?tls=false&ssl=false
-  RABBIT_URI: "amqp://user:3e3abae2-6325-11ec-90d6-0242ac120003@rabbitmq-headless"
+  RABBIT_URI: "amqp://user:3e3abae2-6325-11ec-90d6-0242ac120003@rabbitmq"
   BUCKET_NAME: session
   SUBSCRIBER_TOPIC: feedback
   AUTO_ACTIVATE_USER: "true"
