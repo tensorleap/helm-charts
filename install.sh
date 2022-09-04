@@ -17,16 +17,6 @@ function report_status() {
   fi
 }
 
-function check_apple_silicon() {
-  ARCHITECTURE=$(uname -m)
-  if [ "$ARCHITECTURE" == "arm64" ];
-  then
-    report_status "{\"type\":\"install-script-apple-silicon\",\"installId\":\"$INSTALL_ID\"}"
-    echo "Apple M1 support will be available soon. Drop us a line at $(tput bold)info@tensorleap.ai$(tput sgr0) and we will notify you as soon as it is ready."
-    exit -1
-  fi
-}
-
 function check_k3d() {
   echo Checking k3d installation
   if !(k3d version);
@@ -325,7 +315,6 @@ function update_existing_chart() {
 
 function main() {
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
-  check_apple_silicon
   check_docker
   check_k3d
   get_latest_chart_version
