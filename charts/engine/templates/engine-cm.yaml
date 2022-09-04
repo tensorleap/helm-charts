@@ -6,9 +6,9 @@ data:
   PY_CONFIG: /app/config/config.yaml
   ELASTIC_HOST: http://elasticsearch-master:9200
   SESSION_BUCKET: session
-  RABBIT_HOST: rabbitmq-headless
-  RABBIT_USER: user
-  RABBIT_PASSWORD: 3e3abae2-6325-11ec-90d6-0242ac120003
+  RABBIT_HOST: rabbitmq
+  RABBIT_USER: guest
+  RABBIT_PASSWORD: guest
   FEEDBACK_TOPIC: feedback
   SUBSCRIBER_TOPIC: job-control-channel
   STORAGE_PROVIDER: minio
