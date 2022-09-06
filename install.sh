@@ -9,6 +9,7 @@ K3D=k3d
 VAR_DIR='/var/lib/tensorleap/standalone'
 K3S_VAR_DIR='/var/lib/rancher/k3s'
 
+REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
 function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
@@ -130,8 +131,6 @@ function check_docker_requirements() {
 }
 
 function create_docker_registry() {
-  REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
-
   if $K3D registry list tensorleap-registry &> /dev/null;
   then
     report_status "{\"type\":\"install-script-registry-exists\"}"
@@ -140,12 +139,34 @@ function create_docker_registry() {
     report_status "{\"type\":\"install-script-creating-registry\"}"
     check_docker_requirements
     echo Creating docker registry...
-    $K3D registry create tensorleap-registry -p $TENSORLEAP_REGISTRY_PORT
+    $K3D registry create tensorleap-registry -p $REGISTRY_PORT
   fi
+}
+
+function cache_image() {
+  local registry_port=$1
+  local image=$2
+  local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
+  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
+  if curl -s --fail $api_url &> /dev/null;
+  then
+    echo "$image already cached"
+  else
+    docker pull $image && \
+    docker tag $image $target && \
+    docker push $target && \
+    docker image rm $image
+  fi
+}
+export -f cache_image
+
+function cache_images_in_registry() {
+  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
 function install_new_tensorleap_cluster() {
   create_docker_registry
+  cache_images_in_registry
 
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
@@ -301,6 +322,8 @@ EOF
 }
 
 function update_existing_chart() {
+  cache_images_in_registry
+
   create_docker_backups_folder
 
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
