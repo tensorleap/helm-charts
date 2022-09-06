@@ -129,8 +129,23 @@ function check_docker_requirements() {
   fi
 }
 
+function create_docker_registry() {
+  REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
+
+  if $K3D registry list tensorleap-registry &> /dev/null;
+  then
+    report_status "{\"type\":\"install-script-registry-exists\"}"
+    echo Found existing docker registry!
+  else
+    report_status "{\"type\":\"install-script-creating-registry\"}"
+    check_docker_requirements
+    echo Creating docker registry...
+    $K3D registry create tensorleap-registry -p $TENSORLEAP_REGISTRY_PORT
+  fi
+}
+
 function install_new_tensorleap_cluster() {
-  check_docker_requirements
+  create_docker_registry
 
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
