@@ -89,7 +89,7 @@ function create_docker_backups_folder() {
   run_in_docker mkdir -m 777 /mongodb-backups &> /dev/null || run_in_docker chmod -R 777 /mongodb-backups
 }
 
-function install_new_tensorleap_cluster() {
+function check_docker_requirements() {
   echo Checking docker storage and memory limits...
 
   REQUIRED_MEMORY=6227000000
@@ -127,6 +127,10 @@ function install_new_tensorleap_cluster() {
     echo Please retry installation after updating your docker config.
     exit -1
   fi
+}
+
+function install_new_tensorleap_cluster() {
+  check_docker_requirements
 
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
