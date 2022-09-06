@@ -223,6 +223,28 @@ EOF
   mkdir -p $VAR_DIR/storage
   mkdir -p $VAR_DIR/scripts
 
+  cat << EOF > $VAR_DIR/manifests/registries.yaml
+mirrors:
+  docker.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  docker.elastic.co:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  k3s.gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  quay.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  us-central1-docker.pkg.dev:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+EOF
+
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
@@ -290,6 +312,8 @@ EOF
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
+    --registry-config $VAR_DIR/manifests/registries.yaml \
+    --registry-use tensorleap-registry \
     -v $VAR_DIR:$VAR_DIR \
     -v $VAR_DIR/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh \
     -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
