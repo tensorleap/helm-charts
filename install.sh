@@ -98,8 +98,8 @@ function check_docker_requirements() {
   DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
   DOCKER_MEMORY_PRETTY="$(echo "scale=2; $DOCKER_MEMORY /1024/1024/1024" | bc -l)Gb"
 
-  REQUIRED_STORAGE_KB=41943040
-  REQUIRED_STORAGE_PRETTY=40Gb
+  REQUIRED_STORAGE_KB=83886080
+  REQUIRED_STORAGE_PRETTY=80Gb
   $DOCKER pull -q alpine &> /dev/null
   DF_TMP_FILE=$(mktemp)
   $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
