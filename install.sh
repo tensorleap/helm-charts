@@ -324,12 +324,12 @@ EOF
 
   create_docker_backups_folder
 
-  echo 'Waiting for images to download and install... (This can take up to 15 minutes depends on network speed)'
+  echo 'Setting up cluster... (this may take a few minutes)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
   then
     report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
   echo 'Waiting for containers to initialize... (Just a few more minutes!)'
@@ -337,12 +337,12 @@ EOF
   if !(run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
   then
     report_status "{\"type\":\"install-script-deployment-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT
+  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
 }
 
 function update_existing_chart() {
