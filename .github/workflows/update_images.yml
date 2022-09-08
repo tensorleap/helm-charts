@@ -117,7 +117,6 @@ jobs:
           helm template ./charts/tensorleap \
             | grep 'image: ' \
             | grep -v 'tensorleap/engine' \
-            | grep -v 'tensorleap-ops' \
             | sed 's/.*: //' \
             | sed 's/\"//g' \
             | sort \
