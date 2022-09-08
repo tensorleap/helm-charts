@@ -1,0 +1,37 @@
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: tensorleap
+volumes:
+  - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalon
+  - volume: /var/lib/tensorleap/standalone/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh
+  - volume: /var/lib/tensorleap/standalone/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml
+registries:
+  use:
+    - tensorleap-registry
+  config: |
+    mirrors:
+      docker.io:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+      gcr.io:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+      docker.elastic.co:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+      k3s.gcr.io:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+      quay.io:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+      us-central1-docker.pkg.dev:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*

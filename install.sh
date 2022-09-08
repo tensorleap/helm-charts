@@ -224,7 +224,7 @@ EOF
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/registries.yaml -o $VAR_DIR/manifests/registries.yaml
+  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml -o $VAR_DIR/manifests/k3d-config.yaml
   curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh -o $VAR_DIR/scripts/k3d-entrypoint.sh
   chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
 
@@ -249,14 +249,8 @@ EOF
 
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create tensorleap \
-    --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
-    -p "$PORT:80@loadbalancer" \
-    --registry-config $VAR_DIR/manifests/registries.yaml \
-    --registry-use tensorleap-registry \
-    -v $VAR_DIR:$VAR_DIR \
-    -v $VAR_DIR/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh \
-    -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
+    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM
 
   # Download engine latest image
   LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
