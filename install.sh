@@ -9,6 +9,7 @@ K3D=k3d
 VAR_DIR='/var/lib/tensorleap/standalone'
 K3S_VAR_DIR='/var/lib/rancher/k3s'
 
+REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
 function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
@@ -89,7 +90,7 @@ function create_docker_backups_folder() {
   run_in_docker mkdir -m 777 /mongodb-backups &> /dev/null || run_in_docker chmod -R 777 /mongodb-backups
 }
 
-function install_new_tensorleap_cluster() {
+function check_docker_requirements() {
   echo Checking docker storage and memory limits...
 
   REQUIRED_MEMORY=6227000000
@@ -97,8 +98,8 @@ function install_new_tensorleap_cluster() {
   DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
   DOCKER_MEMORY_PRETTY="$(echo "scale=2; $DOCKER_MEMORY /1024/1024/1024" | bc -l)Gb"
 
-  REQUIRED_STORAGE_KB=41943040
-  REQUIRED_STORAGE_PRETTY=40Gb
+  REQUIRED_STORAGE_KB=83886080
+  REQUIRED_STORAGE_PRETTY=80Gb
   $DOCKER pull -q alpine &> /dev/null
   DF_TMP_FILE=$(mktemp)
   $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
@@ -127,6 +128,45 @@ function install_new_tensorleap_cluster() {
     echo Please retry installation after updating your docker config.
     exit -1
   fi
+}
+
+function create_docker_registry() {
+  if $K3D registry list tensorleap-registry &> /dev/null;
+  then
+    report_status "{\"type\":\"install-script-registry-exists\"}"
+    echo Found existing docker registry!
+  else
+    report_status "{\"type\":\"install-script-creating-registry\"}"
+    check_docker_requirements
+    echo Creating docker registry...
+    $K3D registry create tensorleap-registry -p $REGISTRY_PORT
+  fi
+}
+
+function cache_image() {
+  local registry_port=$1
+  local image=$2
+  local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
+  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
+  if curl -s --fail $api_url &> /dev/null;
+  then
+    echo "$image already cached"
+  else
+    docker pull $image && \
+    docker tag $image $target && \
+    docker push $target && \
+    docker image rm $image
+  fi
+}
+export -f cache_image
+
+function cache_images_in_registry() {
+  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+}
+
+function install_new_tensorleap_cluster() {
+  create_docker_registry
+  cache_images_in_registry
 
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
@@ -182,6 +222,28 @@ EOF
   mkdir -p $VAR_DIR/manifests
   mkdir -p $VAR_DIR/storage
   mkdir -p $VAR_DIR/scripts
+
+  cat << EOF > $VAR_DIR/manifests/registries.yaml
+mirrors:
+  docker.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  docker.elastic.co:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  k3s.gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  quay.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  us-central1-docker.pkg.dev:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+EOF
 
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
@@ -250,6 +312,8 @@ EOF
   $K3D cluster create tensorleap \
     --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
     -p "$PORT:80@loadbalancer" \
+    --registry-config $VAR_DIR/manifests/registries.yaml \
+    --registry-use tensorleap-registry \
     -v $VAR_DIR:$VAR_DIR \
     -v $VAR_DIR/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh \
     -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
@@ -260,12 +324,12 @@ EOF
 
   create_docker_backups_folder
 
-  echo 'Waiting for images to download and install... (This can take up to 15 minutes depends on network speed)'
+  echo 'Setting up cluster... (this may take a few minutes)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
   then
     report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
   echo 'Waiting for containers to initialize... (Just a few more minutes!)'
@@ -273,15 +337,17 @@ EOF
   if !(run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
   then
     report_status "{\"type\":\"install-script-deployment-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Images may still be downloading, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT
+  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
 }
 
 function update_existing_chart() {
+  cache_images_in_registry
+
   create_docker_backups_folder
 
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
