@@ -1,0 +1,19 @@
+mirrors:
+  docker.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  docker.elastic.co:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  k3s.gcr.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  quay.io:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
+  us-central1-docker.pkg.dev:
+    endpoint:
+      - http://k3d-tensorleap-registry:5000
