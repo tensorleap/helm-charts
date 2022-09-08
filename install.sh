@@ -164,7 +164,7 @@ function cache_images_in_registry() {
   curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
-function install_new_tensorleap_cluster() {
+function get_installation_options() {
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
   VOLUME=${TENSORLEAP_VOLUME:=}
@@ -213,10 +213,9 @@ function install_new_tensorleap_cluster() {
 EOF
 )
   fi
+}
 
-  create_docker_registry
-  cache_images_in_registry
-
+function init_var_dir() {
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
@@ -227,7 +226,9 @@ EOF
   curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml -o $VAR_DIR/manifests/k3d-config.yaml
   curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh -o $VAR_DIR/scripts/k3d-entrypoint.sh
   chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+}
 
+function create_tensorleap_helm_manifest() {
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
@@ -246,18 +247,21 @@ kind: Namespace
 metadata:
   name: tensorleap
 EOF
+}
 
+function download_latest_engine_image() {
+  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
+  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+}
+
+function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
     -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM
+}
 
-  # Download engine latest image
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
-
-  create_docker_backups_folder
-
+function wait_for_cluster_init() {
   echo 'Setting up cluster... (this may take a few minutes)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
@@ -274,16 +278,9 @@ EOF
     echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
-
-  report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
 }
 
-function update_existing_chart() {
-  cache_images_in_registry
-
-  create_docker_backups_folder
-
+function check_installed_version() {
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
@@ -291,24 +288,35 @@ function update_existing_chart() {
     echo Installation in up to date!
     exit 0
   fi
+  echo Installed Version: $INSTALLED_CHART_VERSION
+}
 
-  if [ ! -d "$VAR_DIR" ]
-  then
-    report_status "{\"type\":\"install-script-update-prevented\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
-    echo "Upgrade is not supported, please uninstall by running: k3d cluster delete tensorleap"
-    exit -1
-  fi
+function install_new_tensorleap_cluster() {
+  get_installation_options
+  create_docker_registry
+  cache_images_in_registry
+  init_var_dir
+  create_tensorleap_helm_manifest
+  create_tensorleap_cluster
+  download_latest_engine_image
+  create_docker_backups_folder
+  wait_for_cluster_init
+
+  report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
+}
+
+function update_existing_chart() {
+  cache_images_in_registry
+  check_installed_version
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
-  echo Installed Version: $INSTALLED_CHART_VERSION
   echo Updating to latest version...
   run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
-  # Download engine latest image
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+  download_latest_engine_image
 
   echo 'Done! (note that images could still be downloading in the background...)'
 }
@@ -329,3 +337,4 @@ function main() {
 }
 
 main
+
