@@ -133,10 +133,10 @@ function check_docker_requirements() {
 function create_docker_registry() {
   if $K3D registry list tensorleap-registry &> /dev/null;
   then
-    report_status "{\"type\":\"install-script-registry-exists\"}"
+    report_status "{\"type\":\"install-script-registry-exists\",\"installId\":\"$INSTALL_ID\"}"
     echo Found existing docker registry!
   else
-    report_status "{\"type\":\"install-script-creating-registry\"}"
+    report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
     check_docker_requirements
     echo Creating docker registry...
     $K3D registry create tensorleap-registry -p $REGISTRY_PORT
