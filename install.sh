@@ -11,10 +11,42 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
+function setup_http_utils() {
+  if type curl > /dev/null; then
+    echo using curl
+    HTTP_GET='curl -s --fail'
+  elif type wget > /dev/null; then
+    echo using wget
+    HTTP_GET='wget -q -O-'
+  else
+    echo you must have either curl or wget installed.
+    exit -1
+  fi
+}
+
+function download_file() {
+  if type curl > /dev/null; then
+    curl -s --fail $1 -o $2
+  elif type wget > /dev/null; then
+    wget -q -O $2 $1
+  else
+    echo you must have either curl or wget installed.
+    exit -1
+  fi
+}
+
 function report_status() {
+  local report_url=https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot
   if [ "$DISABLE_REPORTING" != "true" ]
   then
-    curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
+    if type curl > /dev/null; then
+      curl -s --fail -XPOST -H 'Content-Type: application/json' $report_url -d "$1" &> /dev/null &
+    elif type wget > /dev/null; then
+      wget -q --method POST --header 'Content-Type: application/json' -O- --body-data "$1" $report_url &> /dev/null &
+    else
+      echo you must have either curl or wget installed.
+      exit -1
+    fi
   fi
 }
 
@@ -24,7 +56,7 @@ function check_k3d() {
   then
     echo Installing k3d...
     report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
-    curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+    $HTTP_GET https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
   fi
 }
 
@@ -37,14 +69,14 @@ function check_docker() {
     then
       report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo Running docker community installation script...
-      curl -s https://get.docker.com | sh \
+      $HTTP_GET https://get.docker.com | sh \
         && sleep 2
     elif [ "$OS_NAME" == "Darwin" ];
     then
       report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       TEMP_DIR=$(mktemp -d)
       echo Downloading docker...
-      curl -s https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
+      $HTTP_GET https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
       echo Installing docker...
       sudo hdiutil attach $TEMP_DIR/Docker.dmg \
         && sudo /Volumes/Docker/Docker.app/Contents/MacOS/install \
@@ -78,7 +110,7 @@ function check_docker() {
 
 function get_latest_chart_version() {
   echo Getting latest version...
-  LATEST_CHART_VERSION=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
+  LATEST_CHART_VERSION=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
   echo $LATEST_CHART_VERSION
 }
 
@@ -148,7 +180,7 @@ function cache_image() {
   local image=$2
   local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
   local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if curl -s --fail $api_url &> /dev/null;
+  if $HTTP_GET $api_url &> /dev/null;
   then
     echo "$image already cached"
   else
@@ -158,11 +190,12 @@ function cache_image() {
     $DOCKER image rm $image
   fi
 }
+export HTTP_GET
 export DOCKER
 export -f cache_image
 
 function cache_images_in_registry() {
-  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
 function get_installation_options() {
@@ -224,8 +257,8 @@ function init_var_dir() {
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml -o $VAR_DIR/manifests/k3d-config.yaml
-  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh -o $VAR_DIR/scripts/k3d-entrypoint.sh
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
   chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
 }
 
@@ -251,10 +284,10 @@ EOF
 }
 
 function download_latest_engine_image() {
-  local latest_engine_image=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
+  local latest_engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
   local target=$(echo $latest_engine_image | sed "s/[^\/]*\//127.0.0.1:$REGISTRY_PORT\//" | sed 's/@.*$//')
   local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if ! curl -s --fail $api_url &> /dev/null;
+  if ! $HTTP_GET $api_url &> /dev/null;
   then
     $DOCKER run --rm -d --name tensorleap-engine-image-download-$INSTALL_ID \
       -v /var/run/docker.sock:/var/run/docker.sock \
@@ -332,6 +365,7 @@ function update_existing_chart() {
 }
 
 function main() {
+  setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
   check_k3d
