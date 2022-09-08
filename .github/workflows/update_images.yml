@@ -107,6 +107,21 @@ jobs:
                 fs.writeFileSync(chartPath, updatedChart);
               }
             }
+      - name: Extract image names
+        run: |
+          helm repo add nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add elastic https://helm.elastic.co
+          helm repo add minio https://charts.min.io
+          helm dependency build ./charts/tensorleap
+          rm ./charts/tensorleap/Chart.lock
+          helm template ./charts/tensorleap \
+            | grep 'image: ' \
+            | grep -v 'tensorleap/engine' \
+            | grep -v 'tensorleap-ops' \
+            | sed 's/.*: //' \
+            | sed 's/\"//g' \
+            | sort \
+            | uniq > images.txt
       - name: Commit
         uses: EndBug/add-and-commit@v9
         with:

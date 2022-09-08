@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: rabbitmq
-          image: rabbitmq:3.9.22
+          image: docker.io/library/rabbitmq:3.9.22
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
