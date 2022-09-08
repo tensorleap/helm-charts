@@ -165,9 +165,6 @@ function cache_images_in_registry() {
 }
 
 function install_new_tensorleap_cluster() {
-  create_docker_registry
-  cache_images_in_registry
-
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
   VOLUME=${TENSORLEAP_VOLUME:=}
@@ -216,6 +213,9 @@ function install_new_tensorleap_cluster() {
 EOF
 )
   fi
+
+  create_docker_registry
+  cache_images_in_registry
 
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
