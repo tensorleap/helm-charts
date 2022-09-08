@@ -152,12 +152,13 @@ function cache_image() {
   then
     echo "$image already cached"
   else
-    docker pull $image && \
-    docker tag $image $target && \
-    docker push $target && \
-    docker image rm $image
+    $DOCKER pull $image && \
+    $DOCKER tag $image $target && \
+    $DOCKER push $target && \
+    $DOCKER image rm $image
   fi
 }
+export DOCKER
 export -f cache_image
 
 function cache_images_in_registry() {
