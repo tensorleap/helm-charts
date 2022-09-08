@@ -250,8 +250,17 @@ EOF
 }
 
 function download_latest_engine_image() {
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+  local latest_engine_image=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
+  local target=$(echo $latest_engine_image | sed "s/[^\/]*\//127.0.0.1:$REGISTRY_PORT\//" | sed 's/@.*$//')
+  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
+  if ! curl -s --fail $api_url &> /dev/null;
+  then
+    $DOCKER run --rm -d --name tensorleap-engine-image-download-$INSTALL_ID \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e SOURCE=$latest_engine_image -e TARGET=$target \
+      docker:cli \
+      sh -c 'docker pull $SOURCE && docker tag $SOURCE $TARGET && docker push $TARGET' &> /dev/null
+  fi
 }
 
 function create_tensorleap_cluster() {
@@ -294,11 +303,11 @@ function check_installed_version() {
 function install_new_tensorleap_cluster() {
   get_installation_options
   create_docker_registry
+  download_latest_engine_image
   cache_images_in_registry
   init_var_dir
   create_tensorleap_helm_manifest
   create_tensorleap_cluster
-  download_latest_engine_image
   create_docker_backups_folder
   wait_for_cluster_init
 
