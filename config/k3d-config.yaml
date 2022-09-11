@@ -3,7 +3,7 @@ kind: Simple
 metadata:
   name: tensorleap
 volumes:
-  - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalon
+  - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalone
   - volume: /var/lib/tensorleap/standalone/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh
   - volume: /var/lib/tensorleap/standalone/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml
 registries:
