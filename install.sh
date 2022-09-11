@@ -11,10 +11,42 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
+function setup_http_utils() {
+  if type curl > /dev/null; then
+    echo using curl
+    HTTP_GET='curl -s --fail'
+  elif type wget > /dev/null; then
+    echo using wget
+    HTTP_GET='wget -q -O-'
+  else
+    echo you must have either curl or wget installed.
+    exit -1
+  fi
+}
+
+function download_file() {
+  if type curl > /dev/null; then
+    curl -s --fail $1 -o $2
+  elif type wget > /dev/null; then
+    wget -q -O $2 $1
+  else
+    echo you must have either curl or wget installed.
+    exit -1
+  fi
+}
+
 function report_status() {
+  local report_url=https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot
   if [ "$DISABLE_REPORTING" != "true" ]
   then
-    curl -s -XPOST https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot -H 'Content-Type: application/json' -d "$1" &> /dev/null &
+    if type curl > /dev/null; then
+      curl -s --fail -XPOST -H 'Content-Type: application/json' $report_url -d "$1" &> /dev/null &
+    elif type wget > /dev/null; then
+      wget -q --method POST --header 'Content-Type: application/json' -O- --body-data "$1" $report_url &> /dev/null &
+    else
+      echo you must have either curl or wget installed.
+      exit -1
+    fi
   fi
 }
 
@@ -24,7 +56,7 @@ function check_k3d() {
   then
     echo Installing k3d...
     report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
-    curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+    $HTTP_GET https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
   fi
 }
 
@@ -37,14 +69,14 @@ function check_docker() {
     then
       report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo Running docker community installation script...
-      curl -s https://get.docker.com | sh \
+      $HTTP_GET https://get.docker.com | sh \
         && sleep 2
     elif [ "$OS_NAME" == "Darwin" ];
     then
       report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       TEMP_DIR=$(mktemp -d)
       echo Downloading docker...
-      curl -s https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
+      $HTTP_GET https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
       echo Installing docker...
       sudo hdiutil attach $TEMP_DIR/Docker.dmg \
         && sudo /Volumes/Docker/Docker.app/Contents/MacOS/install \
@@ -78,7 +110,7 @@ function check_docker() {
 
 function get_latest_chart_version() {
   echo Getting latest version...
-  LATEST_CHART_VERSION=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
+  LATEST_CHART_VERSION=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
   echo $LATEST_CHART_VERSION
 }
 
@@ -133,10 +165,10 @@ function check_docker_requirements() {
 function create_docker_registry() {
   if $K3D registry list tensorleap-registry &> /dev/null;
   then
-    report_status "{\"type\":\"install-script-registry-exists\"}"
+    report_status "{\"type\":\"install-script-registry-exists\",\"installId\":\"$INSTALL_ID\"}"
     echo Found existing docker registry!
   else
-    report_status "{\"type\":\"install-script-creating-registry\"}"
+    report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
     check_docker_requirements
     echo Creating docker registry...
     $K3D registry create tensorleap-registry -p $REGISTRY_PORT
@@ -148,23 +180,25 @@ function cache_image() {
   local image=$2
   local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
   local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if curl -s --fail $api_url &> /dev/null;
+  if $HTTP_GET $api_url &> /dev/null;
   then
     echo "$image already cached"
   else
-    docker pull $image && \
-    docker tag $image $target && \
-    docker push $target && \
-    docker image rm $image
+    $DOCKER pull $image && \
+    $DOCKER tag $image $target && \
+    $DOCKER push $target && \
+    $DOCKER image rm $image
   fi
 }
+export HTTP_GET
+export DOCKER
 export -f cache_image
 
 function cache_images_in_registry() {
-  curl -s --fail https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
-function install_new_tensorleap_cluster() {
+function get_installation_options() {
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
   VOLUME=${TENSORLEAP_VOLUME:=}
@@ -213,38 +247,22 @@ function install_new_tensorleap_cluster() {
 EOF
 )
   fi
+}
 
-  create_docker_registry
-  cache_images_in_registry
-
+function init_var_dir() {
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
   mkdir -p $VAR_DIR/storage
   mkdir -p $VAR_DIR/scripts
 
-  cat << EOF > $VAR_DIR/manifests/registries.yaml
-mirrors:
-  docker.io:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-  gcr.io:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-  docker.elastic.co:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-  k3s.gcr.io:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-  quay.io:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-  us-central1-docker.pkg.dev:
-    endpoint:
-      - http://k3d-tensorleap-registry:5000
-EOF
+  echo 'Downloading config files...'
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
+  chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+}
 
+function create_tensorleap_helm_manifest() {
   cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
@@ -263,67 +281,30 @@ kind: Namespace
 metadata:
   name: tensorleap
 EOF
-
-# this file can be removed once https://github.com/k3d-io/k3d/pull/1119 is merged
-  cat << 'EOF' > $VAR_DIR/scripts/k3d-entrypoint.sh
-#!/bin/sh
-
-set -o errexit
-set -o nounset
-
-LOGFILE="/var/log/k3d-entrypoints_$(date "+%y%m%d%H%M%S").log"
-
-touch "$LOGFILE"
-
-echo "[$(date -Iseconds)] Running k3d entrypoints..." >> "$LOGFILE"
-
-for entrypoint in /bin/k3d-entrypoint-*.sh ; do
-  echo "[$(date -Iseconds)] Running $entrypoint"  >> "$LOGFILE"
-  "$entrypoint"  >> "$LOGFILE" 2>&1 || exit 1
-done
-
-echo "[$(date -Iseconds)] Finished k3d entrypoint scripts!" >> "$LOGFILE"
-
-/bin/k3s "$@" &
-k3s_pid=$!
-
-until kubectl uncordon $HOSTNAME; do sleep 3; done
-
-function cleanup() {
-  echo Draining node...
-  kubectl drain $HOSTNAME --force --delete-emptydir-data
-  echo Sending SIGTERM to k3s...
-  kill -15 $k3s_pid
-  echo Waiting for k3s to close...
-  wait $k3s_pid
-  echo Bye!
 }
 
-trap cleanup SIGTERM SIGINT SIGQUIT SIGHUP
+function download_latest_engine_image() {
+  local latest_engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
+  local target=$(echo $latest_engine_image | sed "s/[^\/]*\//127.0.0.1:$REGISTRY_PORT\//" | sed 's/@.*$//')
+  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
+  if ! $HTTP_GET $api_url &> /dev/null;
+  then
+    $DOCKER run --rm -d --name tensorleap-engine-image-download-$INSTALL_ID \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -e SOURCE=$latest_engine_image -e TARGET=$target \
+      docker:cli \
+      sh -c 'docker pull $SOURCE && docker tag $SOURCE $TARGET && docker push $TARGET' &> /dev/null
+  fi
+}
 
-wait $k3s_pid
-echo Bye!
-EOF
-
-  chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
-
+function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create tensorleap \
-    --k3s-arg='--disable=traefik@server:0' $GPU_CLUSTER_PARAMS \
-    -p "$PORT:80@loadbalancer" \
-    --registry-config $VAR_DIR/manifests/registries.yaml \
-    --registry-use tensorleap-registry \
-    -v $VAR_DIR:$VAR_DIR \
-    -v $VAR_DIR/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh \
-    -v $VAR_DIR/manifests/tensorleap.yaml:$K3S_VAR_DIR/server/manifests/tensorleap.yaml $VOLUMES_MOUNT_PARAM
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
+    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM
+}
 
-  # Download engine latest image
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
-
-  create_docker_backups_folder
-
+function wait_for_cluster_init() {
   echo 'Setting up cluster... (this may take a few minutes)'
   report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
@@ -340,16 +321,9 @@ EOF
     echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
     exit -1
   fi
-
-  report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
 }
 
-function update_existing_chart() {
-  cache_images_in_registry
-
-  create_docker_backups_folder
-
+function check_installed_version() {
   INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
@@ -357,29 +331,41 @@ function update_existing_chart() {
     echo Installation in up to date!
     exit 0
   fi
+  echo Installed Version: $INSTALLED_CHART_VERSION
+}
 
-  if [ ! -d "$VAR_DIR" ]
-  then
-    report_status "{\"type\":\"install-script-update-prevented\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
-    echo "Upgrade is not supported, please uninstall by running: k3d cluster delete tensorleap"
-    exit -1
-  fi
+function install_new_tensorleap_cluster() {
+  get_installation_options
+  create_docker_registry
+  download_latest_engine_image
+  cache_images_in_registry
+  init_var_dir
+  create_tensorleap_helm_manifest
+  create_tensorleap_cluster
+  create_docker_backups_folder
+  wait_for_cluster_init
+
+  report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
+}
+
+function update_existing_chart() {
+  cache_images_in_registry
+  check_installed_version
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
-  echo Installed Version: $INSTALLED_CHART_VERSION
   echo Updating to latest version...
   run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
-  # Download engine latest image
-  LATEST_ENGINE_IMAGE=$(curl -s https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  run_in_docker kubectl create job -n tensorleap engine-download-$INSTALL_ID --image=$LATEST_ENGINE_IMAGE -- sh -c "echo Downloaded $LATEST_ENGINE_IMAGE" &> /dev/null
+  download_latest_engine_image
 
   echo 'Done! (note that images could still be downloading in the background...)'
 }
 
 function main() {
+  setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
   check_k3d
@@ -395,3 +381,4 @@ function main() {
 }
 
 main
+

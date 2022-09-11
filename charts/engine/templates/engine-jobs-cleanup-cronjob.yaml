@@ -11,7 +11,7 @@ spec:
           serviceAccountName: jobs-cleanup
           containers:
             - name: engine-jobs-cleanup
-              image: gcr.io/tensorleap/tensorleap-ops:latest
+              image: docker.io/alpine/k8s:1.19.16
               args:
                 - /bin/bash
                 - -c

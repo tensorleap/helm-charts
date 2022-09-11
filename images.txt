@@ -1,10 +1,11 @@
 docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+docker.io/alpine/k8s:1.19.16
 docker.io/bitnami/mongodb:5.0.9-debian-11-r3
 docker.io/library/mongo:5.0.11
 docker.io/library/rabbitmq:3.9.22
 gcr.io/tensorleap/kibanimat:master-52f5ccdb-stable
-gcr.io/tensorleap/node-server:master-f66efc6f-stable
-gcr.io/tensorleap/web-ui:master-99636e04-stable
+gcr.io/tensorleap/node-server:master-679fe331-stable
+gcr.io/tensorleap/web-ui:master-501275c6-stable
 k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
 k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
 quay.io/minio/mc:RELEASE.2021-12-20T23-43-34Z
