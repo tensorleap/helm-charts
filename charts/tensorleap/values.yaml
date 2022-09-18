@@ -5,7 +5,7 @@ kibana:
   fullnameOverride: kibana
   healthCheckPath: /kibana/app/kibana
   image: us-central1-docker.pkg.dev/tensorleap/main/kibanimat
-  imageTag: master-52f5ccdb-stable
+  imageTag: master-ef30f279-stable
   kibanaConfig:
     kibana.yml: |
       server:
