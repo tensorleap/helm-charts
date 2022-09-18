@@ -12,7 +12,7 @@ data:
       template:
         spec:
           containers:
-            - image: gcr.io/tensorleap/engine:{{ .Values.image_tag }}
+            - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
               name: engine
 {{ if .Values.gpu }}
               resources:
