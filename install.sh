@@ -232,7 +232,7 @@ function get_installation_options() {
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    GPU_CLUSTER_PARAMS='--image gcr.io/tensorleap/k3s:v1.23.8-k3s1-cuda --gpus all'
+    GPU_CLUSTER_PARAMS='--image us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda --gpus all'
     GPU_ENGINE_VALUES='gpu: true'
   fi
 

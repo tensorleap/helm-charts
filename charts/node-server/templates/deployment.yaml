@@ -16,7 +16,7 @@ spec:
       serviceAccountName: node-server-sa
       initContainers:
         - name: db-migration-files
-          image: gcr.io/tensorleap/node-server:{{ .Values.image_tag }}
+          image: us-central1-docker.pkg.dev/tensorleap/main/node-server:{{ .Values.image_tag }}
           command:
             [
               "sh",
@@ -119,7 +119,7 @@ spec:
                   key: rootPassword
       containers:
         - name: tensorleap-node-server
-          image: gcr.io/tensorleap/node-server:{{ .Values.image_tag }}
+          image: us-central1-docker.pkg.dev/tensorleap/main/node-server:{{ .Values.image_tag }}
           imagePullPolicy: Always
           ports:
             - name: http

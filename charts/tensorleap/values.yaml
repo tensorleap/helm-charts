@@ -4,7 +4,7 @@ ingress-nginx:
 kibana:
   fullnameOverride: kibana
   healthCheckPath: /kibana/app/kibana
-  image: gcr.io/tensorleap/kibanimat
+  image: us-central1-docker.pkg.dev/tensorleap/main/kibanimat
   imageTag: master-52f5ccdb-stable
   kibanaConfig:
     kibana.yml: |
