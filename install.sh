@@ -52,7 +52,7 @@ function report_status() {
 
 function check_k3d() {
   echo Checking k3d installation
-  if !(k3d version);
+  if !($K3D version);
   then
     echo Installing k3d...
     report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
@@ -371,7 +371,7 @@ function main() {
   check_k3d
   get_latest_chart_version
 
-  if k3d cluster list tensorleap &> /dev/null;
+  if $K3D cluster list tensorleap &> /dev/null;
   then
     echo Detected existing tensorleap installation
     update_existing_chart
