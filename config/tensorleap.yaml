@@ -1,0 +1,14 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: tensorleap
+  namespace: kube-system
+spec:
+  chart: tensorleap
+  repo: https://helm.tensorleap.ai
+  targetNamespace: tensorleap
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tensorleap
