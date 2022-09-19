@@ -14,6 +14,27 @@ After about 10 minutes, tensorleap will be available on port `4589`. \
 The cluster is available in `kubectx` with the name `k3d-tensorleap`. (don't forget to switch to `tensorleap` namespace). \
 To see the `helm` installation output run `kubectl logs -f -n kube-system job/helm-install-tensorleap`.
 
+## Uninstall
+
+<details>
+<summary>You can completly uninstall tensorleap with these instuctions</summary>
+
+```bash
+# Delete main cluster
+k3d cluster delete tensorleap
+
+# Remove docker registry with cached images
+k3d registry delete tensorleap-registry
+
+# Remove docker internal cache
+docker system prune --volumes --all --force
+
+# Remove configuration and state files
+rm -rf /var/lib/tensorleap/standalone
+```
+
+</details>
+
 ## Manual Installation
 
 <details>
@@ -60,7 +81,7 @@ spec:
 ```
 
 5. (optional) Enable experimental GPU support:
-   1. Make sure to have nvidia drivers installed and configured to work with docker.
+   1. Make sure to have [nvidia drivers](https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#ubuntu-lts) installed and configured to [work with docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-ubuntu-and-debian).
    2. Update the configuration files:
 
 ```yaml
