@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-09-19T13:54:00.914596871Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: e080b04c01396e120187e6d672f98532c5f8d953938811b909e1acbd99029229
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.77/tensorleap-1.0.77.tgz
+    version: 1.0.77
+  - apiVersion: v2
     created: "2022-09-18T22:01:01.591986936Z"
     dependencies:
     - name: ingress-nginx
@@ -2364,6 +2382,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2022-09-19T13:54:01.363710951Z"
+    digest: 1ffc9cd8e047c608c0e1f273d7c870e00883596b30a38ffecc9c3eca36c14545
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.54/tensorleap-node-server-1.0.54.tgz
+    version: 1.0.54
+  - apiVersion: v2
     created: "2022-09-18T20:07:54.209505405Z"
     digest: 9db3e1dc84d9e28f939e2c82cf1a3855433274a6b062b2804f03467cfaf65605
     name: tensorleap-node-server
@@ -2796,6 +2822,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-09-19T13:54:01.702199682Z"
+    digest: e17b74bdda3edf1ebc08cf73f7890a90a28a11ca8b9bc3f9fd08de87e773f9b6
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.60/tensorleap-web-ui-1.0.60.tgz
+    version: 1.0.60
   - apiVersion: v2
     created: "2022-09-18T20:07:54.379129592Z"
     digest: a721b1912b3e4e3a8587588cada3dcb80a0cf010ba607f2bf7cd5216831c396c
