@@ -223,7 +223,7 @@ function get_installation_options() {
     VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
   fi
 
-  VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME")
+  VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME@server:*")
 
   USE_GPU=${USE_GPU:=}
   GPU_CLUSTER_PARAMS=""
