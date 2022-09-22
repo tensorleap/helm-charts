@@ -13,10 +13,8 @@ REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
 function setup_http_utils() {
   if type curl > /dev/null; then
-    echo using curl
     HTTP_GET='curl -s --fail'
   elif type wget > /dev/null; then
-    echo using wget
     HTTP_GET='wget -q -O-'
   else
     echo you must have either curl or wget installed.
