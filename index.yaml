@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-09-26T09:18:12.97576262Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 376aea728643de881f8cf33b2f97a407d9ae0173b2662c5b64cce3794ffb8ec7
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.79/tensorleap-1.0.79.tgz
+    version: 1.0.79
+  - apiVersion: v2
     created: "2022-09-25T21:48:07.370311352Z"
     dependencies:
     - name: ingress-nginx
@@ -1982,6 +2000,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.0/tensorleap-1.0.0.tgz
     version: 1.0.0
   tensorleap-engine:
+  - apiVersion: v2
+    created: "2022-09-26T09:18:13.259617708Z"
+    digest: b6885024203b52f5b385f29a5e761a782cc2867a7b8e879e4fb3501998215a0f
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.53/tensorleap-engine-1.0.53.tgz
+    version: 1.0.53
   - apiVersion: v2
     created: "2022-09-25T21:48:07.655695399Z"
     digest: c839c3813cb6871a6fcce4910d5137e073bad5300acdb28c2081cdb4e7a1c784
