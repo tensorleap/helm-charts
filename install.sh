@@ -133,7 +133,7 @@ function check_docker_requirements() {
 
   REQUIRED_STORAGE_KB=16777216
   REQUIRED_STORAGE_PRETTY=15Gb
-  $DOCKER pull -q alpine 1> /dev/null
+  $DOCKER pull alpine 1> /dev/null
   DF_TMP_FILE=$(mktemp)
   echo Checking docker storage limits...
   $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
