@@ -11,9 +11,12 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
+USE_GPU=${USE_GPU:=}
+GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
+
 function setup_http_utils() {
   if type curl > /dev/null; then
-    HTTP_GET='curl -s --fail'
+    HTTP_GET='curl -sL --fail'
   elif type wget > /dev/null; then
     HTTP_GET='wget -q -O-'
   else
@@ -24,7 +27,7 @@ function setup_http_utils() {
 
 function download_file() {
   if type curl > /dev/null; then
-    curl -s --fail $1 -o $2
+    curl -sL --fail $1 -o $2
   elif type wget > /dev/null; then
     wget -q -O $2 $1
   else
@@ -197,7 +200,16 @@ export DOCKER
 export -f cache_image
 
 function cache_images_in_registry() {
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+  if [ "$USE_GPU" == "true" ]
+  then
+    k3s_version=$(echo $GPU_IMAGE | sed 's/.*://;s/-cuda$//;s/-/+/')
+  else
+    k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
+  fi
+  cat \
+    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt) \
+    <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
+    | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
 function get_installation_options() {
@@ -229,12 +241,11 @@ function get_installation_options() {
 
   VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME@server:*")
 
-  USE_GPU=${USE_GPU:=}
   GPU_CLUSTER_PARAMS=""
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    GPU_CLUSTER_PARAMS='--image us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda --gpus all'
+    GPU_CLUSTER_PARAMS="--image $GPU_IMAGE --gpus all"
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
@@ -285,20 +296,6 @@ metadata:
 EOF
 }
 
-function download_latest_engine_image() {
-  local latest_engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  local target=$(echo $latest_engine_image | sed "s/[^\/]*\//127.0.0.1:$REGISTRY_PORT\//" | sed 's/@.*$//')
-  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if ! $HTTP_GET $api_url &> /dev/null;
-  then
-    $DOCKER run --rm -d --name tensorleap-engine-image-download-$INSTALL_ID \
-      -v /var/run/docker.sock:/var/run/docker.sock \
-      -e SOURCE=$latest_engine_image -e TARGET=$target \
-      docker:cli \
-      sh -c 'docker pull $SOURCE && docker tag $SOURCE $TARGET && docker push $TARGET' &> /dev/null
-  fi
-}
-
 function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
@@ -340,7 +337,6 @@ function check_installed_version() {
 function install_new_tensorleap_cluster() {
   get_installation_options
   create_docker_registry
-  download_latest_engine_image
   cache_images_in_registry
   init_var_dir
   create_tensorleap_helm_manifest
@@ -361,8 +357,6 @@ function update_existing_chart() {
   echo Updating to latest version...
   run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
-
-  download_latest_engine_image
 
   echo 'Done! (note that images could still be downloading in the background...)'
 }
