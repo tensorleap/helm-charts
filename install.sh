@@ -11,6 +11,9 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
+USE_GPU=${USE_GPU:=}
+GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
+
 function setup_http_utils() {
   if type curl > /dev/null; then
     HTTP_GET='curl -sL --fail'
@@ -197,7 +200,16 @@ export DOCKER
 export -f cache_image
 
 function cache_images_in_registry() {
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+  if [ "$USE_GPU" == "true" ]
+  then
+    k3s_version=$(echo $GPU_IMAGE | sed 's/.*://;s/-cuda$//;s/-/+/')
+  else
+    k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
+  fi
+  cat \
+    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt) \
+    <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
+    | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
 function get_installation_options() {
@@ -229,12 +241,11 @@ function get_installation_options() {
 
   VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME@server:*")
 
-  USE_GPU=${USE_GPU:=}
   GPU_CLUSTER_PARAMS=""
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    GPU_CLUSTER_PARAMS='--image us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda --gpus all'
+    GPU_CLUSTER_PARAMS="--image $GPU_IMAGE --gpus all"
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
