@@ -13,7 +13,7 @@ REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
 function setup_http_utils() {
   if type curl > /dev/null; then
-    HTTP_GET='curl -s --fail'
+    HTTP_GET='curl -sL --fail'
   elif type wget > /dev/null; then
     HTTP_GET='wget -q -O-'
   else
@@ -24,7 +24,7 @@ function setup_http_utils() {
 
 function download_file() {
   if type curl > /dev/null; then
-    curl -s --fail $1 -o $2
+    curl -sL --fail $1 -o $2
   elif type wget > /dev/null; then
     wget -q -O $2 $1
   else
