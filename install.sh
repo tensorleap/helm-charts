@@ -285,20 +285,6 @@ metadata:
 EOF
 }
 
-function download_latest_engine_image() {
-  local latest_engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/engine-latest-image)
-  local target=$(echo $latest_engine_image | sed "s/[^\/]*\//127.0.0.1:$REGISTRY_PORT\//" | sed 's/@.*$//')
-  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if ! $HTTP_GET $api_url &> /dev/null;
-  then
-    $DOCKER run --rm -d --name tensorleap-engine-image-download-$INSTALL_ID \
-      -v /var/run/docker.sock:/var/run/docker.sock \
-      -e SOURCE=$latest_engine_image -e TARGET=$target \
-      docker:cli \
-      sh -c 'docker pull $SOURCE && docker tag $SOURCE $TARGET && docker push $TARGET' &> /dev/null
-  fi
-}
-
 function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
@@ -340,7 +326,6 @@ function check_installed_version() {
 function install_new_tensorleap_cluster() {
   get_installation_options
   create_docker_registry
-  download_latest_engine_image
   cache_images_in_registry
   init_var_dir
   create_tensorleap_helm_manifest
@@ -361,8 +346,6 @@ function update_existing_chart() {
   echo Updating to latest version...
   run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
-
-  download_latest_engine_image
 
   echo 'Done! (note that images could still be downloading in the background...)'
 }
