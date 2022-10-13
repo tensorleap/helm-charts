@@ -11,7 +11,6 @@ spec:
     metadata:
       labels:
         app: tensorleap-web-ui
-        revision: {{ .Values.image_tag }}
     spec:
       containers:
         - name: web-ui
