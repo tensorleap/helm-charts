@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-10-19T15:16:48.905312705Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: b19f66daa77fcbcfc8be00d99c8f1c826f5873b6752ccfa75ec28e453d6db948
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.91/tensorleap-1.0.91.tgz
+    version: 1.0.91
+  - apiVersion: v2
     created: "2022-10-19T10:21:30.649236457Z"
     dependencies:
     - name: ingress-nginx
@@ -2199,6 +2217,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2022-10-19T15:16:49.212127763Z"
+    digest: 428fa316dad8fd9d314bcc324c0dbbd077c2582ad966305454ba1ed45b8c7883
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.60/tensorleap-engine-1.0.60.tgz
+    version: 1.0.60
+  - apiVersion: v2
     created: "2022-10-19T10:21:30.773312165Z"
     digest: 95cef4b1b56e91cae1bffcd78ff74e2f327c25e9a5f9590d469632840605fe0b
     name: tensorleap-engine
@@ -3184,6 +3210,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-10-19T15:16:49.506849519Z"
+    digest: acdd068bd81a1952a1046c10d16ce3dd9f72139845844ef62574913168fd7b82
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.72/tensorleap-web-ui-1.0.72.tgz
+    version: 1.0.72
   - apiVersion: v2
     created: "2022-10-19T10:21:31.026850747Z"
     digest: dc2aceb0c3864cd4f2225257041426728cbec13dd11135b180035ac96c037a08
