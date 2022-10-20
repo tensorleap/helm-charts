@@ -14,11 +14,14 @@ REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 
+RETRIES=5
+REQUEST_TIMEOUT=5
+RETRY_DELAY=0
 function setup_http_utils() {
   if type curl > /dev/null; then
-    HTTP_GET='curl -sL --fail'
+    HTTP_GET="curl -sL --fail --max-time $REQUEST_TIMEOUT --retry $RETRIES --retry-delay $RETRY_DELAY"
   elif type wget > /dev/null; then
-    HTTP_GET='wget -q -O-'
+    HTTP_GET="wget -q -O- --timeout=$REQUEST_TIMEOUT --tries=$RETRIES --wait=$RETRY_DELAY"
   else
     echo you must have either curl or wget installed.
     exit -1
