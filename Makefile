@@ -4,11 +4,8 @@ NAMESPACE ?= tensorleap
 
 cluster-create:
 	k3d cluster create ${NAMESPACE} --k3s-arg="--disable=traefik@server:0"
-	kubectl create namespace ${NAMESPACE}
-	kubens ${NAMESPACE}
 
 cluster-del:
-	kubectl delete namespace ${NAMESPACE}
 	k3d cluster delete ${NAMESPACE}
 
 helm-install: ./charts/tensorleap
