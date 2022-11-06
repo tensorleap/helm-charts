@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-11-06T16:08:50.369156494Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 56296f33f0264c7c6ea2cefdcd579c1707cd47f6d95439398be60b488f8b8377
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.99/tensorleap-1.0.99.tgz
+    version: 1.0.99
+  - apiVersion: v2
     created: "2022-11-06T11:59:34.896794856Z"
     dependencies:
     - name: ingress-nginx
@@ -2343,6 +2361,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2022-11-06T16:08:50.485041007Z"
+    digest: a7e6357a992e7fb428f8525383a7bbe2a9294fbeb5e3fa205ef1ccc6e79ac210
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.67/tensorleap-engine-1.0.67.tgz
+    version: 1.0.67
+  - apiVersion: v2
     created: "2022-11-06T11:59:35.105039608Z"
     digest: 2c111f311a9cc918a9475606b5512296b956d56af2645fa5f7c27eb82a19eb54
     name: tensorleap-engine
@@ -3432,6 +3458,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-11-06T16:08:50.616297595Z"
+    digest: 8783007dbbe0ab1919cd1a813efc8751bfb96ee2072d3df04db35fc22aed714a
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.79/tensorleap-web-ui-1.0.79.tgz
+    version: 1.0.79
   - apiVersion: v2
     created: "2022-11-06T11:59:35.551019411Z"
     digest: e5cf83344b0aa97369494cd8fe8f44bc1a39ced44b2b7d8a87a1e7a071ef7d68
