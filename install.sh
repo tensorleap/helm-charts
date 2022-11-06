@@ -30,9 +30,9 @@ function setup_http_utils() {
 
 function download_file() {
   if type curl > /dev/null; then
-    curl -sL --fail $1 -o $2
+    $HTTP_GET $1 '-o' $2
   elif type wget > /dev/null; then
-    wget -q -O $2 $1
+    $HTTP_GET '-O' $2 $1
   else
     echo you must have either curl or wget installed.
     exit -1
