@@ -110,6 +110,17 @@ function check_docker() {
     DOCKER='sudo docker'
     K3D='sudo k3d'
   fi
+
+  REQUIRED_DOCKER_MAJOR_VERSION=20
+  DOCKER_VERSION=$($DOCKER version | sed -ne '/Client:/,/^$/ p' | grep '^ Version:' | xargs | cut -d ' ' -f 2)
+  DOCKER_MAJOR_VERSION=$(echo $DOCKER_VERSION | cut -d '.' -f 1)
+
+  if [ $DOCKER_MAJOR_VERSION -lt $REQUIRED_DOCKER_MAJOR_VERSION ];
+  then
+    report_status "{\"type\":\"install-script-old-docker-version\",\"installId\":\"$INSTALL_ID\",\"dockerVersion\":\"$DOCKER_VERSION\"}"
+    echo "Tensorleap standalone installation requires docker version $REQUIRED_DOCKER_MAJOR_VERSION or above. Installed version: $DOCKER_VERSION"
+      exit -1
+  fi
 }
 
 function get_latest_chart_version() {
