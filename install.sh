@@ -277,7 +277,11 @@ EOF
 )
   fi
 
-  CLUSTER_ENV_VARS=$(env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" | sed 's/^/-e /;s/$/@server:*/' | tr '\n' ' ')
+  CLUSTER_ENV_VARS=""
+  if env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" &> /dev/null;
+  then
+    CLUSTER_ENV_VARS=$(env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" | sed 's/^/-e /;s/$/@server:*/' | tr '\n' ' ')
+  fi
 }
 
 function init_var_dir() {
