@@ -14,8 +14,6 @@ REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 
-FORWARDED_ENVIRONMENT_VARIABLES='all_proxy\|ALL_PROXY\|http_proxy\|HTTP_PROXY\|https_proxy\|HTTPS_PROXY\|no_proxy\|NO_PROXY'
-
 RETRIES=5
 REQUEST_TIMEOUT=5
 RETRY_DELAY=0
@@ -276,8 +274,6 @@ function get_installation_options() {
 EOF
 )
   fi
-
-  CLUSTER_ENV_VARS=$(env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" | sed 's/^/-e /;s/$/@server:*/' | tr '\n' ' ')
 }
 
 function init_var_dir() {
@@ -318,7 +314,7 @@ function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
-    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
+    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
