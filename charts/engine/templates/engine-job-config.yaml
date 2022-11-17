@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engine-job-config
+data:
+{{ if .Values.gpu }}
+  defaultGpuType: engine-job-template-k80-cm
+{{ else }}
+  defaultCpuType: engine-job-template-pysvcs-cm
+{{ end }}
+  machineTypes: |
+    - id: cpu
+      displayName: CPU
+      templateConfigMap: engine-job-template-pysvcs-cm
+{{ if .Values.gpu }}
+    - id: k80
+      displayName: GPU
+      templateConfigMap: engine-job-template-k80-cm
+{{ end }}
