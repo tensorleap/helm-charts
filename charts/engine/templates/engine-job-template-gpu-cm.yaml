@@ -1,7 +1,8 @@
+{{ if .Values.gpu }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: engine-job-template-pytop-k80
+  name: engine-job-template-gpu-cm
 data:
   job: |
     metadata:
@@ -14,11 +15,9 @@ data:
           containers:
             - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
               name: engine
-{{ if .Values.gpu }}
               resources:
                 limits:
                   nvidia.com/gpu: 1
-{{ end }}
               env:
                 - name: JOB_PAYLOAD
               envFrom:
@@ -42,4 +41,5 @@ data:
               hostPath:
                 path: {{ .Values.localDataDirectory }}
                 type: DirectoryOrCreate
+{{ end }}
 {{ end }}
