@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-11-17T10:56:33.221132448Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 0d2908019f25dfb1acf5b9f5dd4d2ea6275b94b921f675a220a6b019ae4dce14
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.106/tensorleap-1.0.106.tgz
+    version: 1.0.106
+  - apiVersion: v2
     created: "2022-11-16T17:08:23.233752793Z"
     dependencies:
     - name: ingress-nginx
@@ -2469,6 +2487,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2022-11-17T10:56:33.355326198Z"
+    digest: e5fcbae2459c510cbdd8a05f9b0a1e7a50854488ee758a9fc091105c71541da7
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.72/tensorleap-engine-1.0.72.tgz
+    version: 1.0.72
+  - apiVersion: v2
     created: "2022-11-16T17:08:23.371569881Z"
     digest: fe677a534c064e978c0052d63128f6d14ef954c87d3640b18fa92092dfd01469
     name: tensorleap-engine
@@ -3045,6 +3071,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.0/tensorleap-engine-1.0.0.tgz
     version: 1.0.0
   tensorleap-node-server:
+  - apiVersion: v2
+    created: "2022-11-17T10:56:33.491376074Z"
+    digest: 979941ebdf306ffd53d11ea084cc21646f3adb68713e994ecd772f6299e3b0eb
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.73/tensorleap-node-server-1.0.73.tgz
+    version: 1.0.73
   - apiVersion: v2
     created: "2022-11-16T17:08:23.495046677Z"
     digest: 0e262e270d16eaa195c2d8db4dfe10d023fdf16b529668da738a5960cd2ef45c
