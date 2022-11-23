@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-11-23T08:44:30.227588079Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 82ec307fe60508fd63fa6724b82814543dd41fab323040bdc806388d4548c0ef
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.112/tensorleap-1.0.112.tgz
+    version: 1.0.112
+  - apiVersion: v2
     created: "2022-11-22T17:53:09.106049669Z"
     dependencies:
     - name: ingress-nginx
@@ -3202,6 +3220,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2022-11-23T08:44:30.363905821Z"
+    digest: 234042908004c810be7d455cd440b1253a729f644789e08c6522f9c3f7b0ac9b
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.77/tensorleap-node-server-1.0.77.tgz
+    version: 1.0.77
+  - apiVersion: v2
     created: "2022-11-22T17:53:09.433447762Z"
     digest: 46b4e28c50e79c8ed05e4b1176be44f2e09cec6d35f27e20273137a34351c670
     name: tensorleap-node-server
@@ -3818,6 +3844,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-11-23T08:44:30.536571327Z"
+    digest: 003ce00dc4b7a9f09e2b94b3cd89c8c92743096e97f8670074379bfeb3b6a778
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.89/tensorleap-web-ui-1.0.89.tgz
+    version: 1.0.89
   - apiVersion: v2
     created: "2022-11-22T17:53:09.558195097Z"
     digest: b2becdfa4c46a9cd92e6b7724d892e16c8b9209ae0e8f2974ccf8f886dffc734
