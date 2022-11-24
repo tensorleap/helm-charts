@@ -6,6 +6,7 @@ data:
   elasticsearch.yml: |
     node.store.allow_mmap: false
     discovery.type: single-node
+    path.repo: ["/usr/share/elasticsearch/data"]
 ---
 kind: Service
 apiVersion: v1
