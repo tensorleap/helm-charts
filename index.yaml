@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-12-06T12:38:57.677589785Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: b69146bfb283220027c9f7e3b100feb38a4b17c2334646c830b428292a1c9e61
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.117/tensorleap-1.0.117.tgz
+    version: 1.0.117
+  - apiVersion: v2
     created: "2022-12-04T17:06:42.575568193Z"
     dependencies:
     - name: ingress-nginx
@@ -2667,6 +2685,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2022-12-06T12:38:57.882293497Z"
+    digest: 87f09d969f321627f415d1d7e29fe9ddfa66af627b4acc18fdfdd1e780127d86
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.82/tensorleap-engine-1.0.82.tgz
+    version: 1.0.82
+  - apiVersion: v2
     created: "2022-12-04T17:06:42.704061172Z"
     digest: 6b51dc7603975d32c952e0707ff7a9e1e681f5a4a04da5e859e3cc2fe0dbde28
     name: tensorleap-engine
@@ -3980,6 +4006,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-12-06T12:38:58.112660017Z"
+    digest: c4b56f9ecc037ed670fd2bcd4f3f434ecef376596f377e400ae961df52b013d4
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.94/tensorleap-web-ui-1.0.94.tgz
+    version: 1.0.94
   - apiVersion: v2
     created: "2022-12-04T17:06:42.953981209Z"
     digest: e6e34ff2fdc2204c9a7589a00daba35f954548d751db1be25297f049cc4b3cd6
