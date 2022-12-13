@@ -11,6 +11,8 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
+FIX_DNS=${FIX_DNS:=}
+
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 
@@ -256,6 +258,11 @@ function get_installation_options() {
   fi
 
   VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME@server:*")
+
+  if [ "$FIX_DNS" == "true" ]
+  then
+    VOLUMES_MOUNT_PARAM="$VOLUMES_MOUNT_PARAM -v /etc/resolv.conf:/etc/resolv.conf@server:*"
+  fi
 
   GPU_CLUSTER_PARAMS=""
   GPU_ENGINE_VALUES=""
