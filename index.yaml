@@ -2,6 +2,24 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2022-12-15T15:29:42.803219408Z"
+    dependencies:
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: c3536ab4c04d4d4ffaaeb5e1b77526090c0e8ae725e3bd4510a42cac2c8e730d
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.122/tensorleap-1.0.122.tgz
+    version: 1.0.122
+  - apiVersion: v2
     created: "2022-12-14T09:32:17.36683566Z"
     dependencies:
     - name: ingress-nginx
@@ -3446,6 +3464,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2022-12-15T15:29:42.92437674Z"
+    digest: c78f3c7535250b03756b4a6221e6a5e328cb620d9c9e59c4ff725f8df4edd3b6
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.85/tensorleap-node-server-1.0.85.tgz
+    version: 1.0.85
+  - apiVersion: v2
     created: "2022-12-14T09:32:17.737982949Z"
     digest: 969d6a04be7d6c095ab7129afe8cc3cdfae1c1dc7ae868454c61d73aca1b12a8
     name: tensorleap-node-server
@@ -4126,6 +4152,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2022-12-15T15:29:43.056971662Z"
+    digest: 5ebef67225b6539ae9a75a539360e1cb4cfcba40df6f468d848c5b7cf4278e87
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.97/tensorleap-web-ui-1.0.97.tgz
+    version: 1.0.97
   - apiVersion: v2
     created: "2022-12-14T09:32:17.898326797Z"
     digest: b165ff8613277a3b2003a98acfcbf9c9833e79b2eed5b8d3b9023ba8f5dac08c
