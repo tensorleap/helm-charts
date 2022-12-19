@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: engine-job-template-pytop-svcs
+  name: engine-job-template-pysvcs-cm
 data:
   job: |
     metadata:
