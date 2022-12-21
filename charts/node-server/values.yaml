@@ -1,1 +1,4 @@
 image_tag: master-272100cb-stable
+
+ingress:
+  enabled: true

@@ -1,3 +1,6 @@
+ingress:
+  enabled: true
+
 ingress-nginx:
   enabled: true
   fullnameOverride: ingress-nginx

@@ -1,1 +1,4 @@
 image_tag: master-c03ab1d9-stable
+
+ingress:
+  enabled: true
