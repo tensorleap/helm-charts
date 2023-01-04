@@ -399,10 +399,18 @@ function wait_for_cluster_init() {
 }
 
 function check_installed_version() {
-  INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+  if run_in_docker kubectl get -n kube-system HelmChart tensorleap;
+  then
+    INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+    USE_LOCAL_HELM=false
+  else
+    INSTALLED_CHART_VERSION=$(helm list -n tensorleap -a -f tensorleap -o yaml | grep 'chart:' | sed 's/.*tensorleap-//')
+    USE_LOCAL_HELM=true
+  fi
+
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
-    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
     echo Installation in up to date!
     exit 0
   fi
@@ -428,10 +436,14 @@ function update_existing_chart() {
   cache_images_in_registry
   check_installed_version
 
-  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
 
   echo Updating to latest version...
-  run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  if [ "$USE_LOCAL_HELM" == "true" ]; then
+    run_helm_install
+  else
+    run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  fi
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
   echo 'Done! (note that images could still be downloading in the background...)'
