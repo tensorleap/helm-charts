@@ -5,6 +5,7 @@ DISABLE_REPORTING=${DISABLE_REPORTING:=}
 INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
+HELM=helm
 
 VAR_DIR='/var/lib/tensorleap/standalone'
 K3S_VAR_DIR='/var/lib/rancher/k3s'
@@ -12,6 +13,7 @@ K3S_VAR_DIR='/var/lib/rancher/k3s'
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
 FIX_DNS=${FIX_DNS:=}
+USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
@@ -113,6 +115,7 @@ function check_docker() {
 
     DOCKER='sudo docker'
     K3D='sudo k3d'
+    HELM='sudo helm'
   fi
 
   REQUIRED_DOCKER_MAJOR_VERSION=20
@@ -124,6 +127,19 @@ function check_docker() {
     report_status "{\"type\":\"install-script-old-docker-version\",\"installId\":\"$INSTALL_ID\",\"dockerVersion\":\"$DOCKER_VERSION\"}"
     echo "Tensorleap standalone installation requires docker version $REQUIRED_DOCKER_MAJOR_VERSION or above. Installed version: $DOCKER_VERSION"
       exit -1
+  fi
+}
+
+function check_helm() {
+  if [ "$USE_LOCAL_HELM" == "true" ]
+  then
+    echo Checking helm installation
+    if !($HELM version);
+    then
+      report_status "{\"type\":\"install-script-helm-not-installed\",\"installId\":\"$INSTALL_ID\"}"
+      echo Please install helm!
+      exit -1
+    fi
   fi
 }
 
@@ -272,9 +288,17 @@ function get_installation_options() {
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
+  VALUES_FILE=""
   VALUES_CONTENT=""
   if [ -n "$VOLUME_ENGINE_VALUES$GPU_ENGINE_VALUES" ]
   then
+    VALUES_FILE=$(cat << EOF
+tensorleap-engine:
+  ${VOLUME_ENGINE_VALUES}
+  ${GPU_ENGINE_VALUES}
+EOF
+)
+
     VALUES_CONTENT=$(cat << EOF
   valuesContent: |-
     tensorleap-engine:
@@ -305,7 +329,12 @@ function init_var_dir() {
 }
 
 function create_tensorleap_helm_manifest() {
-  cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
+  if [ "$USE_LOCAL_HELM" == "true" ]
+  then
+    echo "$VALUES_FILE" > $VAR_DIR/manifests/helm-values.yaml
+    echo --- > $VAR_DIR/manifests/tensorleap.yaml
+  else
+    cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -323,6 +352,7 @@ kind: Namespace
 metadata:
   name: tensorleap
 EOF
+  fi
 }
 
 function create_tensorleap_cluster() {
@@ -333,14 +363,30 @@ function create_tensorleap_cluster() {
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
+function run_helm_install() {
+  if [ "$USE_LOCAL_HELM" == "true" ]; then
+    echo Setting up helm repo...
+    report_status "{\"type\":\"install-script-setting-helm-repo\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    $HELM repo add tensorleap https://helm.tensorleap.ai
+    $HELM repo update tensorleap
+    echo Running helm install...
+    report_status "{\"type\":\"install-script-running-helm-upgrade\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+      --values $VAR_DIR/manifests/helm-values.yaml \
+      --wait
+  fi
+}
+
 function wait_for_cluster_init() {
-  echo 'Setting up cluster... (this may take a few minutes)'
-  report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
-  then
-    report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
-    exit -1
+  if [ "$USE_LOCAL_HELM" != "true" ]; then
+    echo 'Setting up cluster... (this may take a few minutes)'
+    report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
+    then
+      report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+      echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+      exit -1
+    fi
   fi
   echo 'Waiting for containers to initialize... (Just a few more minutes!)'
   report_status "{\"type\":\"install-script-deployment-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
@@ -353,10 +399,18 @@ function wait_for_cluster_init() {
 }
 
 function check_installed_version() {
-  INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+  if run_in_docker kubectl get -n kube-system HelmChart tensorleap;
+  then
+    INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
+    USE_LOCAL_HELM=false
+  else
+    INSTALLED_CHART_VERSION=$(helm list -n tensorleap -a -f tensorleap -o yaml | grep 'chart:' | sed 's/.*tensorleap-//')
+    USE_LOCAL_HELM=true
+  fi
+
   if [ "$LATEST_CHART_VERSION" == "$INSTALLED_CHART_VERSION" ]
   then
-    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+    report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
     echo Installation in up to date!
     exit 0
   fi
@@ -371,6 +425,7 @@ function install_new_tensorleap_cluster() {
   create_tensorleap_helm_manifest
   create_tensorleap_cluster
   create_docker_backups_folder
+  run_helm_install
   wait_for_cluster_init
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
@@ -381,10 +436,14 @@ function update_existing_chart() {
   cache_images_in_registry
   check_installed_version
 
-  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
+  report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
 
   echo Updating to latest version...
-  run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  if [ "$USE_LOCAL_HELM" == "true" ]; then
+    run_helm_install
+  else
+    run_in_docker kubectl patch -n kube-system  HelmChart/tensorleap --type='merge' -p "{\"spec\":{\"version\":\"$LATEST_CHART_VERSION\"}}"
+  fi
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
   echo 'Done! (note that images could still be downloading in the background...)'
@@ -395,6 +454,7 @@ function main() {
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
   check_k3d
+  check_helm
   get_latest_chart_version
 
   if $K3D cluster list tensorleap &> /dev/null;
