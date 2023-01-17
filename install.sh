@@ -325,7 +325,7 @@ function init_var_dir() {
   echo 'Downloading config files...'
   download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
   download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
-  chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
 }
 
 function create_tensorleap_helm_manifest() {
