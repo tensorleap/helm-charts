@@ -21,7 +21,7 @@ GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 FORWARDED_ENVIRONMENT_VARIABLES='all_proxy\|ALL_PROXY\|http_proxy\|HTTP_PROXY\|https_proxy\|HTTPS_PROXY\|no_proxy\|NO_PROXY'
 
 RETRIES=5
-REQUEST_TIMEOUT=5
+REQUEST_TIMEOUT=20
 RETRY_DELAY=0
 function setup_http_utils() {
   if type curl > /dev/null; then
