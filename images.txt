@@ -10,4 +10,4 @@ quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-3f153ad8-stable
 us-central1-docker.pkg.dev/tensorleap/main/kibanimat:master-43b86e9d-stable
 us-central1-docker.pkg.dev/tensorleap/main/node-server:master-f3a2ef10-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-a825ec5d-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-506fba3d-stable
