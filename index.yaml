@@ -2,6 +2,25 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-01-23T14:12:28.557492497Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: kibana
+      repository: https://helm.elastic.co
+      version: 7.6.1
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 3c2af18d11ba184d63d192c21e9de3add3bc57b82160f56211dbcd7b247c1e8c
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.135/tensorleap-1.0.135.tgz
+    version: 1.0.135
+  - apiVersion: v2
     created: "2023-01-23T09:19:39.671050778Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3000,6 +3019,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2023-01-23T14:12:28.745569577Z"
+    digest: 98abbc7140d5bdaa3a530f3518ec06028b4c11d8700c0a116423d4e91b3fbdf5
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.97/tensorleap-engine-1.0.97.tgz
+    version: 1.0.97
+  - apiVersion: v2
     created: "2023-01-23T09:19:39.840990966Z"
     digest: ec10f15c5578bde721c52f370dc06fea94da3f446d2e24979c8f5c7dbea4a9d8
     name: tensorleap-engine
@@ -4545,6 +4572,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2023-01-23T14:12:28.954136543Z"
+    digest: 1a83678f107e52e736798fa584866da56ee170f06b4bb387156feac124297324
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.110/tensorleap-web-ui-1.0.110.tgz
+    version: 1.0.110
   - apiVersion: v2
     created: "2023-01-23T09:19:40.199489174Z"
     digest: 223cc3c3f60da9c789f6b890455bd11388cc74e5bcf35030b088d258c4ba6503
