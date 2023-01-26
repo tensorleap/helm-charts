@@ -450,6 +450,7 @@ function update_existing_chart() {
 }
 
 function main() {
+  echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
   setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
