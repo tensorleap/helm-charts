@@ -22,27 +22,6 @@ spec:
                 name: tensorleap-node-server
                 port:
                   name: http
-            path: /kibana
-            pathType: ImplementationSpecific
-          - backend:
-              service:
-                name: kibana
-                port:
-                  number: 5601
-            path: /kibana/bundles
-            pathType: ImplementationSpecific
-          - backend:
-              service:
-                name: kibana
-                port:
-                  number: 5601
-            path: /kibana/built_assets
-            pathType: ImplementationSpecific
-          - backend:
-              service:
-                name: tensorleap-node-server
-                port:
-                  name: http
             path: /socket.io
             pathType: ImplementationSpecific
 {{ end }}
