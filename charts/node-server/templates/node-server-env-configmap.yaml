@@ -4,7 +4,6 @@ metadata:
   name: tensorleap-node-server-env-configmap
 data:
   NODE_ENV: production
-  KIBANA_URL: http://kibana:5601
   MONGO_URI: mongodb://mongodb/tensorleap?tls=false&ssl=false
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
   BUCKET_NAME: session
