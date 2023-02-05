@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-02-05T16:18:59.871086494Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: b1e90f3f296596ee1301d57db37290b8b76374bf9b2d05638248871f1385f9f3
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.142/tensorleap-1.0.142.tgz
+    version: 1.0.142
+  - apiVersion: v2
     created: "2023-02-02T14:33:58.210407295Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3933,6 +3949,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2023-02-05T16:19:00.076736459Z"
+    digest: 4b5024730e3dfc1e91ae90935a6540e3b52820cfba9c68edeb38da9a924fb8de
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.101/tensorleap-node-server-1.0.101.tgz
+    version: 1.0.101
+  - apiVersion: v2
     created: "2023-02-02T14:33:58.527259676Z"
     digest: 9650048019457db58f00910aae4c7f863d00dd926dafa1b5ef9f7b44f4948b45
     name: tensorleap-node-server
@@ -4741,6 +4765,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2023-02-05T16:19:00.272668372Z"
+    digest: bc14969cd0f571c3d646e49b562cb37f993146b478837f5cbd27dd58a09e9f0f
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.117/tensorleap-web-ui-1.0.117.tgz
+    version: 1.0.117
   - apiVersion: v2
     created: "2023-02-02T14:33:58.692989537Z"
     digest: 9b1c4dd389c733dc60bf57573d7ad934d9f144c5d259c72a11ddcd2f097b167d
