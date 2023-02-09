@@ -249,23 +249,10 @@ function cache_images_in_registry() {
 function get_installation_options() {
   # Get port and volume mount
   PORT=${TENSORLEAP_PORT:=4589}
-  VOLUME=${TENSORLEAP_VOLUME:=}
   DEFAULT_VOLUME="$HOME/tensorleap/data"
-  if [ -z "$VOLUME" ]
-  then
-    echo "Enter a path to be mounted and accessible by scripts (default: $DEFAULT_VOLUME):"
-    read LOCAL_PATH
-    if [ -n "$LOCAL_PATH" ]
-    then
-      echo "Enter the path on the container: (leave empty to use same path):"
-      read CONTAINER_PATH
-      LOCAL_PATH=$(cd $LOCAL_PATH && pwd)
-      VOLUME="$LOCAL_PATH:${CONTAINER_PATH:=$LOCAL_PATH}"
-    else
-      mkdir -p $DEFAULT_VOLUME
-      VOLUME="$DEFAULT_VOLUME:$DEFAULT_VOLUME"
-    fi
-  fi
+  VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
+  LOCAL_PATH=${VOLUME/:*/}
+  [ ! -d "$LOCAL_PATH" ] && mkdir -p $LOCAL_PATH
 
   VOLUME_ENGINE_VALUES=""
   if [ -n "$VOLUME" ]
