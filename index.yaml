@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-02-09T15:26:49.780352904Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 524462d8b9f2df76e2cbce4d1282d99cc0e69dc4962bfc3b5a89aad8799a99e4
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.145/tensorleap-1.0.145.tgz
+    version: 1.0.145
+  - apiVersion: v2
     created: "2023-02-08T15:36:07.284721279Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3981,6 +3997,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2023-02-09T15:26:49.918379124Z"
+    digest: b4441fcf92c662ac874992635af2c4d38eed0fe3d1202cfe5a91c9fe9e3d6fa2
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.104/tensorleap-node-server-1.0.104.tgz
+    version: 1.0.104
+  - apiVersion: v2
     created: "2023-02-08T15:36:07.529320025Z"
     digest: 7108679aa7fb2a47799c2dee0277f08c975136f690c28e886c8e080825bfde0a
     name: tensorleap-node-server
@@ -4813,6 +4837,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2023-02-09T15:26:50.052836872Z"
+    digest: add5baa55f83bab91b2458e5107aa26a11c14c75ed3c9ec00e1b208bc82f57f8
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.120/tensorleap-web-ui-1.0.120.tgz
+    version: 1.0.120
   - apiVersion: v2
     created: "2023-02-08T15:36:07.690173812Z"
     digest: 715e4c16ae1d77aa1df13a2b5be7996c5b0392dc2be3436d656c29123befb72e
