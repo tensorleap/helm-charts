@@ -2,6 +2,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: engine-cm
+{{ if .Values.global.target_namespace }}
+  namespace: {{ .Values.global.target_namespace }}
+{{ end }}
 data:
   PY_CONFIG: /app/config/config.yaml
   ELASTIC_HOST: http://elasticsearch-master.{{ .Release.Namespace }}.svc:9200
