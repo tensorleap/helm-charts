@@ -1,5 +1,5 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: {{ empty .Values.global.target_namespace | ternary "Role" "ClusterRole" }}
 metadata:
   name: node-server-role
 rules:
