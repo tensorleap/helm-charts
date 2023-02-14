@@ -9,6 +9,7 @@ data:
         engineJob: "true"
         suffix: svcs
     spec:
+      ttlSecondsAfterFinished: 36000 # 10 hours
       template:
         spec:
           containers:
