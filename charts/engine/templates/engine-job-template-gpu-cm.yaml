@@ -10,6 +10,7 @@ data:
         engineJob: "true"
         suffix: k80
     spec:
+      ttlSecondsAfterFinished: 36000 # 10 hours
       template:
         spec:
           containers:
