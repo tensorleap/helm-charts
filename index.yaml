@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-02-19T14:56:23.974740111Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 804be4689fa3ce142ac02bed8196bbb04562e74e5019ff1058eca220dcb60de1
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.151/tensorleap-1.0.151.tgz
+    version: 1.0.151
+  - apiVersion: v2
     created: "2023-02-19T08:53:14.620671608Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3252,6 +3268,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2023-02-19T14:56:24.194618128Z"
+    digest: 788c924bab3ff78f67c1dc9574ea790917f76e46682ab2c8424a707f4ff70148
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.107/tensorleap-engine-1.0.107.tgz
+    version: 1.0.107
+  - apiVersion: v2
     created: "2023-02-19T08:53:14.830902785Z"
     digest: a7ade81500e69ec458b44e294691cf6657e8768ea6e931756034f3a9e1734bcb
     name: tensorleap-engine
@@ -4108,6 +4132,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.0/tensorleap-engine-1.0.0.tgz
     version: 1.0.0
   tensorleap-node-server:
+  - apiVersion: v2
+    created: "2023-02-19T14:56:24.403411369Z"
+    digest: 5b2cac3f8d316898d70eec86c38dc35b233706bf39bfe9f8eb808df635eb82f7
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.109/tensorleap-node-server-1.0.109.tgz
+    version: 1.0.109
   - apiVersion: v2
     created: "2023-02-19T08:53:15.046202495Z"
     digest: 7324208b744d5cddfa0c775f28faaf4dfe90bd7e4fd663c3f1c379e7bc60d367
