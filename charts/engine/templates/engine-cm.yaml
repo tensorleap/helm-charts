@@ -2,16 +2,19 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: engine-cm
+{{ if .Values.global.target_namespace }}
+  namespace: {{ .Values.global.target_namespace }}
+{{ end }}
 data:
   PY_CONFIG: /app/config/config.yaml
-  ELASTIC_HOST: http://elasticsearch-master:9200
+  ELASTIC_HOST: http://elasticsearch-master.{{ .Release.Namespace }}.svc:9200
   SESSION_BUCKET: session
-  RABBIT_HOST: rabbitmq
+  RABBIT_HOST: rabbitmq.{{ .Release.Namespace }}.svc
   RABBIT_USER: guest
   RABBIT_PASSWORD: guest
   FEEDBACK_TOPIC: feedback
   SUBSCRIBER_TOPIC: job-control-channel
   STORAGE_PROVIDER: minio
-  STORAGE_ENDPOINT: tensorleap-minio
+  STORAGE_ENDPOINT: tensorleap-minio.{{ .Release.Namespace }}.svc
   STORAGE_PORT: "9000"
   CONTENT_BASE_URL: /session/

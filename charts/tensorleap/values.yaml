@@ -21,3 +21,6 @@ minio:
   buckets:
     - name: session
       policy: public
+
+global:
+  target_namespace: ''

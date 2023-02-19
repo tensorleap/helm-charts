@@ -32,3 +32,6 @@ data:
     CHKIakAHnM/Pe7WIBxixK7TG8qRgrOzzBOu2QVt04DVhVcxqZkpglgce+6LZhYmZ
     fUdjVwvr9Nq+s5Fc1QN4uQkCAwEAAQ==
     -----END PUBLIC KEY-----
+{{ if .Values.global.target_namespace }}
+  TARGET_NAMESPACE: {{ .Values.global.target_namespace }}
+{{ end }}
