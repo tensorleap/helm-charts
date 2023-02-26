@@ -28,6 +28,9 @@ data:
                   mountPath: {{ .Values.localDataDirectory }}
 {{ end }}
           restartPolicy: Never
+{{ if .Values.schedulerName }}
+          schedulerName: {{ .Values.schedulerName }}
+{{ end }}
           volumes:
             - name: engine-pvc
               hostPath:
