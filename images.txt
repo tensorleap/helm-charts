@@ -7,5 +7,5 @@ k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206ad
 quay.io/minio/mc:RELEASE.2021-12-20T23-43-34Z
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-13738486-stable
-us-central1-docker.pkg.dev/tensorleap/main/node-server:master-c75e3762-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-350c18ee-stable
 us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-2e837164-stable
