@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-02-28T15:21:42.208520683Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: 3132d38d992d25d390bcf45c2a4664354c11cce817e0e3b1523f9afcf0904162
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.159/tensorleap-1.0.159.tgz
+    version: 1.0.159
+  - apiVersion: v2
     created: "2023-02-28T12:43:32.654219572Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4269,6 +4285,14 @@ entries:
     version: 1.0.0
   tensorleap-node-server:
   - apiVersion: v2
+    created: "2023-02-28T15:21:42.428177831Z"
+    digest: 4bd8ee55f8666d7e47247af103bf063d579aa229c922b9b6f37a1c79cdcd81b9
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.116/tensorleap-node-server-1.0.116.tgz
+    version: 1.0.116
+  - apiVersion: v2
     created: "2023-02-28T12:43:32.859400901Z"
     digest: 73ca498c4c4c2ad47a20c66ee8894d903fb57746a41ab78f0478b655d4e2faff
     name: tensorleap-node-server
@@ -5197,6 +5221,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2023-02-28T15:21:42.670975917Z"
+    digest: 3cd0e72c5ec2b49d624abbbea0741bd3cdac46dd3e5a004ae27d34d20e2e0b15
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.127/tensorleap-web-ui-1.0.127.tgz
+    version: 1.0.127
   - apiVersion: v2
     created: "2023-02-28T12:43:33.052445288Z"
     digest: b4346ab17692577850304e573ebede207b0e1021b14911b0af25dc6fd9abee88
