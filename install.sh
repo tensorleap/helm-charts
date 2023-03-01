@@ -346,7 +346,7 @@ function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
-    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
+    -p "$PORT:80@server:0" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
