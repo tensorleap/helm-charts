@@ -20,6 +20,9 @@ registries:
       docker.io:
         endpoint:
           - http://k3d-tensorleap-registry:5000
+      k8s.gcr.io:
+        endpoint:
+          - http://k3d-tensorleap-registry:5000
       gcr.io:
         endpoint:
           - http://k3d-tensorleap-registry:5000
