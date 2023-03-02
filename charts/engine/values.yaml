@@ -1,4 +1,4 @@
-image_tag: master-cd8c4e0f-stable
+image_tag: master-f38462b0-stable
 
 localDataDirectory: ""
 gpu: false
