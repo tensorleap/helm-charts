@@ -12,6 +12,10 @@ volumes:
   - volume: /var/lib/tensorleap/standalone/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml
     nodeFilters:
       - server:*
+ports:
+  - port: 4589:80
+    nodeFilters:
+      - loadbalancer
 registries:
   use:
     - tensorleap-registry

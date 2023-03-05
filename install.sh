@@ -248,7 +248,6 @@ function cache_images_in_registry() {
 
 function get_installation_options() {
   # Get port and volume mount
-  PORT=${TENSORLEAP_PORT:=4589}
   DEFAULT_VOLUME="$HOME/tensorleap/data"
   VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
   LOCAL_PATH=${VOLUME/:*/}
@@ -345,8 +344,7 @@ EOF
 function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
-    -p "$PORT:80@loadbalancer" $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
@@ -371,7 +369,7 @@ function wait_for_cluster_init() {
     if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
     then
       report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-      echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+      echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:4589 If it's not, contact support"
       exit -1
     fi
   fi
@@ -380,7 +378,7 @@ function wait_for_cluster_init() {
   if !(run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
   then
     report_status "{\"type\":\"install-script-deployment-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:$PORT If it's not, contact support"
+    echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:4589 If it's not, contact support"
     exit -1
   fi
 }
@@ -416,7 +414,7 @@ function install_new_tensorleap_cluster() {
   wait_for_cluster_init
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:$PORT"
+  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:4589"
 }
 
 function update_existing_chart() {

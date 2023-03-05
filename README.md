@@ -120,7 +120,7 @@ done
 8. Create a cluster with tensorleap installed:
 
 ```bash
-k3d cluster create --config /var/lib/tensorleap/standalone/manifests/k3d-config.yaml -p "4589:80@loadbalancer"
+k3d cluster create --config /var/lib/tensorleap/standalone/manifests/k3d-config.yaml
 ```
 
 note that it will take some time for the installation to be ready. \
