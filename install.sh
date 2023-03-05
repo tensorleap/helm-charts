@@ -8,7 +8,6 @@ K3D=k3d
 HELM=helm
 
 VAR_DIR='/var/lib/tensorleap/standalone'
-K3S_VAR_DIR='/var/lib/rancher/k3s'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
