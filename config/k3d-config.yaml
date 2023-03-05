@@ -29,9 +29,6 @@ registries:
       docker.elastic.co:
         endpoint:
           - http://k3d-tensorleap-registry:5000
-      k3s.gcr.io:
-        endpoint:
-          - http://k3d-tensorleap-registry:5000
       quay.io:
         endpoint:
           - http://k3d-tensorleap-registry:5000
