@@ -242,7 +242,6 @@ function cache_images_in_registry() {
 }
 
 function get_installation_options() {
-  # Get port and volume mount
   DEFAULT_VOLUME="$HOME/tensorleap/data"
   VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
   LOCAL_PATH=${VOLUME/:*/}
