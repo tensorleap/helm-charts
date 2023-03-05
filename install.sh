@@ -250,13 +250,8 @@ function get_installation_options() {
   LOCAL_PATH=${VOLUME/:*/}
   [ ! -d "$LOCAL_PATH" ] && mkdir -p $LOCAL_PATH
 
-  VOLUME_ENGINE_VALUES=""
-  if [ -n "$VOLUME" ]
-  then
-    VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
-  fi
-
-  VOLUMES_MOUNT_PARAM=$([ -z $VOLUME ] && echo '' || echo "-v $VOLUME@server:*")
+  VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
+  VOLUMES_MOUNT_PARAM="-v $VOLUME@server:*"
 
   if [ "$FIX_DNS" == "true" ]
   then
@@ -271,25 +266,20 @@ function get_installation_options() {
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
-  VALUES_FILE=""
-  VALUES_CONTENT=""
-  if [ -n "$VOLUME_ENGINE_VALUES$GPU_ENGINE_VALUES" ]
-  then
-    VALUES_FILE=$(cat << EOF
+  VALUES_FILE=$(cat << EOF
 tensorleap-engine:
   ${VOLUME_ENGINE_VALUES}
   ${GPU_ENGINE_VALUES}
 EOF
 )
 
-    VALUES_CONTENT=$(cat << EOF
+  VALUES_CONTENT=$(cat << EOF
   valuesContent: |-
     tensorleap-engine:
       ${VOLUME_ENGINE_VALUES}
       ${GPU_ENGINE_VALUES}
 EOF
 )
-  fi
 
   CLUSTER_ENV_VARS=""
   if env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" &> /dev/null;
