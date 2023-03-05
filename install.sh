@@ -2,6 +2,7 @@ set -euo pipefail
 
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
 DISABLE_CLUSTER_CREATION=${DISABLE_CLUSTER_CREATION:=}
+FILES_BRANCH=${FILES_BRANCH:=master}
 
 INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
@@ -145,7 +146,7 @@ function check_helm() {
 
 function get_latest_chart_version() {
   echo Getting latest version...
-  LATEST_CHART_VERSION=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
+  LATEST_CHART_VERSION=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
   echo $LATEST_CHART_VERSION
 }
 
@@ -237,7 +238,7 @@ function cache_images_in_registry() {
     k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
   fi
   cat \
-    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/master/images.txt) \
+    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt) \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
     | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
@@ -305,8 +306,8 @@ function init_var_dir() {
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/master/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
   sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
 }
 
