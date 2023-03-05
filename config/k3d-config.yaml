@@ -16,6 +16,31 @@ ports:
   - port: 4589:80
     nodeFilters:
       - loadbalancer
+env:
+  - envVar: all_proxy=${all_proxy}
+    nodeFilters:
+      - server:*
+  - envVar: ALL_PROXY=${ALL_PROXY}
+    nodeFilters:
+      - server:*
+  - envVar: http_proxy=${http_proxy}
+    nodeFilters:
+      - server:*
+  - envVar: HTTP_PROXY=${HTTP_PROXY}
+    nodeFilters:
+      - server:*
+  - envVar: https_proxy=${https_proxy}
+    nodeFilters:
+      - server:*
+  - envVar: HTTPS_PROXY=${HTTPS_PROXY}
+    nodeFilters:
+      - server:*
+  - envVar: no_proxy=${no_proxy}
+    nodeFilters:
+      - server:*
+  - envVar: NO_PROXY=${NO_PROXY}
+    nodeFilters:
+      - server:*
 registries:
   use:
     - tensorleap-registry

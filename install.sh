@@ -19,8 +19,6 @@ USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 
-FORWARDED_ENVIRONMENT_VARIABLES='all_proxy\|ALL_PROXY\|http_proxy\|HTTP_PROXY\|https_proxy\|HTTPS_PROXY\|no_proxy\|NO_PROXY'
-
 RETRIES=5
 REQUEST_TIMEOUT=20
 RETRY_DELAY=0
@@ -280,12 +278,6 @@ EOF
       ${GPU_ENGINE_VALUES}
 EOF
 )
-
-  CLUSTER_ENV_VARS=""
-  if env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" &> /dev/null;
-  then
-    CLUSTER_ENV_VARS=$(env | grep "$FORWARDED_ENVIRONMENT_VARIABLES" | sed 's/^/-e /;s/$/@server:*/' | tr '\n' ' ')
-  fi
 }
 
 function init_var_dir() {
@@ -331,12 +323,12 @@ EOF
 function create_tensorleap_cluster() {
   if [ "$DISABLE_CLUSTER_CREATION" == "true" ]; then
     echo 'To continue installation run:'
-    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS"
+    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM"
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM $CLUSTER_ENV_VARS \
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
