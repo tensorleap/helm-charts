@@ -126,11 +126,5 @@ k3d cluster create --config /var/lib/tensorleap/standalone/manifests/k3d-config.
 note that it will take some time for the installation to be ready. \
 You can monitor progress by inspecting the cluster with `kubectl`
 
-9. Create a directory inside the container for db backups
-
-```
-docker exec -it k3d-tensorleap-server-0 mkdir -m 777 /mongodb-backups
-```
-
-10. After the self initialization of the cluster, Tensorleap should be available on http://127.0.0.1:4589
+9. After the self initialization of the cluster, Tensorleap should be available on http://127.0.0.1:4589
 </details>

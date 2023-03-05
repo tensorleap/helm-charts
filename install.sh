@@ -152,10 +152,6 @@ function run_in_docker() {
   $DOCKER exec -it k3d-tensorleap-server-0 $*
 }
 
-function create_docker_backups_folder() {
-  run_in_docker mkdir -m 777 /mongodb-backups &> /dev/null || run_in_docker chmod -R 777 /mongodb-backups
-}
-
 function check_docker_requirements() {
 
   NO_RESOURCES=''
@@ -408,7 +404,6 @@ function install_new_tensorleap_cluster() {
   init_var_dir
   create_tensorleap_helm_manifest
   create_tensorleap_cluster
-  create_docker_backups_folder
   run_helm_install
   wait_for_cluster_init
 
