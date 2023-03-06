@@ -248,18 +248,32 @@ function get_installation_options() {
   [ ! -d "$LOCAL_PATH" ] && mkdir -p $LOCAL_PATH
 
   VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
-  VOLUMES_MOUNT_PARAM="-v $VOLUME@server:*"
+  K3D_CONFIG_SED_SCRIPT="/volumes:/ a\\
+  - volume: $VOLUME\\
+    nodeFilters:\\
+      - server:*"
 
   if [ "$FIX_DNS" == "true" ]
   then
-    VOLUMES_MOUNT_PARAM="$VOLUMES_MOUNT_PARAM -v /etc/resolv.conf:/etc/resolv.conf@server:*"
+    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT\\
+  - volume: /etc/resolv.conf:/etc/resolv.conf\\
+    nodeFilters:\\
+      - server:*"
   fi
 
-  GPU_CLUSTER_PARAMS=""
+  K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT
+"
+
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    GPU_CLUSTER_PARAMS="--image $GPU_IMAGE --gpus all"
+    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT;
+/volumes:/ i\\
+image: $GPU_IMAGE
+;\$ a\\
+  runtime:\\
+    gpuRequest: all
+"
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
@@ -287,9 +301,10 @@ function init_var_dir() {
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml $VAR_DIR/manifests/k3d-config.yaml
   download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
   sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | sed "$K3D_CONFIG_SED_SCRIPT" > $VAR_DIR/manifests/k3d-config.yaml
 }
 
 function create_tensorleap_helm_manifest() {
@@ -322,12 +337,20 @@ EOF
 function create_tensorleap_cluster() {
   if [ "$DISABLE_CLUSTER_CREATION" == "true" ]; then
     echo 'To continue installation run:'
-    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM"
+    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml"
+    if [ "$USE_LOCAL_HELM" == "true" ]
+    then
+      echo $HELM repo add tensorleap https://helm.tensorleap.ai
+      echo $HELM repo update tensorleap
+      echo $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+      --values $VAR_DIR/manifests/helm-values.yaml \
+      --wait
+    fi
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS $VOLUMES_MOUNT_PARAM \
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
