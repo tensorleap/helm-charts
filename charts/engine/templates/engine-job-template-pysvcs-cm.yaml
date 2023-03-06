@@ -21,8 +21,10 @@ data:
                 - configMapRef:
                     name: engine-cm
               volumeMounts:
-                - name: engine-pvc
-                  mountPath: /nfs/
+{{- range .Values.additional_pvcs }}
+                - name: {{ .name  }}-vol
+                  mountPath: {{ .mountPath }}
+{{- end }}
 {{ if .Values.localDataDirectory }}
                 - name: local-user-data
                   mountPath: {{ .Values.localDataDirectory }}
@@ -32,10 +34,11 @@ data:
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}
           volumes:
-            - name: engine-pvc
-              hostPath:
-                path: /engine-data
-                type: DirectoryOrCreate
+{{- range .Values.additional_pvcs }}
+            - name: {{ .name  }}-vol
+              persistentVolumeClaim:
+                claimName: {{ .name }}
+{{- end }}
 {{ if .Values.localDataDirectory }}
             - name: local-user-data
               hostPath:

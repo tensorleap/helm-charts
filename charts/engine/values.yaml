@@ -2,3 +2,5 @@ image_tag: master-ed130c21-stable
 
 localDataDirectory: ""
 gpu: false
+
+additional_pvcs: []
