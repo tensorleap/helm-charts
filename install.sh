@@ -338,6 +338,14 @@ function create_tensorleap_cluster() {
   if [ "$DISABLE_CLUSTER_CREATION" == "true" ]; then
     echo 'To continue installation run:'
     echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml"
+    if [ "$USE_LOCAL_HELM" == "true" ]
+    then
+      echo $HELM repo add tensorleap https://helm.tensorleap.ai
+      echo $HELM repo update tensorleap
+      echo $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+      --values $VAR_DIR/manifests/helm-values.yaml \
+      --wait
+    fi
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
