@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-03-06T07:38:55.557586432Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.1.2
+    - name: minio
+      repository: https://charts.min.io
+      version: 3.4.3
+    digest: c705f66cb6be646615eefb217143534a86d61c36db9be83ee556d319c0e825fd
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.163/tensorleap-1.0.163.tgz
+    version: 1.0.163
+  - apiVersion: v2
     created: "2023-03-06T07:10:50.358051261Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3444,6 +3460,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2023-03-06T07:38:55.685546813Z"
+    digest: b27d57beeb66bd4ff12af8fb36dc06779379b9a93f222771f446125cf3948235
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.112/tensorleap-engine-1.0.112.tgz
+    version: 1.0.112
+  - apiVersion: v2
     created: "2023-03-02T13:20:31.95494916Z"
     digest: e4081b4037afdeabd09fd6285e3aec314dcfc9dbcb7c8f505dcfe9e1d6b702e9
     name: tensorleap-engine
@@ -4340,6 +4364,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.0/tensorleap-engine-1.0.0.tgz
     version: 1.0.0
   tensorleap-node-server:
+  - apiVersion: v2
+    created: "2023-03-06T07:38:55.825014455Z"
+    digest: df132bfca992110ff6af8270af3f12d112695e316f878948b07ef064adab294f
+    name: tensorleap-node-server
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.119/tensorleap-node-server-1.0.119.tgz
+    version: 1.0.119
   - apiVersion: v2
     created: "2023-03-06T07:10:50.561316608Z"
     digest: 387f57f9d77a4218adb44009dba8e0cf6ccbaef67ccd485d3fc790d44bf2c664
