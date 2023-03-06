@@ -25,6 +25,10 @@ data:
                 - configMapRef:
                     name: engine-cm
               volumeMounts:
+{{- range .Values.additional_pvcs }}
+                - name: {{ .name  }}-vol
+                  mountPath: {{ .mountPath }}
+{{- end }}
 {{ if .Values.localDataDirectory }}
                 - name: local-user-data
                   mountPath: {{ .Values.localDataDirectory }}
@@ -34,6 +38,11 @@ data:
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}
           volumes:
+{{- range .Values.additional_pvcs }}
+            - name: {{ .name  }}-vol
+              persistentVolumeClaim:
+                claimName: {{ .name }}
+{{- end }}
 {{ if .Values.localDataDirectory }}
             - name: local-user-data
               hostPath:
