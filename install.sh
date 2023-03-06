@@ -264,11 +264,16 @@ function get_installation_options() {
   K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT
 "
 
-  GPU_CLUSTER_PARAMS=""
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    GPU_CLUSTER_PARAMS="--image $GPU_IMAGE --gpus all"
+    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT;
+/volumes:/ i\\
+image: $GPU_IMAGE
+;\$ a\\
+  runtime:\\
+    gpuRequest: all
+"
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
@@ -332,12 +337,12 @@ EOF
 function create_tensorleap_cluster() {
   if [ "$DISABLE_CLUSTER_CREATION" == "true" ]; then
     echo 'To continue installation run:'
-    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS"
+    echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml"
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
-  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml $GPU_CLUSTER_PARAMS \
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
