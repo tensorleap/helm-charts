@@ -53,10 +53,10 @@ spec:
               fi
 
               echo "Locking DB"
-              FAILED_TO_GET_LOCK=$(mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1, schemaVersion: $CURRNET_VERSION, lock: { \$exists: false }}, { \$set: { lock: 'Backup before migration from $CURRNET_VERSION to $LATEST_VERSION' }})" --quiet)
-              if [ $FAILED_TO_GET_LOCK == 'true' ]
+              FAILED_TO_GET_LOCK=$(mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1, schemaVersion: $CURRNET_VERSION, lock: { \$exists: false }}, { \$set: { lock: 'Preparing for migration from $CURRNET_VERSION to $LATEST_VERSION' }})" --quiet)
+              if [ "$FAILED_TO_GET_LOCK" == 'true' ];
               then
-                echo "Failed to lock DB! (Could be failed migration or backup), waiting for lock to clear before restarting"
+                echo "Failed to lock DB! (Could be failed migration), waiting for lock to clear before restarting"
                 LOCK_TEXT=$(mongosh $MONGO_URI --eval "db.db_metadata.findOne({ _id: 1 }).lock" --quiet)
                 until [ -z "$LOCK_TEXT" ]
                 do
@@ -70,10 +70,6 @@ spec:
                 exit -1
               fi
 
-              TIMESTAMP=$(date +%s)
-              BACKUP_FILE_NAME="tensorleap-backup-$CURRNET_VERSION-before-$LATEST_VERSION-$TIMESTAMP.tgz"
-              echo "Backing up database to $BACKUP_FILE_NAME"
-              mongodump --archive=/mnt/backups/$BACKUP_FILE_NAME --db=tensorleap $MONGO_URI
               for file in $(ls *.js | sort); do
                 VERSION=$(echo $file | sed 's/-.*$//' | sed 's/^0*//')
                 if [ $VERSION -gt $CURRNET_VERSION ]
@@ -92,8 +88,6 @@ spec:
           volumeMounts:
             - mountPath: /mnt/shared
               name: shared
-            - mountPath: /mnt/backups
-              name: backups
           envFrom:
             - configMapRef:
                 name: tensorleap-node-server-env-configmap
@@ -153,7 +147,3 @@ spec:
       volumes:
         - name: shared
           emptyDir: {}
-        - name: backups
-          hostPath:
-            path: /mongodb-backups
-            type: DirectoryOrCreate
