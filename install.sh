@@ -285,21 +285,6 @@ image: $GPU_IMAGE
 "
     GPU_ENGINE_VALUES='gpu: true'
   fi
-
-  VALUES_FILE=$(cat << EOF
-tensorleap-engine:
-  ${VOLUME_ENGINE_VALUES}
-  ${GPU_ENGINE_VALUES}
-EOF
-)
-
-  VALUES_CONTENT=$(cat << EOF
-  valuesContent: |-
-    tensorleap-engine:
-      ${VOLUME_ENGINE_VALUES}
-      ${GPU_ENGINE_VALUES}
-EOF
-)
 }
 
 function init_var_dir() {
@@ -319,27 +304,19 @@ function init_var_dir() {
 function create_tensorleap_helm_manifest() {
   if [ "$USE_LOCAL_HELM" == "true" ]
   then
-    echo "$VALUES_FILE" > $VAR_DIR/manifests/helm-values.yaml
+    echo "tensorleap-engine:
+  ${VOLUME_ENGINE_VALUES}
+  ${GPU_ENGINE_VALUES}" > $VAR_DIR/manifests/helm-values.yaml
     echo --- > $VAR_DIR/manifests/tensorleap.yaml
   else
-    cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
-metadata:
-  name: tensorleap
-  namespace: kube-system
-spec:
-  chart: tensorleap
-  repo: https://helm.tensorleap.ai
-  version: $LATEST_CHART_VERSION
-  targetNamespace: tensorleap
-$VALUES_CONTENT
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: tensorleap
-EOF
+    local sed_script="/targetNamespace:/ a\\
+  version: $LATEST_CHART_VERSION\\
+  valuesContent: |-\\
+    tensorleap-engine:\\
+      ${VOLUME_ENGINE_VALUES}\\
+      ${GPU_ENGINE_VALUES}
+"
+    $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml | sed "$sed_script" > $VAR_DIR/manifests/tensorleap.yaml
   fi
 }
 
