@@ -302,6 +302,27 @@ image: $GPU_IMAGE
     > $VAR_DIR/manifests/k3d-config.yaml
 }
 
+function create_helm_values_file() {
+  echo "tensorleap-engine:
+  ${VOLUME_ENGINE_VALUES}
+  ${GPU_ENGINE_VALUES}" \
+    > $VAR_DIR/manifests/helm-values.yaml
+
+  echo --- > $VAR_DIR/manifests/tensorleap.yaml
+}
+function download_and_patch_helm_chart_manifest() {
+  local sed_script="/targetNamespace:/ a\\
+  version: $LATEST_CHART_VERSION\\
+  valuesContent: |-\\
+    tensorleap-engine:\\
+      ${VOLUME_ENGINE_VALUES}\\
+      ${GPU_ENGINE_VALUES}
+"
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml | \
+    sed "$sed_script" \
+    > $VAR_DIR/manifests/tensorleap.yaml
+}
+
 function init_var_dir() {
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
@@ -312,24 +333,12 @@ function init_var_dir() {
   echo 'Downloading config files...'
   download_custom_k3d_entry_point
   download_and_patch_k3d_cluster_config
-}
 
-function create_tensorleap_helm_manifest() {
   if [ "$USE_LOCAL_HELM" == "true" ]
   then
-    echo "tensorleap-engine:
-  ${VOLUME_ENGINE_VALUES}
-  ${GPU_ENGINE_VALUES}" > $VAR_DIR/manifests/helm-values.yaml
-    echo --- > $VAR_DIR/manifests/tensorleap.yaml
+    create_helm_values_file
   else
-    local sed_script="/targetNamespace:/ a\\
-  version: $LATEST_CHART_VERSION\\
-  valuesContent: |-\\
-    tensorleap-engine:\\
-      ${VOLUME_ENGINE_VALUES}\\
-      ${GPU_ENGINE_VALUES}
-"
-    $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml | sed "$sed_script" > $VAR_DIR/manifests/tensorleap.yaml
+    download_and_patch_helm_chart_manifest
   fi
 }
 
@@ -412,7 +421,6 @@ function install_new_tensorleap_cluster() {
   create_docker_registry
   cache_images_in_registry
   init_var_dir
-  create_tensorleap_helm_manifest
   create_tensorleap_cluster
   run_helm_install
   wait_for_cluster_init
