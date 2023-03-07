@@ -18,6 +18,7 @@ minio:
   resources:
     requests:
       memory: 500Mi
+  users: []
 
 global:
   target_namespace: ''
