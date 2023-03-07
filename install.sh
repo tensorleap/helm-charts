@@ -253,8 +253,6 @@ function cache_images_in_registry() {
 function get_installation_options() {
   DEFAULT_VOLUME="$HOME/tensorleap/data"
   VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
-  LOCAL_PATH=${VOLUME/:*/}
-  [ ! -d "$LOCAL_PATH" ] && mkdir -p $LOCAL_PATH
 
   VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
   K3D_CONFIG_SED_SCRIPT="/volumes:/ a\\
