@@ -5,20 +5,7 @@ ingress-nginx:
   enabled: true
   fullnameOverride: ingress-nginx
 
-minio:
-  mode: standalone
-  existingSecret: minio-secret
-  service:
-    type: NodePort
-  securityContext:
-    enabled: false
-  persistence:
-    size: 2Gi
-    VolumeName: minio-data
-  resources:
-    requests:
-      memory: 500Mi
-  users: []
-
 global:
   target_namespace: ''
+  storageClassName: ''
+  create_local_volumes: true

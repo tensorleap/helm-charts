@@ -1,3 +1,4 @@
+{{ if .Values.global.create_local_volumes }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -14,6 +15,7 @@ spec:
   claimRef:
     name: mongodb-data
     namespace: {{ .Release.Namespace }}
+{{ end }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -25,4 +27,8 @@ spec:
   resources:
     requests:
       storage: 8Gi
+{{ if .Values.global.create_local_volumes }}
   volumeName: mongodb-data
+{{ else if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}

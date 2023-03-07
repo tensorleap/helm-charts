@@ -89,3 +89,6 @@ spec:
         resources:
           requests:
             storage: 500Mi
+{{ if .Values.global.storageClassName }}
+        storageClassName: {{ .Values.global.storageClassName }}
+{{ end}}

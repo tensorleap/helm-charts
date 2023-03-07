@@ -1,3 +1,22 @@
+{{ if .Values.global.create_local_volumes }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-data
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  hostPath:
+    path: /var/lib/tensorleap/standalone/storage/minio
+    type: DirectoryOrCreate
+  claimRef:
+    name: tensorleap-minio
+    namespace: {{ .Release.Namespace }}
+{{ end }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -8,4 +27,8 @@ spec:
   resources:
     requests:
       storage: 2Gi
+{{ if .Values.global.create_local_volumes }}
   volumeName: minio-data
+{{ else if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+{{ end}}

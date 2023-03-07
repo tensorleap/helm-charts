@@ -1,3 +1,22 @@
+{{ if .Values.global.create_local_volumes }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elasticsearch-data
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 30Gi
+  hostPath:
+    path: /var/lib/tensorleap/standalone/storage/elasticsearch
+    type: DirectoryOrCreate
+  claimRef:
+    name: elasticsearch-master-elasticsearch-master-0
+    namespace: {{ .Release.Namespace }}
+{{ end }}
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -8,4 +27,8 @@ spec:
   resources:
     requests:
       storage: 8Gi
+{{ if .Values.global.create_local_volumes }}
   volumeName: elasticsearch-data
+{{ else if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}
