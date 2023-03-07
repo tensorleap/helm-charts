@@ -4,6 +4,9 @@ DISABLE_REPORTING=${DISABLE_REPORTING:=}
 DISABLE_CLUSTER_CREATION=${DISABLE_CLUSTER_CREATION:=}
 FILES_BRANCH=${FILES_BRANCH:=master}
 
+DEFAULT_VOLUME="$HOME/tensorleap/data"
+DATA_VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
+
 INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
@@ -250,12 +253,8 @@ function cache_images_in_registry() {
     | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
-function get_installation_options() {
-  DEFAULT_VOLUME="$HOME/tensorleap/data"
-  VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
-
-  VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
-
+function init_helm_values() {
+  VOLUME_ENGINE_VALUES="localDataDirectory: ${DATA_VOLUME/*:/}"
   GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
@@ -270,7 +269,7 @@ function download_custom_k3d_entry_point() {
 
 function download_and_patch_k3d_cluster_config() {
   local sed_script="/volumes:/ a\\
-  - volume: $VOLUME\\
+  - volume: $DATA_VOLUME\\
     nodeFilters:\\
       - server:*"
 
@@ -334,6 +333,8 @@ function init_var_dir() {
   download_custom_k3d_entry_point
   download_and_patch_k3d_cluster_config
 
+  init_helm_values
+
   if [ "$USE_LOCAL_HELM" == "true" ]
   then
     create_helm_values_file
@@ -357,7 +358,7 @@ function create_tensorleap_cluster() {
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
-  report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
+  report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$DATA_VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
@@ -417,7 +418,6 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  get_installation_options
   create_docker_registry
   cache_images_in_registry
   init_var_dir
