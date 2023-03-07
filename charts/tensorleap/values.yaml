@@ -18,9 +18,7 @@ minio:
   resources:
     requests:
       memory: 500Mi
-  buckets:
-    - name: session
-      policy: public
+  users: []
 
 global:
   target_namespace: ''
