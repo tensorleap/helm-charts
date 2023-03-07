@@ -255,26 +255,39 @@ function get_installation_options() {
   VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
 
   VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
-  K3D_CONFIG_SED_SCRIPT="/volumes:/ a\\
+
+  GPU_ENGINE_VALUES=""
+  if [ "$USE_GPU" == "true" ]
+  then
+    GPU_ENGINE_VALUES='gpu: true'
+  fi
+}
+
+function download_custom_k3d_entry_point() {
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
+  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+}
+
+function download_and_patch_k3d_cluster_config() {
+  local sed_script="/volumes:/ a\\
   - volume: $VOLUME\\
     nodeFilters:\\
       - server:*"
 
   if [ "$FIX_DNS" == "true" ]
   then
-    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT\\
+    sed_script="$sed_script\\
   - volume: /etc/resolv.conf:/etc/resolv.conf\\
     nodeFilters:\\
       - server:*"
   fi
 
-  K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT
+  sed_script="$sed_script
 "
 
-  GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT;
+    sed_script="$sed_script;
 /volumes:/ i\\
 image: $GPU_IMAGE
 ;\$ a\\
@@ -283,11 +296,10 @@ image: $GPU_IMAGE
 "
     GPU_ENGINE_VALUES='gpu: true'
   fi
-}
 
-function download_custom_k3d_entry_point() {
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
-  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | \
+    sed "$sed_script" \
+    > $VAR_DIR/manifests/k3d-config.yaml
 }
 
 function init_var_dir() {
@@ -299,8 +311,7 @@ function init_var_dir() {
 
   echo 'Downloading config files...'
   download_custom_k3d_entry_point
-
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | sed "$K3D_CONFIG_SED_SCRIPT" > $VAR_DIR/manifests/k3d-config.yaml
+  download_and_patch_k3d_cluster_config
 }
 
 function create_tensorleap_helm_manifest() {
