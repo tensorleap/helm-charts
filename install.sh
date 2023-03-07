@@ -364,17 +364,15 @@ function create_tensorleap_cluster() {
 }
 
 function run_helm_install() {
-  if [ "$USE_LOCAL_HELM" == "true" ]; then
-    echo Setting up helm repo...
-    report_status "{\"type\":\"install-script-setting-helm-repo\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    $HELM repo add tensorleap https://helm.tensorleap.ai
-    $HELM repo update tensorleap
-    echo Running helm install...
-    report_status "{\"type\":\"install-script-running-helm-upgrade\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
-      --values $VAR_DIR/manifests/helm-values.yaml \
-      --wait
-  fi
+  echo Setting up helm repo...
+  report_status "{\"type\":\"install-script-setting-helm-repo\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  $HELM repo add tensorleap https://helm.tensorleap.ai
+  $HELM repo update tensorleap
+  echo Running helm install...
+  report_status "{\"type\":\"install-script-running-helm-upgrade\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+    --values $VAR_DIR/manifests/helm-values.yaml \
+    --wait
 }
 
 function wait_for_cluster_init() {
@@ -422,7 +420,11 @@ function install_new_tensorleap_cluster() {
   cache_images_in_registry
   init_var_dir
   create_tensorleap_cluster
-  run_helm_install
+
+  if [ "$USE_LOCAL_HELM" == "true" ]; then
+    run_helm_install
+  fi
+
   wait_for_cluster_init
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
