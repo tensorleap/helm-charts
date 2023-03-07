@@ -22,11 +22,20 @@ GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
 RETRIES=5
 REQUEST_TIMEOUT=20
 RETRY_DELAY=0
+
+INSECURE=${INSECURE:=}
+EXTRA_CURL_PARAMS=""
+EXTRA_WGET_PARAMS=""
 function setup_http_utils() {
+  if [ "$INSECURE" == "true" ];
+  then
+    EXTRA_CURL_PARAMS="--insecure"
+    EXTRA_WGET_PARAMS="--no-check-certificate"
+  fi
   if type curl > /dev/null; then
-    HTTP_GET="curl -sL --fail --connect-timeout $REQUEST_TIMEOUT --retry $RETRIES --retry-delay $RETRY_DELAY"
+    HTTP_GET="curl -sL --fail --connect-timeout $REQUEST_TIMEOUT --retry $RETRIES --retry-delay $RETRY_DELAY $EXTRA_CURL_PARAMS"
   elif type wget > /dev/null; then
-    HTTP_GET="wget -q -O- --timeout=$REQUEST_TIMEOUT --tries=$RETRIES --wait=$RETRY_DELAY"
+    HTTP_GET="wget -q -O- --timeout=$REQUEST_TIMEOUT --tries=$RETRIES --wait=$RETRY_DELAY $EXTRA_WGET_PARAMS"
   else
     echo you must have either curl or wget installed.
     exit -1
@@ -49,9 +58,9 @@ function report_status() {
   if [ "$DISABLE_REPORTING" != "true" ]
   then
     if type curl > /dev/null; then
-      curl -s --fail -XPOST -H 'Content-Type: application/json' $report_url -d "$1" &> /dev/null &
+      curl -s --fail -XPOST -H 'Content-Type: application/json' $EXTRA_CURL_PARAMS $report_url -d "$1" &> /dev/null &
     elif type wget > /dev/null; then
-      wget -q --method POST --header 'Content-Type: application/json' -O- --body-data "$1" $report_url &> /dev/null &
+      wget -q --method POST --header 'Content-Type: application/json' $EXTRA_WGET_PARAMS -O- --body-data "$1" $report_url &> /dev/null &
     else
       echo you must have either curl or wget installed.
       exit -1
