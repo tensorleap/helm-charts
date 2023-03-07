@@ -285,6 +285,11 @@ image: $GPU_IMAGE
   fi
 }
 
+function download_custom_k3d_entry_point() {
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
+  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+}
+
 function init_var_dir() {
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
@@ -293,8 +298,7 @@ function init_var_dir() {
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
-  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+  download_custom_k3d_entry_point
 
   $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | sed "$K3D_CONFIG_SED_SCRIPT" > $VAR_DIR/manifests/k3d-config.yaml
 }
