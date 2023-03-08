@@ -4,6 +4,9 @@ DISABLE_REPORTING=${DISABLE_REPORTING:=}
 DISABLE_CLUSTER_CREATION=${DISABLE_CLUSTER_CREATION:=}
 FILES_BRANCH=${FILES_BRANCH:=master}
 
+DEFAULT_VOLUME="$HOME/tensorleap/data"
+DATA_VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
+
 INSTALL_ID=$RANDOM$RANDOM
 DOCKER=docker
 K3D=k3d
@@ -250,33 +253,40 @@ function cache_images_in_registry() {
     | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
-function get_installation_options() {
-  DEFAULT_VOLUME="$HOME/tensorleap/data"
-  VOLUME=${DATA_VOLUME:=$DEFAULT_VOLUME:$DEFAULT_VOLUME}
-  LOCAL_PATH=${VOLUME/:*/}
-  [ ! -d "$LOCAL_PATH" ] && mkdir -p $LOCAL_PATH
+function init_helm_values() {
+  VOLUME_ENGINE_VALUES="localDataDirectory: ${DATA_VOLUME/*:/}"
+  GPU_ENGINE_VALUES=""
+  if [ "$USE_GPU" == "true" ]
+  then
+    GPU_ENGINE_VALUES='gpu: true'
+  fi
+}
 
-  VOLUME_ENGINE_VALUES="localDataDirectory: ${VOLUME/*:/}"
-  K3D_CONFIG_SED_SCRIPT="/volumes:/ a\\
-  - volume: $VOLUME\\
+function download_custom_k3d_entry_point() {
+  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
+  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+}
+
+function download_and_patch_k3d_cluster_config() {
+  local sed_script="/volumes:/ a\\
+  - volume: $DATA_VOLUME\\
     nodeFilters:\\
       - server:*"
 
   if [ "$FIX_DNS" == "true" ]
   then
-    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT\\
+    sed_script="$sed_script\\
   - volume: /etc/resolv.conf:/etc/resolv.conf\\
     nodeFilters:\\
       - server:*"
   fi
 
-  K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT
+  sed_script="$sed_script
 "
 
-  GPU_ENGINE_VALUES=""
   if [ "$USE_GPU" == "true" ]
   then
-    K3D_CONFIG_SED_SCRIPT="$K3D_CONFIG_SED_SCRIPT;
+    sed_script="$sed_script;
 /volumes:/ i\\
 image: $GPU_IMAGE
 ;\$ a\\
@@ -286,20 +296,30 @@ image: $GPU_IMAGE
     GPU_ENGINE_VALUES='gpu: true'
   fi
 
-  VALUES_FILE=$(cat << EOF
-tensorleap-engine:
-  ${VOLUME_ENGINE_VALUES}
-  ${GPU_ENGINE_VALUES}
-EOF
-)
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | \
+    sed "$sed_script" \
+    > $VAR_DIR/manifests/k3d-config.yaml
+}
 
-  VALUES_CONTENT=$(cat << EOF
-  valuesContent: |-
-    tensorleap-engine:
-      ${VOLUME_ENGINE_VALUES}
+function create_helm_values_file() {
+  echo "tensorleap-engine:
+  ${VOLUME_ENGINE_VALUES}
+  ${GPU_ENGINE_VALUES}" \
+    > $VAR_DIR/manifests/helm-values.yaml
+
+  echo --- > $VAR_DIR/manifests/tensorleap.yaml
+}
+function download_and_patch_helm_chart_manifest() {
+  local sed_script="/targetNamespace:/ a\\
+  version: $LATEST_CHART_VERSION\\
+  valuesContent: |-\\
+    tensorleap-engine:\\
+      ${VOLUME_ENGINE_VALUES}\\
       ${GPU_ENGINE_VALUES}
-EOF
-)
+"
+  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml | \
+    sed "$sed_script" \
+    > $VAR_DIR/manifests/tensorleap.yaml
 }
 
 function init_var_dir() {
@@ -310,36 +330,16 @@ function init_var_dir() {
   mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
-  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
+  download_custom_k3d_entry_point
+  download_and_patch_k3d_cluster_config
 
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | sed "$K3D_CONFIG_SED_SCRIPT" > $VAR_DIR/manifests/k3d-config.yaml
-}
+  init_helm_values
 
-function create_tensorleap_helm_manifest() {
   if [ "$USE_LOCAL_HELM" == "true" ]
   then
-    echo "$VALUES_FILE" > $VAR_DIR/manifests/helm-values.yaml
-    echo --- > $VAR_DIR/manifests/tensorleap.yaml
+    create_helm_values_file
   else
-    cat << EOF > $VAR_DIR/manifests/tensorleap.yaml
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
-metadata:
-  name: tensorleap
-  namespace: kube-system
-spec:
-  chart: tensorleap
-  repo: https://helm.tensorleap.ai
-  version: $LATEST_CHART_VERSION
-  targetNamespace: tensorleap
-$VALUES_CONTENT
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: tensorleap
-EOF
+    download_and_patch_helm_chart_manifest
   fi
 }
 
@@ -358,23 +358,21 @@ function create_tensorleap_cluster() {
     exit 0;
   fi
   echo Creating tensorleap k3d cluster...
-  report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$VOLUME\"}"
+  report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$DATA_VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
     2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
 }
 
 function run_helm_install() {
-  if [ "$USE_LOCAL_HELM" == "true" ]; then
-    echo Setting up helm repo...
-    report_status "{\"type\":\"install-script-setting-helm-repo\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    $HELM repo add tensorleap https://helm.tensorleap.ai
-    $HELM repo update tensorleap
-    echo Running helm install...
-    report_status "{\"type\":\"install-script-running-helm-upgrade\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-    $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
-      --values $VAR_DIR/manifests/helm-values.yaml \
-      --wait
-  fi
+  echo Setting up helm repo...
+  report_status "{\"type\":\"install-script-setting-helm-repo\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  $HELM repo add tensorleap https://helm.tensorleap.ai
+  $HELM repo update tensorleap
+  echo Running helm install...
+  report_status "{\"type\":\"install-script-running-helm-upgrade\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+    --values $VAR_DIR/manifests/helm-values.yaml \
+    --wait
 }
 
 function wait_for_cluster_init() {
@@ -418,13 +416,15 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  get_installation_options
   create_docker_registry
   cache_images_in_registry
   init_var_dir
-  create_tensorleap_helm_manifest
   create_tensorleap_cluster
-  run_helm_install
+
+  if [ "$USE_LOCAL_HELM" == "true" ]; then
+    run_helm_install
+  fi
+
   wait_for_cluster_init
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
