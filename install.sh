@@ -293,7 +293,6 @@ image: $GPU_IMAGE
   runtime:\\
     gpuRequest: all
 "
-    GPU_ENGINE_VALUES='gpu: true'
   fi
 
   if [ "$USE_LOCAL_HELM" == "true" ]
