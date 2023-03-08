@@ -172,7 +172,7 @@ function check_docker_requirements() {
   REQUIRED_MEMORY_PRETTY=6Gb
   echo Checking docker memory limits...
   DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
-  DOCKER_MEMORY_PRETTY="$(echo "scale=2; $DOCKER_MEMORY /1024/1024/1024" | bc -l)Gb"
+  DOCKER_MEMORY_PRETTY="$(($DOCKER_MEMORY /1024/1024/1024))Gb"
   echo "Docker has $DOCKER_MEMORY_PRETTY memory available."
 
   REQUIRED_STORAGE_KB=16777216
@@ -183,9 +183,9 @@ function check_docker_requirements() {
   $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
   DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
   DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
-  DOCKER_TOTAL_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_TOTAL_STORAGE_KB /1024/1024" | bc -l)Gb"
+  DOCKER_TOTAL_STORAGE_PRETTY="$(($DOCKER_TOTAL_STORAGE_KB /1024/1024))Gb"
   DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
-  DOCKER_FREE_STORAGE_PRETTY="$(echo "scale=2; $DOCKER_FREE_STORAGE_KB /1024/1024" | bc -l)Gb"
+  DOCKER_FREE_STORAGE_PRETTY="$(($DOCKER_FREE_STORAGE_KB /1024/1024))Gb"
   echo "Docker has $DOCKER_FREE_STORAGE_PRETTY free storage available ($DOCKER_TOTAL_STORAGE_PRETTY total)."
 
   if [ $DOCKER_MEMORY -lt $REQUIRED_MEMORY ];
