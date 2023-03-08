@@ -6,9 +6,6 @@ volumes:
   - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalone
     nodeFilters:
       - server:*
-  - volume: /var/lib/tensorleap/standalone/scripts/k3d-entrypoint.sh:/bin/k3d-entrypoint.sh
-    nodeFilters:
-      - server:*
   - volume: /var/lib/tensorleap/standalone/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml
     nodeFilters:
       - server:*
