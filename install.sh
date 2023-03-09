@@ -293,11 +293,7 @@ image: $GPU_IMAGE
 \ \ runtime:\\
 \ \ \ \ gpuRequest: all
 "
-  fi
-
-  if [ "$USE_LOCAL_HELM" == "true" ]
-  then
-    sed_script="$sed_script;/- volume: ${VAR_DIR//\//\\/}\/manifests\/tensorleap\.yaml/,+2d"
+    GPU_ENGINE_VALUES='gpu: true'
   fi
 
   $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | \
@@ -310,6 +306,8 @@ function create_helm_values_file() {
   ${VOLUME_ENGINE_VALUES}
   ${GPU_ENGINE_VALUES}" \
     > $VAR_DIR/manifests/helm-values.yaml
+
+  echo --- > $VAR_DIR/manifests/tensorleap.yaml
 }
 function download_and_patch_helm_chart_manifest() {
   local sed_script="/targetNamespace:/ a\\
