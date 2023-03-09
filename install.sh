@@ -263,9 +263,8 @@ function download_and_patch_k3d_cluster_config() {
   if [ "$USE_GPU" == "true" ]
   then
     sed_script="$sed_script;
-/volumes:/ i\\
-image: $GPU_IMAGE
-;\$ a\\
+s/image:.*/image: ${GPU_IMAGE//\//\\/}/;
+\$ a\\
 \ \ runtime:\\
 \ \ \ \ gpuRequest: all
 "

@@ -2,6 +2,7 @@ apiVersion: k3d.io/v1alpha4
 kind: Simple
 metadata:
   name: tensorleap
+image: rancher/k3s:v1.25.6-k3s1
 volumes:
   - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalone
     nodeFilters:
