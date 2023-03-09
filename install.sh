@@ -322,6 +322,11 @@ function download_and_patch_helm_chart_manifest() {
     > $VAR_DIR/manifests/tensorleap.yaml
 }
 
+function create_data_dir_if_needed() {
+  local local_path=${DATA_VOLUME/:*/}
+  [ ! -d "$local_path" ] && mkdir -p $local_path
+}
+
 function init_var_dir() {
   sudo mkdir -p $VAR_DIR
   sudo chmod -R 777 $VAR_DIR
@@ -419,6 +424,7 @@ function install_new_tensorleap_cluster() {
   create_docker_registry
   cache_images_in_registry
   init_var_dir
+  create_data_dir_if_needed
   create_tensorleap_cluster
 
   if [ "$USE_LOCAL_HELM" == "true" ]; then
