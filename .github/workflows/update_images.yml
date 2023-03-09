@@ -135,11 +135,14 @@ jobs:
           rm ./charts/tensorleap/Chart.lock
           helm template ./charts/tensorleap \
             | grep 'image: ' \
-            | grep -v 'tensorleap/engine' \
-            | sed 's/.*: //' \
-            | sed 's/\"//g' \
+            | sed 's/.*: //;s/\"//g' \
             | sort \
             | uniq > images.txt
+      - name: Add k3s images to list
+        run: |
+          k3s_version=$(grep 'image:' ./config/k3d-config.yaml | sed 's/.*://;s/-/+/')
+          curl -L --fail https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt \
+            >> images.txt
       - name: Commit
         uses: EndBug/add-and-commit@v9
         with:

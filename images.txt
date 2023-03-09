@@ -8,3 +8,11 @@ quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-e66dc6a0-stable
 us-central1-docker.pkg.dev/tensorleap/main/node-server:master-5210b6c7-stable
 us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-17025d5a-stable
+docker.io/rancher/klipper-helm:v0.7.4-build20221121
+docker.io/rancher/klipper-lb:v0.4.0
+docker.io/rancher/local-path-provisioner:v0.0.23
+docker.io/rancher/mirrored-coredns-coredns:1.9.4
+docker.io/rancher/mirrored-library-busybox:1.34.1
+docker.io/rancher/mirrored-library-traefik:2.9.4
+docker.io/rancher/mirrored-metrics-server:v0.6.2
+docker.io/rancher/mirrored-pause:3.6
