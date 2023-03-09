@@ -143,6 +143,47 @@ jobs:
           k3s_version=$(grep 'image:' ./config/k3d-config.yaml | sed 's/.*://;s/-/+/')
           curl -L --fail https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt \
             >> images.txt
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.OPS_SERVICE_ACCOUNT_KEY }}
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Configure docker
+        shell: bash
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Verify images are in registry
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const TARGET_REPO='us-central1-docker.pkg.dev/tensorleap/main/';
+            const images = fs.readFileSync('images.txt', 'utf-8')
+              .split('\n')
+              .filter(image => image.length > 0);
+
+            for (const image of images) {
+              if (image.startsWith(TARGET_REPO)) {
+                try {
+                  await exec.exec(`skopeo inspect docker://${image}`);
+                  console.log(`Image "${image}" exists!`);
+                } catch (err) {
+                  throw new Error(`image not found: "${image}" ${err}`);
+                }
+              } else {
+                const targetImage = image.replace(/[^\/]*\//, TARGET_REPO);
+                try {
+                  await exec.exec(`skopeo inspect docker://${targetImage}`);
+                  console.log(`Image "${targetImage}" exists!`)
+                } catch (_expected_error) {
+                  try {
+                    await exec.exec(`skopeo copy --all docker://${image} docker://${targetImage}`);
+                  } catch (err)   {
+                    throw new Error(`Failed to copy image: "${image}" ${err}`);
+                  }
+                }
+              }
+            }
       - name: Commit
         uses: EndBug/add-and-commit@v9
         with:
