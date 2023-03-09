@@ -20,7 +20,7 @@ REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
-GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.23.8-k3s1-cuda'
+GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.25.6-k3s1-cuda'
 
 RETRIES=5
 REQUEST_TIMEOUT=20
