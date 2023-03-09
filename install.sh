@@ -324,9 +324,7 @@ function download_and_patch_helm_chart_manifest() {
 
 function create_data_dir_if_needed() {
   local local_path=${DATA_VOLUME/:*/}
-  echo 'hello'
   [ -d "$local_path" ] || mkdir -p $local_path
-  echo 'world'
 }
 
 function init_var_dir() {
