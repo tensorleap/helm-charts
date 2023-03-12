@@ -277,7 +277,6 @@ image: $GPU_IMAGE
 \ \ runtime:\\
 \ \ \ \ gpuRequest: all
 "
-    GPU_ENGINE_VALUES='gpu: true'
   fi
 
   $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | \
