@@ -45,17 +45,6 @@ function setup_http_utils() {
   fi
 }
 
-function download_file() {
-  if type curl > /dev/null; then
-    $HTTP_GET $1 '-o' $2
-  elif type wget > /dev/null; then
-    $HTTP_GET '-O' $2 $1
-  else
-    echo you must have either curl or wget installed.
-    exit -1
-  fi
-}
-
 function report_status() {
   local report_url=https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot
   if [ "$DISABLE_REPORTING" != "true" ]
@@ -262,11 +251,6 @@ function init_helm_values() {
   fi
 }
 
-function download_custom_k3d_entry_point() {
-  download_file https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-entrypoint.sh $VAR_DIR/scripts/k3d-entrypoint.sh
-  sudo chmod +x $VAR_DIR/scripts/k3d-entrypoint.sh
-}
-
 function download_and_patch_k3d_cluster_config() {
   local sed_script="/volumes:/ a\\
 \ \ - volume: $DATA_VOLUME\\
@@ -332,10 +316,8 @@ function init_var_dir() {
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
   mkdir -p $VAR_DIR/storage
-  mkdir -p $VAR_DIR/scripts
 
   echo 'Downloading config files...'
-  download_custom_k3d_entry_point
   download_and_patch_k3d_cluster_config
 
   init_helm_values
@@ -364,8 +346,7 @@ function create_tensorleap_cluster() {
   fi
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$DATA_VOLUME\"}"
-  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml \
-    2>&1 | grep -v 'ERRO.*/bin/k3d-entrypoint\.sh' # This hides the expected warning about k3d-entrypoint replacement
+  $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml
 }
 
 function run_helm_install() {
