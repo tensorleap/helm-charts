@@ -1,8 +1,11 @@
-.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up
+.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env
 
 CLUSTER_NAME ?= tensorleap
 
 cluster-create:
+validate-k-env:
+	[[ -x "$$(command -v kubectx)" && "$$(kubectx --current)" == 'k3d-tensorleap' ]]
+	[[ -x "$$(command -v kubens)" && "$$(kubens --current)" == 'tensorleap' ]]
 
 cluster-del:
 	k3d cluster create ${CLUSTER_NAME} --k3s-arg="--disable=traefik@server:0"
