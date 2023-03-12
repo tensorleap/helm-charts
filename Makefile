@@ -1,19 +1,19 @@
 .PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up
 
-NAMESPACE ?= tensorleap
+CLUSTER_NAME ?= tensorleap
 
 cluster-create:
-	k3d cluster create ${NAMESPACE} --k3s-arg="--disable=traefik@server:0"
 
 cluster-del:
-	k3d cluster delete ${NAMESPACE}
+	k3d cluster create ${CLUSTER_NAME} --k3s-arg="--disable=traefik@server:0"
 
 helm-install: ./charts/tensorleap
-	helm upgrade --install ${NAMESPACE} ./charts/tensorleap
+	k3d cluster delete ${CLUSTER_NAME}
 
 helm-uninstall:
-	helm uninstall ${NAMESPACE}
+	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap
 
+	helm uninstall ${CLUSTER_NAME}
 helm-reinstall: helm-uninstall helm-install
 
 helm-deps-up: ./charts/tensorleap
