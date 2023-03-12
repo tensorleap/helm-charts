@@ -1,20 +1,24 @@
-.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up
+.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env
 
-NAMESPACE ?= tensorleap
+CLUSTER_NAME ?= tensorleap
+
+validate-k-env:
+	[[ -x "$$(command -v kubectx)" && "$$(kubectx --current)" == 'k3d-tensorleap' ]]
+	[[ -x "$$(command -v kubens)" && "$$(kubens --current)" == 'tensorleap' ]]
 
 cluster-create:
-	k3d cluster create ${NAMESPACE} --k3s-arg="--disable=traefik@server:0"
+	k3d cluster create ${CLUSTER_NAME} --config ./config/k3d-config.yaml
 
-cluster-del:
-	k3d cluster delete ${NAMESPACE}
+cluster-del: validate-k-env
+	k3d cluster delete ${CLUSTER_NAME}
 
-helm-install: ./charts/tensorleap
-	helm upgrade --install ${NAMESPACE} ./charts/tensorleap
+helm-install: validate-k-env
+	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap
 
-helm-uninstall:
-	helm uninstall ${NAMESPACE}
+helm-uninstall: validate-k-env
+	helm uninstall ${CLUSTER_NAME}
 
 helm-reinstall: helm-uninstall helm-install
 
-helm-deps-up: ./charts/tensorleap
+helm-deps-up: validate-k-env
 	helm dependency update ./charts/tensorleap
