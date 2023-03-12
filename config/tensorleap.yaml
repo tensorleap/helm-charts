@@ -6,6 +6,7 @@ metadata:
 spec:
   chart: tensorleap
   repo: https://helm.tensorleap.ai
+  timeout: "2h"
   targetNamespace: tensorleap
 ---
 apiVersion: v1
