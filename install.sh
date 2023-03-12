@@ -15,8 +15,6 @@ HELM=helm
 
 VAR_DIR='/var/lib/tensorleap/standalone'
 
-REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
-
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -199,51 +197,6 @@ function check_docker_requirements() {
   fi
 }
 
-function create_docker_registry() {
-  if $K3D registry list tensorleap-registry &> /dev/null;
-  then
-    report_status "{\"type\":\"install-script-registry-exists\",\"installId\":\"$INSTALL_ID\"}"
-    echo Found existing docker registry!
-  else
-    report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
-    check_docker_requirements
-    echo Creating docker registry...
-    $K3D registry create tensorleap-registry -p $REGISTRY_PORT
-  fi
-}
-
-function cache_image() {
-  local registry_port=$1
-  local image=$2
-  local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
-  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if $HTTP_GET $api_url &> /dev/null;
-  then
-    echo "$image already cached"
-  else
-    $DOCKER pull $image && \
-    $DOCKER tag $image $target && \
-    $DOCKER push $target && \
-    $DOCKER image rm $image
-  fi
-}
-export HTTP_GET
-export DOCKER
-export -f cache_image
-
-function cache_images_in_registry() {
-  if [ "$USE_GPU" == "true" ]
-  then
-    k3s_version=$(echo $GPU_IMAGE | sed 's/.*://;s/-cuda$//;s/-/+/')
-  else
-    k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
-  fi
-  cat \
-    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt) \
-    <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
-    | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
-}
-
 function init_helm_values() {
   VOLUME_ENGINE_VALUES="localDataDirectory: ${DATA_VOLUME/*:/}"
   GPU_ENGINE_VALUES=""
@@ -400,9 +353,7 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  create_docker_registry
   init_var_dir
-  cache_images_in_registry
   create_data_dir_if_needed
   create_tensorleap_cluster
 
@@ -417,7 +368,6 @@ function install_new_tensorleap_cluster() {
 }
 
 function update_existing_chart() {
-  cache_images_in_registry
   check_installed_version
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
