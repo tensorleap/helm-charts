@@ -207,7 +207,7 @@ function init_helm_values() {
 }
 
 function download_and_patch_k3d_cluster_config() {
-  local sed_script="/volumes:/ a\\
+  local sed_script="/^volumes:/ a\\
 \ \ - volume: $DATA_VOLUME\\
 \ \ \ \ nodeFilters:\\
 \ \ \ \ \ \ - server:*
@@ -259,6 +259,7 @@ function init_var_dir() {
   sudo chmod -R 777 $VAR_DIR
   mkdir -p $VAR_DIR/manifests
   mkdir -p $VAR_DIR/storage
+  mkdir -p $VAR_DIR/registry
 
   echo 'Downloading config files...'
   download_and_patch_k3d_cluster_config

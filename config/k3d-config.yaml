@@ -40,28 +40,44 @@ env:
     nodeFilters:
       - server:*
 registries:
-  use:
-    - tensorleap-registry
+  create:
+    name: tensorleap-registry
+    host: "0.0.0.0"
+    hostPort: "5699"
+    proxy:
+      remoteURL: https://us-central1-docker.pkg.dev
+    volumes:
+      - /var/lib/tensorleap/standalone/registry:/var/lib/registry
   config: |
     mirrors:
       docker.io:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
+        rewrite:
+          "^(.*)": "tensorleap/main/$1"
       k8s.gcr.io:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
+        rewrite:
+          "^(.*)": "tensorleap/main/$1"
       gcr.io:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
+        rewrite:
+          "^(.*)": "tensorleap/main/$1"
       docker.elastic.co:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
+        rewrite:
+          "^(.*)": "tensorleap/main/$1"
       quay.io:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
+        rewrite:
+          "^(.*)": "tensorleap/main/$1"
       us-central1-docker.pkg.dev:
         endpoint:
-          - http://k3d-tensorleap-registry:5000
+          - http://tensorleap-registry:5000
 options:
   k3d:
     disableLoadbalancer: true
