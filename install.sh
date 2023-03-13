@@ -431,7 +431,7 @@ function open_tensorleap_url() {
   if [ "$OS_NAME" == "Linux" ];
   then
     if type xdg-open > /dev/null; then
-      xdg-open $TENSORLEAP_URL
+      xdg-open $TENSORLEAP_URL 2> /dev/null
     elif type sensible-browser > /dev/null; then
       sensible-browser $TENSORLEAP_URL
     fi
