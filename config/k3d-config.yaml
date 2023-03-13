@@ -12,7 +12,7 @@ volumes:
 ports:
   - port: 4589:80
     nodeFilters:
-      - loadbalancer
+      - server:*:direct
 env:
   - envVar: all_proxy=${all_proxy}
     nodeFilters:
@@ -62,6 +62,8 @@ registries:
         endpoint:
           - http://k3d-tensorleap-registry:5000
 options:
+  k3d:
+    disableLoadbalancer: true
   k3s:
     extraArgs:
       - arg: --disable=traefik
