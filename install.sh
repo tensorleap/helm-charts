@@ -353,6 +353,8 @@ function wait_for_cluster_init() {
   if [ "$USE_LOCAL_HELM" != "true" ]; then
     echo 'Setting up cluster... (this may take a few minutes)'
     report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+
+    sleep 10 # wait for helm-install job to start
     if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
     then
       report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
