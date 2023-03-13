@@ -16,7 +16,6 @@ VAR_DIR='/var/lib/tensorleap/standalone'
 
 REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
 
-FIX_DNS=${FIX_DNS:=}
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -255,17 +254,7 @@ function download_and_patch_k3d_cluster_config() {
   local sed_script="/volumes:/ a\\
 \ \ - volume: $DATA_VOLUME\\
 \ \ \ \ nodeFilters:\\
-\ \ \ \ \ \ - server:*"
-
-  if [ "$FIX_DNS" == "true" ]
-  then
-    sed_script="$sed_script\\
-\ \ - volume: /etc/resolv.conf:/etc/resolv.conf\\
-\ \ \ \ nodeFilters:\\
-\ \ \ \ \ \ - server:*"
-  fi
-
-  sed_script="$sed_script
+\ \ \ \ \ \ - server:*
 "
 
   if [ "$USE_GPU" == "true" ]
