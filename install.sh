@@ -20,6 +20,8 @@ USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 USE_GPU=${USE_GPU:=}
 GPU_IMAGE='us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.25.6-k3s1-cuda'
 
+REQUIRED_K3D_VERSION='5.4.8'
+
 RETRIES=5
 REQUEST_TIMEOUT=20
 RETRY_DELAY=0
@@ -58,6 +60,45 @@ function report_status() {
   fi
 }
 
+function validate_minimal_semver() {
+  local min_ver=$1;
+  local actual_ver=$2;
+  local error_message=$3;
+
+  local min_major=$(echo "$min_ver" | cut -f 1 -d '.');
+  local min_minor=$(echo "$min_ver" | cut -f 2 -d '.');
+  local min_patch=$(echo "$min_ver" | cut -f 3 -d '.');
+  local actual_major=$(echo "$actual_ver" | cut -f 1 -d '.');
+  local actual_minor=$(echo "$actual_ver" | cut -f 2 -d '.');
+  local actual_patch=$(echo "$actual_ver" | cut -f 3 -d '.');
+
+  if [ "$actual_major" -gt "$min_major" ]
+  then
+    return;
+  elif [ "$actual_major" -lt "$min_major" ]
+  then
+    echo "$error_message";
+    exit 255;
+  fi
+
+  if [ "$actual_minor" -gt "$min_minor" ]
+  then
+    return;
+  elif [ "$actual_minor" -lt "$min_minor" ]
+  then
+    echo "$error_message";
+    exit 255;
+  fi
+
+  if [ "$actual_patch" -ge "$min_patch" ]
+  then
+    return;
+  fi
+
+  echo "$error_message";
+  exit 255;
+}
+
 function check_k3d() {
   echo Checking k3d installation
   if !($K3D version);
@@ -66,6 +107,9 @@ function check_k3d() {
     report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
     $HTTP_GET https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
   fi
+
+  local k3d_version=$($K3D version | grep 'k3d version' | sed 's/.*version v//;s/ .*//;s/-/+/');
+  validate_minimal_semver $REQUIRED_K3D_VERSION $k3d_version "Tensorleap requires k3d v$REQUIRED_K3D_VERSION or higher. installed version: $k3d_version";
 }
 
 function check_docker() {
