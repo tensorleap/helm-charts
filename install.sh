@@ -403,7 +403,7 @@ function install_new_tensorleap_cluster() {
   wait_for_cluster_init
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  echo "Tensorleap demo installed! It should be available now on http://127.0.0.1:4589"
+  echo "Congratulations! You've successfully installed Tensorleap"
 }
 
 function update_existing_chart() {
@@ -423,6 +423,28 @@ function update_existing_chart() {
   echo 'Done! (note that images could still be downloading in the background...)'
 }
 
+function open_tensorleap_url() {
+  sleep 2 # Avoid server-is-down
+
+  TENSORLEAP_URL="http://127.0.0.1:4589"
+
+  if [ "$OS_NAME" == "Linux" ];
+  then
+    if type xdg-open > /dev/null; then
+      xdg-open $TENSORLEAP_URL 2> /dev/null
+    elif type sensible-browser > /dev/null; then
+      sensible-browser $TENSORLEAP_URL
+    fi
+  elif [ "$OS_NAME" == "Darwin" ];
+  then
+    if type open > /dev/null; then
+      open $TENSORLEAP_URL
+    fi
+  fi
+
+  echo "You can now access Tensorleap at $TENSORLEAP_URL"
+}
+
 function main() {
   echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
   setup_http_utils
@@ -439,6 +461,8 @@ function main() {
   else
     install_new_tensorleap_cluster
   fi
+
+  open_tensorleap_url
 }
 
 main
