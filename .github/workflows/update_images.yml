@@ -4,8 +4,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  wait-for-stable-images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo:
+          - engine
+          - web-ui
+          - node-server
+    steps:
+      - name: Wait for build to succeed
+        uses: fountainhead/action-wait-for-check@v1.1.0
+        id: wait-for-build
+        with:
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          repo: ${{ matrix.repo }}
+          ref: master
+          checkName: mark-stable
+
   update-images:
     runs-on: ubuntu-latest
+    needs: wait-for-stable-images
 
     steps:
       - name: Checkout
