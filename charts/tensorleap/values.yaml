@@ -4,6 +4,13 @@ ingress:
 ingress-nginx:
   enabled: true
   fullnameOverride: ingress-nginx
+  controller:
+    image:
+      digest: ''
+    admissionWebhooks:
+      patch:
+        image:
+          digest: ''
 
 global:
   target_namespace: ''

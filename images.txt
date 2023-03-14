@@ -2,8 +2,8 @@ docker.elastic.co/elasticsearch/elasticsearch:7.10.2
 docker.io/bitnami/mongodb:5.0.9-debian-11-r3
 docker.io/library/mongo:5.0.11
 docker.io/library/rabbitmq:3.9.22
-k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
-k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+k8s.gcr.io/ingress-nginx/controller:v1.2.0
+k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-96532a76-stable
 us-central1-docker.pkg.dev/tensorleap/main/node-server:master-7b7773af-stable
