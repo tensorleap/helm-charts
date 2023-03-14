@@ -335,6 +335,9 @@ function create_tensorleap_cluster() {
   echo Creating tensorleap k3d cluster...
   report_status "{\"type\":\"install-script-creating-cluster\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"volume\":\"$DATA_VOLUME\"}"
   $K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml
+
+  echo Deleting temporary tools container...
+  $K3D node delete k3d-tensorleap-tools
 }
 
 function run_helm_install() {
