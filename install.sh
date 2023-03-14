@@ -397,10 +397,18 @@ function check_installed_version() {
   echo Installed Version: $INSTALLED_CHART_VERSION
 }
 
+function cache_engine_image() {
+  local engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image)
+  report_status "{\"type\":\"install-script-caching-engine-image\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
+  
+  $DOCKER exec -d k3d-tensorleap-server-0 crictl pull $engine_image
+}
+
 function install_new_tensorleap_cluster() {
   init_var_dir
   create_data_dir_if_needed
   create_tensorleap_cluster
+  cache_engine_image
 
   if [ "$USE_LOCAL_HELM" == "true" ]; then
     run_helm_install
@@ -414,6 +422,7 @@ function install_new_tensorleap_cluster() {
 
 function update_existing_chart() {
   check_installed_version
+  cache_engine_image
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
 
