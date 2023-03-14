@@ -1,0 +1,81 @@
+version = 2
+
+[plugins."io.containerd.internal.v1.opt"]
+  path = "/var/lib/rancher/k3s/agent/containerd"
+[plugins."io.containerd.grpc.v1.cri"]
+  stream_server_address = "127.0.0.1"
+  stream_server_port = "10010"
+  enable_selinux = false
+  enable_unprivileged_ports = true
+  enable_unprivileged_icmp = true
+  sandbox_image = "rancher/mirrored-pause:3.6"
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  snapshotter = "overlayfs"
+  disable_snapshot_annotations = true
+
+
+[plugins."io.containerd.grpc.v1.cri".cni]
+  bin_dir = "/bin"
+  conf_dir = "/var/lib/rancher/k3s/agent/etc/cni/net.d"
+
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+  SystemdCgroup = false
+
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.elastic.co"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.elastic.co".rewrite]
+    "^(.*)" = "tensorleap/main/$1"
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io".rewrite]
+    "^(.*)" = "tensorleap/main/$1"
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io".rewrite]
+    "^(.*)" = "tensorleap/main/$1"
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."https://us-central1-docker.pkg.dev"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."k8s.gcr.io"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."k8s.gcr.io".rewrite]
+    "^(.*)" = "tensorleap/main/$1"
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."quay.io"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."quay.io".rewrite]
+    "^(.*)" = "tensorleap/main/$1"
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."tensorleap-registry:5000"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."tensorleap-registry:5699"]
+  endpoint = ["http://tensorleap-registry:5000"]
+
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."us-central1-docker.pkg.dev"]
+  endpoint = ["http://tensorleap-registry:5000"]
