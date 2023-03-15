@@ -48,7 +48,7 @@ registries:
     host: "0.0.0.0"
     hostPort: "5699"
     proxy:
-      remoteURL: https://us-central1-docker.pkg.dev
+      remoteURL: https://registry-1.docker.io
     volumes:
       - /var/lib/tensorleap/standalone/registry:/var/lib/registry
   config: |
@@ -56,31 +56,26 @@ registries:
       docker.io:
         endpoint:
           - http://tensorleap-registry:5000
-        rewrite:
-          "^(.*)": "tensorleap/main/$1"
       k8s.gcr.io:
         endpoint:
           - http://tensorleap-registry:5000
         rewrite:
-          "^(.*)": "tensorleap/main/$1"
-      gcr.io:
-        endpoint:
-          - http://tensorleap-registry:5000
-        rewrite:
-          "^(.*)": "tensorleap/main/$1"
+          "^ingress-nginx/(.*)": "tensorleap/ingress-nginx-$1"
       docker.elastic.co:
         endpoint:
           - http://tensorleap-registry:5000
         rewrite:
-          "^(.*)": "tensorleap/main/$1"
+          "^elasticsearch/(.*)": "tensorleap/elasticsearch-$1"
       quay.io:
         endpoint:
           - http://tensorleap-registry:5000
         rewrite:
-          "^(.*)": "tensorleap/main/$1"
+          "^minio/(.*)": "tensorleap/minio-$1"
       us-central1-docker.pkg.dev:
         endpoint:
           - http://tensorleap-registry:5000
+        rewrite:
+          "^tensorleap/main/(.*)": "tensorleap/$1"
 options:
   k3d:
     disableLoadbalancer: true

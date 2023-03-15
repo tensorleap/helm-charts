@@ -34,24 +34,14 @@ version = 2
   endpoint = ["http://tensorleap-registry:5000"]
 
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.elastic.co".rewrite]
-    "^(.*)" = "tensorleap/main/$1"
+    "^elasticsearch/(.*)"= "tensorleap/elasticsearch-$1"
 
 
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
   endpoint = ["http://tensorleap-registry:5000"]
 
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io".rewrite]
-    "^(.*)" = "tensorleap/main/$1"
 
-
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
-  endpoint = ["http://tensorleap-registry:5000"]
-
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io".rewrite]
-    "^(.*)" = "tensorleap/main/$1"
-
-
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."https://us-central1-docker.pkg.dev"]
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."https://registry-1.docker.io"]
   endpoint = ["http://tensorleap-registry:5000"]
 
 
@@ -59,14 +49,14 @@ version = 2
   endpoint = ["http://tensorleap-registry:5000"]
 
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."k8s.gcr.io".rewrite]
-    "^(.*)" = "tensorleap/main/$1"
+    "^ingress-nginx/(.*)"= "tensorleap/ingress-nginx-$1"
 
 
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."quay.io"]
   endpoint = ["http://tensorleap-registry:5000"]
 
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."quay.io".rewrite]
-    "^(.*)" = "tensorleap/main/$1"
+    "^minio/(.*)"= "tensorleap/minio-$1"
 
 
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."tensorleap-registry:5000"]
@@ -79,3 +69,14 @@ version = 2
 
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."us-central1-docker.pkg.dev"]
   endpoint = ["http://tensorleap-registry:5000"]
+
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."us-central1-docker.pkg.dev".rewrite]
+    "^tensorleap/main/(.*)"= "tensorleap/$1"
+
+
+
+
+
+
+
+
