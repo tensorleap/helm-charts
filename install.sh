@@ -154,7 +154,6 @@ function run_in_docker() {
 }
 
 function check_docker_requirements() {
-
   if [ "$DISABLE_DOCKER_CHECKS" != "true" ]
   then
     NO_RESOURCES=''
