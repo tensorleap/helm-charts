@@ -396,8 +396,8 @@ function check_installed_version() {
 
 function install_new_tensorleap_cluster() {
   create_docker_registry
-  cache_images_in_registry
   init_var_dir
+  cache_images_in_registry
   create_data_dir_if_needed
   create_tensorleap_cluster
 
