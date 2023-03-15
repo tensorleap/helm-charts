@@ -1,5 +1,6 @@
 set -euo pipefail
 
+DISABLE_DOCKER_CHECKS=${DISABLE_DOCKER_CHECKS:=}
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
 DISABLE_CLUSTER_CREATION=${DISABLE_CLUSTER_CREATION:=}
 FILES_BRANCH=${FILES_BRANCH:=master}
@@ -154,45 +155,48 @@ function run_in_docker() {
 
 function check_docker_requirements() {
 
-  NO_RESOURCES=''
-
-  REQUIRED_MEMORY=6227000000
-  REQUIRED_MEMORY_PRETTY=6Gb
-  echo Checking docker memory limits...
-  DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
-  DOCKER_MEMORY_PRETTY="$(($DOCKER_MEMORY /1024/1024/1024))Gb"
-  echo "Docker has $DOCKER_MEMORY_PRETTY memory available."
-
-  REQUIRED_STORAGE_KB=16777216
-  REQUIRED_STORAGE_PRETTY=15Gb
-  $DOCKER pull alpine 1> /dev/null
-  DF_TMP_FILE=$(mktemp)
-  echo Checking docker storage limits...
-  $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
-  DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
-  DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
-  DOCKER_TOTAL_STORAGE_PRETTY="$(($DOCKER_TOTAL_STORAGE_KB /1024/1024))Gb"
-  DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
-  DOCKER_FREE_STORAGE_PRETTY="$(($DOCKER_FREE_STORAGE_KB /1024/1024))Gb"
-  echo "Docker has $DOCKER_FREE_STORAGE_PRETTY free storage available ($DOCKER_TOTAL_STORAGE_PRETTY total)."
-
-  if [ $DOCKER_MEMORY -lt $REQUIRED_MEMORY ];
+  if [ "$DISABLE_DOCKER_CHECKS" != "true" ]
   then
-    echo "Please increase docker memory limit to at least $REQUIRED_MEMORY_PRETTY"
-    NO_RESOURCES=true
-  fi
+    NO_RESOURCES=''
 
-  if [ $DOCKER_FREE_STORAGE_KB -lt $REQUIRED_STORAGE_KB ];
-  then
-    echo "Please increase docker storage limit, tensorleap required at least $REQUIRED_STORAGE_PRETTY free storage"
-    NO_RESOURCES=true
-  fi
+    REQUIRED_MEMORY=6227000000
+    REQUIRED_MEMORY_PRETTY=6Gb
+    echo Checking docker memory limits...
+    DOCKER_MEMORY=$($DOCKER info -f '{{json .MemTotal}}')
+    DOCKER_MEMORY_PRETTY="$(($DOCKER_MEMORY /1024/1024/1024))Gb"
+    echo "Docker has $DOCKER_MEMORY_PRETTY memory available."
 
-  if [ -n "$NO_RESOURCES" ];
-  then
-    report_status "{\"type\":\"install-script-no-resources\",\"installId\":\"$INSTALL_ID\",\"totalMemory\":\"$DOCKER_MEMORY_PRETTY\",\"totalStorage\":\"$DOCKER_TOTAL_STORAGE_PRETTY\",\"freeStorage\":\"$DOCKER_FREE_STORAGE_PRETTY\"}"
-    echo Please retry installation after updating your docker config.
-    exit -1
+    REQUIRED_STORAGE_KB=16777216
+    REQUIRED_STORAGE_PRETTY=15Gb
+    $DOCKER pull alpine 1> /dev/null
+    DF_TMP_FILE=$(mktemp)
+    echo Checking docker storage limits...
+    $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
+    DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
+    DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
+    DOCKER_TOTAL_STORAGE_PRETTY="$(($DOCKER_TOTAL_STORAGE_KB /1024/1024))Gb"
+    DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
+    DOCKER_FREE_STORAGE_PRETTY="$(($DOCKER_FREE_STORAGE_KB /1024/1024))Gb"
+    echo "Docker has $DOCKER_FREE_STORAGE_PRETTY free storage available ($DOCKER_TOTAL_STORAGE_PRETTY total)."
+
+    if [ $DOCKER_MEMORY -lt $REQUIRED_MEMORY ];
+    then
+      echo "Please increase docker memory limit to at least $REQUIRED_MEMORY_PRETTY"
+      NO_RESOURCES=true
+    fi
+
+    if [ $DOCKER_FREE_STORAGE_KB -lt $REQUIRED_STORAGE_KB ];
+    then
+      echo "Please increase docker storage limit, tensorleap required at least $REQUIRED_STORAGE_PRETTY free storage"
+      NO_RESOURCES=true
+    fi
+
+    if [ -n "$NO_RESOURCES" ];
+    then
+      report_status "{\"type\":\"install-script-no-resources\",\"installId\":\"$INSTALL_ID\",\"totalMemory\":\"$DOCKER_MEMORY_PRETTY\",\"totalStorage\":\"$DOCKER_TOTAL_STORAGE_PRETTY\",\"freeStorage\":\"$DOCKER_FREE_STORAGE_PRETTY\"}"
+      echo Please retry installation after updating your docker config.
+      exit -1
+    fi
   fi
 }
 
