@@ -244,7 +244,7 @@ function cache_images_in_registry() {
   cat \
     <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt) \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
-    | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+    | xargs -P0 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
 
 function init_helm_values() {
