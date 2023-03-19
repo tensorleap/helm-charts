@@ -223,16 +223,21 @@ function check_image_in_registry() {
 
 function cache_image() {
   local image=$1
-  local target
-  target=$(echo "$image" | sed "s/[^\/]*\//127.0.0.1:5699\//")
+  local image_repo=${image//\/*/}
+  local image_name_without_repo=${image#*/}
+  local target="127.0.0.1:5699/${image_name_without_repo}"
+  local display_name=${image_name_without_repo/library\//}
+  display_name=${display_name/main\//}
   if check_image_in_registry "$image";
   then
-    echo "$image already cached"
+    echo "$display_name: Cached"
   else
-    $DOCKER pull $image && \
-    $DOCKER tag $image $target && \
-    $DOCKER push $target && \
-    $DOCKER image rm $image
+    echo "$display_name: Pulling from $image_repo" && \
+    $DOCKER pull -q "$image" > /dev/null && \
+    $DOCKER tag "$image" "$target" > /dev/null && \
+    echo "$display_name: Pushing to local registry" && \
+    $DOCKER push "$target" > /dev/null && \
+    echo "$display_name: Saved to cache"
   fi
 }
 export HTTP_GET
@@ -247,6 +252,7 @@ function cache_images_in_registry() {
   else
     k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
   fi
+  echo "Caching needed images in local registry..."
   cat \
     <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt | grep -v 'engine') \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
