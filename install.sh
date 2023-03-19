@@ -208,7 +208,9 @@ function create_docker_registry() {
     report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
     check_docker_requirements
     echo Creating docker registry...
-    $K3D registry create tensorleap-registry -p $REGISTRY_PORT
+    $K3D registry create tensorleap-registry \
+      -p $REGISTRY_PORT \
+      --no-help
   fi
 }
 
