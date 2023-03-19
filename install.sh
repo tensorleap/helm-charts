@@ -210,6 +210,7 @@ function create_docker_registry() {
     echo Creating docker registry...
     $K3D registry create tensorleap-registry \
       -p $REGISTRY_PORT \
+      -v $VAR_DIR/registry:/var/lib/registry \
       --no-help
   fi
 }
@@ -305,11 +306,17 @@ function create_data_dir_if_needed() {
 }
 
 function init_var_dir() {
-  sudo mkdir -p $VAR_DIR
-  sudo chmod -R 777 $VAR_DIR
-  mkdir -p $VAR_DIR/manifests
-  mkdir -p $VAR_DIR/storage
+  if [ ! -d "$VAR_DIR" ]; then
+    sudo mkdir -p $VAR_DIR
+    sudo chmod -R 777 $VAR_DIR
+  fi
 
+  [ -d "$VAR_DIR/manifests" ] || mkdir -p $VAR_DIR/manifests
+  [ -d "$VAR_DIR/storage" ] || mkdir -p $VAR_DIR/storage
+  [ -d "$VAR_DIR/registry" ] || mkdir -p $VAR_DIR/registry
+}
+
+function create_config_files() {
   echo 'Downloading config files...'
   download_and_patch_k3d_cluster_config
 
@@ -403,8 +410,9 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  create_docker_registry
   init_var_dir
+  create_docker_registry
+  create_config_files
   cache_images_in_registry
   create_data_dir_if_needed
   create_tensorleap_cluster
