@@ -242,7 +242,7 @@ function cache_images_in_registry() {
     k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
   fi
   cat \
-    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt) \
+    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt | grep -v 'engine') \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
     | xargs -P0 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
 }
