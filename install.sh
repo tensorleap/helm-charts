@@ -384,7 +384,7 @@ function wait_for_cluster_init() {
 }
 
 function check_installed_version() {
-  if run_in_docker kubectl get -n kube-system HelmChart tensorleap;
+  if run_in_docker kubectl get -n kube-system HelmChart tensorleap > /dev/null;
   then
     INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
     USE_LOCAL_HELM=false
