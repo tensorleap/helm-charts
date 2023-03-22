@@ -197,22 +197,6 @@ function check_docker_requirements() {
   fi
 }
 
-function create_docker_registry() {
-  if $K3D registry list tensorleap-registry &> /dev/null;
-  then
-    report_status "{\"type\":\"install-script-registry-exists\",\"installId\":\"$INSTALL_ID\"}"
-    echo Found existing docker registry!
-  else
-    report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
-    check_docker_requirements
-    echo Creating docker registry...
-    $K3D registry create tensorleap-registry \
-      -p 5699 \
-      -v $VAR_DIR/registry:/var/lib/registry \
-      --no-help
-  fi
-}
-
 function check_image_in_registry() {
   local full_image_name=$1
   local image_name=${full_image_name/:*/}
@@ -343,7 +327,6 @@ function init_var_dir() {
 
   [ -d "$VAR_DIR/manifests" ] || mkdir -p $VAR_DIR/manifests
   [ -d "$VAR_DIR/storage" ] || mkdir -p $VAR_DIR/storage
-  [ -d "$VAR_DIR/registry" ] || mkdir -p $VAR_DIR/registry
 }
 
 function create_config_files() {
@@ -442,7 +425,6 @@ function check_installed_version() {
 
 function install_new_tensorleap_cluster() {
   init_var_dir
-  create_docker_registry
   create_config_files
   cache_images_in_registry
   create_data_dir_if_needed
