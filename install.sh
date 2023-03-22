@@ -201,26 +201,26 @@ function cache_image() {
   local image=$1
   local image_repo=${image//\/*/}
   local image_name_without_repo=${image#*/}
-  local target="127.0.0.1:5699/${image_name_without_repo}"
   local display_name=${image_name_without_repo/library\//}
   display_name=${display_name/main\//}
-  if check_image_in_registry "$image";
+  local filename
+  filename="$VAR_DIR/images/$(echo "$image" | sed 's/[\.\/:]/-/g').tar";
+  if [ -e "$filename" ];
   then
     echo "$display_name: Cached"
   else
     echo "$display_name: Pulling from $image_repo" && \
     $DOCKER pull -q "$image" > /dev/null && \
-    $DOCKER tag "$image" "$target" > /dev/null && \
-    echo "$display_name: Pushing to local registry" && \
-    $DOCKER push "$target" > /dev/null && \
+    echo "$display_name: Saving to cache" && \
+    $DOCKER save "$image" -o "$filename" && \
     echo "$display_name: Saved to cache"
   fi
 }
-export HTTP_GET
+export VAR_DIR
 export DOCKER
 export -f cache_image
 
-function cache_images_in_registry() {
+function update_image_cache() {
   if [ "$USE_GPU" == "true" ]
   then
     k3s_version=$(echo $GPU_IMAGE | sed 's/.*://;s/-cuda$//;s/-/+/')
@@ -406,7 +406,7 @@ function check_installed_version() {
 function install_new_tensorleap_cluster() {
   init_var_dir
   create_config_files
-  cache_images_in_registry
+  update_image_cache
   create_data_dir_if_needed
   create_tensorleap_cluster
 
@@ -423,7 +423,7 @@ function install_new_tensorleap_cluster() {
 }
 
 function update_existing_chart() {
-  cache_images_in_registry
+  update_image_cache
   check_installed_version
 
   report_status "{\"type\":\"install-script-update-started\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
