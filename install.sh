@@ -253,6 +253,24 @@ function cache_images_in_registry() {
     | xargs -P0 -IXXX bash -c "cache_image XXX"
 }
 
+function cache_engine_in_background() {
+  local engine_image;
+  local target_image;
+  engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image);
+  target_image=$(echo "$engine_image" | sed 's/[^\/]*\//k3d-tensorleap-registry:5000\//');
+  if check_image_in_registry "$engine_image";
+  then
+    $DOCKER exec -d k3d-tensorleap-server-0 crictl pull "$engine_image"
+  else
+    echo "Caching engine image in the background..."
+    $DOCKER exec -d k3d-tensorleap-server-0 sh -c "
+crictl pull $engine_image && \
+ctr image convert $engine_image $target_image && \
+ctr image push --plain-http $target_image
+"
+  fi
+}
+
 function init_helm_values() {
   VOLUME_ENGINE_VALUES="localDataDirectory: ${DATA_VOLUME/*:/}"
   GPU_ENGINE_VALUES=""
@@ -410,6 +428,7 @@ function check_installed_version() {
   then
     report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
     echo Installation in up to date!
+    cache_engine_in_background
     exit 0
   fi
   echo Installed Version: $INSTALLED_CHART_VERSION
@@ -431,6 +450,8 @@ function install_new_tensorleap_cluster() {
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   echo "Congratulations! You've successfully installed Tensorleap"
+
+  cache_engine_in_background
 }
 
 function update_existing_chart() {
@@ -448,6 +469,7 @@ function update_existing_chart() {
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
   echo 'Done! (note that images could still be downloading in the background...)'
+  cache_engine_in_background
 }
 
 function open_tensorleap_url() {
