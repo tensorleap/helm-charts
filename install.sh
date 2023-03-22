@@ -245,20 +245,8 @@ function cache_images_in_registry() {
 
 function cache_engine_in_background() {
   local engine_image;
-  local target_image;
   engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image);
-  target_image=$(echo "$engine_image" | sed 's/[^\/]*\//k3d-tensorleap-registry:5000\//');
-  if check_image_in_registry "$engine_image";
-  then
-    $DOCKER exec -d k3d-tensorleap-server-0 crictl pull "$engine_image"
-  else
-    echo "Caching engine image in the background..."
-    $DOCKER exec -d k3d-tensorleap-server-0 sh -c "
-crictl pull $engine_image && \
-ctr image convert $engine_image $target_image && \
-ctr image push --plain-http $target_image
-"
-  fi
+  $DOCKER exec -d k3d-tensorleap-server-0 crictl pull "$engine_image"
 }
 
 function init_helm_values() {
