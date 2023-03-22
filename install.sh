@@ -15,8 +15,6 @@ HELM=helm
 
 VAR_DIR='/var/lib/tensorleap/standalone'
 
-REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
-
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -209,18 +207,25 @@ function create_docker_registry() {
     check_docker_requirements
     echo Creating docker registry...
     $K3D registry create tensorleap-registry \
-      -p $REGISTRY_PORT \
+      -p 5699 \
       -v $VAR_DIR/registry:/var/lib/registry \
       --no-help
   fi
 }
 
+function check_image_in_registry() {
+  local full_image_name=$1
+  local image_name=${full_image_name/:*/}
+  local registry_tags_url="127.0.0.1:5699/v2/${image_name#*/}/tags/list"
+  local image_tag=${full_image_name/*:/}
+  $HTTP_GET "$registry_tags_url" | grep "$image_tag" &> /dev/null
+}
+
 function cache_image() {
-  local registry_port=$1
-  local image=$2
-  local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
-  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if $HTTP_GET $api_url &> /dev/null;
+  local image=$1
+  local target
+  target=$(echo "$image" | sed "s/[^\/]*\//127.0.0.1:5699\//")
+  if check_image_in_registry "$image";
   then
     echo "$image already cached"
   else
@@ -233,6 +238,7 @@ function cache_image() {
 export HTTP_GET
 export DOCKER
 export -f cache_image
+export -f check_image_in_registry
 
 function cache_images_in_registry() {
   if [ "$USE_GPU" == "true" ]
@@ -244,7 +250,7 @@ function cache_images_in_registry() {
   cat \
     <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt | grep -v 'engine') \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
-    | xargs -P0 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+    | xargs -P0 -IXXX bash -c "cache_image XXX"
 }
 
 function init_helm_values() {
