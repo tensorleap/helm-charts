@@ -306,6 +306,7 @@ function init_var_dir() {
 
   [ -d "$VAR_DIR/manifests" ] || mkdir -p $VAR_DIR/manifests
   [ -d "$VAR_DIR/storage" ] || mkdir -p $VAR_DIR/storage
+  [ -d "$VAR_DIR/images" ] || mkdir -p $VAR_DIR/images
 }
 
 function create_config_files() {

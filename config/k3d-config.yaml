@@ -6,6 +6,9 @@ volumes:
   - volume: /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalone
     nodeFilters:
       - server:*
+  - volume: /var/lib/tensorleap/standalone/images:/var/lib/rancher/k3s/agent/images
+    nodeFilters:
+      - server:*
   - volume: /var/lib/tensorleap/standalone/manifests/tensorleap.yaml:/var/lib/rancher/k3s/server/manifests/tensorleap.yaml
     nodeFilters:
       - server:*
