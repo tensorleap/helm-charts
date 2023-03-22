@@ -197,14 +197,6 @@ function check_docker_requirements() {
   fi
 }
 
-function check_image_in_registry() {
-  local full_image_name=$1
-  local image_name=${full_image_name/:*/}
-  local registry_tags_url="127.0.0.1:5699/v2/${image_name#*/}/tags/list"
-  local image_tag=${full_image_name/*:/}
-  $HTTP_GET "$registry_tags_url" | grep "$image_tag" &> /dev/null
-}
-
 function cache_image() {
   local image=$1
   local image_repo=${image//\/*/}
@@ -227,7 +219,6 @@ function cache_image() {
 export HTTP_GET
 export DOCKER
 export -f cache_image
-export -f check_image_in_registry
 
 function cache_images_in_registry() {
   if [ "$USE_GPU" == "true" ]
