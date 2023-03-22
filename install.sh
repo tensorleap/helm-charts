@@ -15,8 +15,6 @@ HELM=helm
 
 VAR_DIR='/var/lib/tensorleap/standalone'
 
-REGISTRY_PORT=${TENSORLEAP_REGISTRY_PORT:=5699}
-
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -208,28 +206,44 @@ function create_docker_registry() {
     report_status "{\"type\":\"install-script-creating-registry\",\"installId\":\"$INSTALL_ID\"}"
     check_docker_requirements
     echo Creating docker registry...
-    $K3D registry create tensorleap-registry -p $REGISTRY_PORT
+    $K3D registry create tensorleap-registry \
+      -p 5699 \
+      -v $VAR_DIR/registry:/var/lib/registry \
+      --no-help
   fi
 }
 
+function check_image_in_registry() {
+  local full_image_name=$1
+  local image_name=${full_image_name/:*/}
+  local registry_tags_url="127.0.0.1:5699/v2/${image_name#*/}/tags/list"
+  local image_tag=${full_image_name/*:/}
+  $HTTP_GET "$registry_tags_url" | grep "$image_tag" &> /dev/null
+}
+
 function cache_image() {
-  local registry_port=$1
-  local image=$2
-  local target=$(echo $image | sed "s/[^\/]*\//127.0.0.1:$registry_port\//" | sed 's/@.*$//')
-  local api_url=$(echo $target | sed 's/\//\/v2\//' | sed 's/:/\/manifests\//2')
-  if $HTTP_GET $api_url &> /dev/null;
+  local image=$1
+  local image_repo=${image//\/*/}
+  local image_name_without_repo=${image#*/}
+  local target="127.0.0.1:5699/${image_name_without_repo}"
+  local display_name=${image_name_without_repo/library\//}
+  display_name=${display_name/main\//}
+  if check_image_in_registry "$image";
   then
-    echo "$image already cached"
+    echo "$display_name: Cached"
   else
-    $DOCKER pull $image && \
-    $DOCKER tag $image $target && \
-    $DOCKER push $target && \
-    $DOCKER image rm $image
+    echo "$display_name: Pulling from $image_repo" && \
+    $DOCKER pull -q "$image" > /dev/null && \
+    $DOCKER tag "$image" "$target" > /dev/null && \
+    echo "$display_name: Pushing to local registry" && \
+    $DOCKER push "$target" > /dev/null && \
+    echo "$display_name: Saved to cache"
   fi
 }
 export HTTP_GET
 export DOCKER
 export -f cache_image
+export -f check_image_in_registry
 
 function cache_images_in_registry() {
   if [ "$USE_GPU" == "true" ]
@@ -238,10 +252,29 @@ function cache_images_in_registry() {
   else
     k3s_version=$($K3D version | grep 'k3s version' | sed 's/.*version //;s/ .*//;s/-/+/')
   fi
+  echo "Caching needed images in local registry..."
   cat \
-    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt) \
+    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt | grep -v 'engine') \
     <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
-    | xargs -P3 -IXXX bash -c "cache_image $REGISTRY_PORT XXX"
+    | xargs -P0 -IXXX bash -c "cache_image XXX"
+}
+
+function cache_engine_in_background() {
+  local engine_image;
+  local target_image;
+  engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image);
+  target_image=$(echo "$engine_image" | sed 's/[^\/]*\//k3d-tensorleap-registry:5000\//');
+  if check_image_in_registry "$engine_image";
+  then
+    $DOCKER exec -d k3d-tensorleap-server-0 crictl pull "$engine_image"
+  else
+    echo "Caching engine image in the background..."
+    $DOCKER exec -d k3d-tensorleap-server-0 sh -c "
+crictl pull $engine_image && \
+ctr image convert $engine_image $target_image && \
+ctr image push --plain-http $target_image
+"
+  fi
 }
 
 function init_helm_values() {
@@ -303,11 +336,17 @@ function create_data_dir_if_needed() {
 }
 
 function init_var_dir() {
-  sudo mkdir -p $VAR_DIR
-  sudo chmod -R 777 $VAR_DIR
-  mkdir -p $VAR_DIR/manifests
-  mkdir -p $VAR_DIR/storage
+  if [ ! -d "$VAR_DIR" ]; then
+    sudo mkdir -p $VAR_DIR
+    sudo chmod -R 777 $VAR_DIR
+  fi
 
+  [ -d "$VAR_DIR/manifests" ] || mkdir -p $VAR_DIR/manifests
+  [ -d "$VAR_DIR/storage" ] || mkdir -p $VAR_DIR/storage
+  [ -d "$VAR_DIR/registry" ] || mkdir -p $VAR_DIR/registry
+}
+
+function create_config_files() {
   echo 'Downloading config files...'
   download_and_patch_k3d_cluster_config
 
@@ -382,7 +421,7 @@ function wait_for_cluster_init() {
 }
 
 function check_installed_version() {
-  if run_in_docker kubectl get -n kube-system HelmChart tensorleap;
+  if run_in_docker kubectl get -n kube-system HelmChart tensorleap > /dev/null;
   then
     INSTALLED_CHART_VERSION=$(run_in_docker kubectl get -n kube-system HelmChart tensorleap -o jsonpath='{.spec.version}')
     USE_LOCAL_HELM=false
@@ -395,14 +434,16 @@ function check_installed_version() {
   then
     report_status "{\"type\":\"install-script-up-to-date\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\",\"localHelm\":\"$USE_LOCAL_HELM\"}"
     echo Installation in up to date!
+    cache_engine_in_background
     exit 0
   fi
   echo Installed Version: $INSTALLED_CHART_VERSION
 }
 
 function install_new_tensorleap_cluster() {
-  create_docker_registry
   init_var_dir
+  create_docker_registry
+  create_config_files
   cache_images_in_registry
   create_data_dir_if_needed
   create_tensorleap_cluster
@@ -415,6 +456,8 @@ function install_new_tensorleap_cluster() {
 
   report_status "{\"type\":\"install-script-install-success\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
   echo "Congratulations! You've successfully installed Tensorleap"
+
+  cache_engine_in_background
 }
 
 function update_existing_chart() {
@@ -432,6 +475,7 @@ function update_existing_chart() {
   report_status "{\"type\":\"install-script-update-success\",\"installId\":\"$INSTALL_ID\",\"from\":\"$INSTALLED_CHART_VERSION\",\"to\":\"$LATEST_CHART_VERSION\"}"
 
   echo 'Done! (note that images could still be downloading in the background...)'
+  cache_engine_in_background
 }
 
 function open_tensorleap_url() {
