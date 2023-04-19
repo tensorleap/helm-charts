@@ -1,4 +1,4 @@
-image_tag: master-3fb759e0-stable
+image_tag: master-d40e961f-stable
 
 ingress:
   enabled: true
