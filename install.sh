@@ -527,9 +527,11 @@ function main() {
 
   if $K3D cluster list tensorleap &> /dev/null;
   then
+    log "Detected existing tensorleap installation, try update"
     echo Detected existing tensorleap installation
     update_existing_chart
   else
+    log "installing new cluster"
     install_new_tensorleap_cluster
   fi
 
