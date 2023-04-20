@@ -1,4 +1,10 @@
 set -euo pipefail
+VAR_DIR='/var/lib/tensorleap/standalone'
+SCRIPT_LOG=$VAR_DIR/log.log
+
+function log(){
+  echo "[$(date)] [INFO]  $1" >> $SCRIPT_LOG
+}
 
 DISABLE_DOCKER_CHECKS=${DISABLE_DOCKER_CHECKS:=}
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
@@ -13,8 +19,6 @@ DOCKER=docker
 K3D=k3d
 HELM=helm
 
-VAR_DIR='/var/lib/tensorleap/standalone'
-
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -27,6 +31,7 @@ RETRY_DELAY=0
 INSECURE=${INSECURE:=}
 EXTRA_CURL_PARAMS=""
 EXTRA_WGET_PARAMS=""
+
 function setup_http_utils() {
   if [ "$INSECURE" == "true" ];
   then
@@ -441,7 +446,6 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  init_var_dir
   create_docker_registry
   create_config_files
   cache_images_in_registry
@@ -502,6 +506,18 @@ function open_tensorleap_url() {
 
 function main() {
   echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
+  init_var_dir
+  log "starting run"
+  log "DISABLE_DOCKER_CHECKS = $DISABLE_DOCKER_CHECKS"
+  log "DISABLE_REPORTING = $DISABLE_REPORTING"
+  log "DISABLE_CLUSTER_CREATION = $DISABLE_CLUSTER_CREATION"
+  log "FILES_BRANCH = $FILES_BRANCH"
+  log "DATA_VOLUME = $DATA_VOLUME"
+  log "INSTALL_ID = $INSTALL_ID"
+  log "USE_LOCAL_HELM = $USE_LOCAL_HELM"
+  log "USE_GPU = $USE_GPU"
+  log "INSECURE = $INSECURE"
+
   setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
