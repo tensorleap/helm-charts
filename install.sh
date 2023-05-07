@@ -1,6 +1,6 @@
 set -euo pipefail
 VAR_DIR='/var/lib/tensorleap/standalone'
-SCRIPT_LOG=$VAR_DIR/log.log
+SCRIPT_LOG=$VAR_DIR/install_log.log
 
 function log(){
   echo "[$(date)] [INFO]  $1" >> $SCRIPT_LOG
