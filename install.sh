@@ -1,4 +1,10 @@
 set -euo pipefail
+VAR_DIR='/var/lib/tensorleap/standalone'
+SCRIPT_LOG=$VAR_DIR/install_log.log
+
+function log(){
+  echo "[$(date)] [INFO] $1" >> $SCRIPT_LOG
+}
 
 DISABLE_DOCKER_CHECKS=${DISABLE_DOCKER_CHECKS:=}
 DISABLE_REPORTING=${DISABLE_REPORTING:=}
@@ -13,8 +19,6 @@ DOCKER=docker
 K3D=k3d
 HELM=helm
 
-VAR_DIR='/var/lib/tensorleap/standalone'
-
 USE_LOCAL_HELM=${USE_LOCAL_HELM:=}
 
 USE_GPU=${USE_GPU:=}
@@ -27,6 +31,7 @@ RETRY_DELAY=0
 INSECURE=${INSECURE:=}
 EXTRA_CURL_PARAMS=""
 EXTRA_WGET_PARAMS=""
+
 function setup_http_utils() {
   if [ "$INSECURE" == "true" ];
   then
@@ -47,11 +52,15 @@ function report_status() {
   local report_url=https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot
   if [ "$DISABLE_REPORTING" != "true" ]
   then
+    log "trying to report $1"
     if type curl > /dev/null; then
+      log "report using curl"
       curl -s --fail -XPOST -H 'Content-Type: application/json' $EXTRA_CURL_PARAMS $report_url -d "$1" &> /dev/null &
     elif type wget > /dev/null; then
+      log "report using wget"
       wget -q --method POST --header 'Content-Type: application/json' $EXTRA_WGET_PARAMS -O- --body-data "$1" $report_url &> /dev/null &
     else
+      log "no curl or wget installed"
       echo you must have either curl or wget installed.
       exit -1
     fi
@@ -441,7 +450,6 @@ function check_installed_version() {
 }
 
 function install_new_tensorleap_cluster() {
-  init_var_dir
   create_docker_registry
   create_config_files
   cache_images_in_registry
@@ -500,8 +508,23 @@ function open_tensorleap_url() {
   echo "You can now access Tensorleap at $TENSORLEAP_URL"
 }
 
+function log_environment_variables() {
+  log "starting run"
+  log "DISABLE_DOCKER_CHECKS = $DISABLE_DOCKER_CHECKS"
+  log "DISABLE_REPORTING = $DISABLE_REPORTING"
+  log "DISABLE_CLUSTER_CREATION = $DISABLE_CLUSTER_CREATION"
+  log "FILES_BRANCH = $FILES_BRANCH"
+  log "DATA_VOLUME = $DATA_VOLUME"
+  log "INSTALL_ID = $INSTALL_ID"
+  log "USE_LOCAL_HELM = $USE_LOCAL_HELM"
+  log "USE_GPU = $USE_GPU"
+  log "INSECURE = $INSECURE"
+}
+
 function main() {
   echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
+  init_var_dir
+  log_environment_variables
   setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
@@ -511,9 +534,11 @@ function main() {
 
   if $K3D cluster list tensorleap &> /dev/null;
   then
+    log "Detected existing tensorleap installation, try update"
     echo Detected existing tensorleap installation
     update_existing_chart
   else
+    log "installing new cluster"
     install_new_tensorleap_cluster
   fi
 
@@ -522,3 +547,5 @@ function main() {
 
 main
 
+
+}
