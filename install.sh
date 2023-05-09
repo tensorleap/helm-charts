@@ -504,9 +504,7 @@ function open_tensorleap_url() {
   echo "You can now access Tensorleap at $TENSORLEAP_URL"
 }
 
-function main() {
-  echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
-  init_var_dir
+function log_environment_variables() {
   log "starting run"
   log "DISABLE_DOCKER_CHECKS = $DISABLE_DOCKER_CHECKS"
   log "DISABLE_REPORTING = $DISABLE_REPORTING"
@@ -517,7 +515,12 @@ function main() {
   log "USE_LOCAL_HELM = $USE_LOCAL_HELM"
   log "USE_GPU = $USE_GPU"
   log "INSECURE = $INSECURE"
+}
 
+function main() {
+  echo Please note that during the installation you may be required to provide your computer password to enable communication with the docker.
+  init_var_dir
+  log_environment_variables
   setup_http_utils
   report_status "{\"type\":\"install-script-init\",\"installId\":\"$INSTALL_ID\",\"uname\":\"$(uname -a)\"}"
   check_docker
@@ -540,3 +543,5 @@ function main() {
 
 main
 
+
+}
