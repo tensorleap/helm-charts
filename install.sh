@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004
+
 set -euo pipefail
 VAR_DIR='/var/lib/tensorleap/standalone'
 SCRIPT_LOG=$VAR_DIR/install_log.log
@@ -44,7 +47,7 @@ function setup_http_utils() {
     HTTP_GET="wget -q -O- --timeout=$REQUEST_TIMEOUT --tries=$RETRIES --wait=$RETRY_DELAY $EXTRA_WGET_PARAMS"
   else
     echo you must have either curl or wget installed.
-    exit -1
+    exit 1
   fi
 }
 
@@ -62,14 +65,14 @@ function report_status() {
     else
       log "no curl or wget installed"
       echo you must have either curl or wget installed.
-      exit -1
+      exit 1
     fi
   fi
 }
 
 function check_k3d() {
   echo Checking k3d installation
-  if !($K3D version);
+  if ! ($K3D version);
   then
     echo Installing k3d...
     report_status "{\"type\":\"install-script-install-k3d\",\"installId\":\"$INSTALL_ID\"}"
@@ -80,7 +83,7 @@ function check_k3d() {
 function check_docker() {
   OS_NAME=$(uname -s)
   echo Checking docker installation
-  if !(which docker &> /dev/null);
+  if ! (which docker &> /dev/null);
   then
     if [ "$OS_NAME" == "Linux" ];
     then
@@ -93,9 +96,9 @@ function check_docker() {
       report_status "{\"type\":\"install-script-installing-docker\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       TEMP_DIR=$(mktemp -d)
       echo Downloading docker...
-      $HTTP_GET https://desktop.docker.com/mac/main/amd64/Docker.dmg > $TEMP_DIR/Docker.dmg
+      $HTTP_GET https://desktop.docker.com/mac/main/amd64/Docker.dmg > "$TEMP_DIR/Docker.dmg"
       echo Installing docker...
-      sudo hdiutil attach $TEMP_DIR/Docker.dmg \
+      sudo hdiutil attach "$TEMP_DIR/Docker.dmg" \
         && sudo /Volumes/Docker/Docker.app/Contents/MacOS/install \
         && sudo hdiutil detach /Volumes/Docker \
         && sleep 2 \
@@ -106,18 +109,18 @@ function check_docker() {
 
     else
       report_status "{\"type\":\"install-script-docker-not-installed\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
-      echo Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/
-      exit -1
+      echo "Please install and run docker, get it at $(tput bold)https://docs.docker.com/get-docker/"
+      exit 1
     fi
   fi
 
-  if !(docker ps &> /dev/null);
+  if ! (docker ps &> /dev/null);
   then
-    if !(sudo docker ps &> /dev/null);
+    if ! (sudo docker ps &> /dev/null);
     then
       report_status "{\"type\":\"install-script-docker-not-running\",\"installId\":\"$INSTALL_ID\",\"os\":\"$OS_NAME\"}"
       echo 'Docker is not running!'
-      exit -1
+      exit 1
     fi
 
     DOCKER='sudo docker'
@@ -127,13 +130,13 @@ function check_docker() {
 
   REQUIRED_DOCKER_MAJOR_VERSION=20
   DOCKER_VERSION=$($DOCKER version | sed -ne '/Client:/,/^$/ p' | grep '^ Version:' | xargs | cut -d ' ' -f 2)
-  DOCKER_MAJOR_VERSION=$(echo $DOCKER_VERSION | cut -d '.' -f 1)
+  DOCKER_MAJOR_VERSION=$(echo "$DOCKER_VERSION" | cut -d '.' -f 1)
 
-  if [ $DOCKER_MAJOR_VERSION -lt $REQUIRED_DOCKER_MAJOR_VERSION ];
+  if [ "$DOCKER_MAJOR_VERSION" -lt $REQUIRED_DOCKER_MAJOR_VERSION ];
   then
     report_status "{\"type\":\"install-script-old-docker-version\",\"installId\":\"$INSTALL_ID\",\"dockerVersion\":\"$DOCKER_VERSION\"}"
     echo "Tensorleap standalone installation requires docker version $REQUIRED_DOCKER_MAJOR_VERSION or above. Installed version: $DOCKER_VERSION"
-      exit -1
+    exit 1
   fi
 }
 
@@ -141,22 +144,23 @@ function check_helm() {
   if [ "$USE_LOCAL_HELM" == "true" ]
   then
     echo Checking helm installation
-    if !($HELM version);
+    if ! ($HELM version);
     then
       report_status "{\"type\":\"install-script-helm-not-installed\",\"installId\":\"$INSTALL_ID\"}"
       echo Please install helm!
-      exit -1
+      exit 1
     fi
   fi
 }
 
 function get_latest_chart_version() {
   echo Getting latest version...
-  LATEST_CHART_VERSION=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/charts/tensorleap/Chart.yaml | grep '^version:' | cut -c 10-)
-  echo $LATEST_CHART_VERSION
+  LATEST_CHART_VERSION=$($HTTP_GET "https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/charts/tensorleap/Chart.yaml" | grep '^version:' | cut -c 10-)
+  echo "$LATEST_CHART_VERSION"
 }
 
 function run_in_docker() {
+  # shellcheck disable=SC2048,SC2086
   $DOCKER exec -it k3d-tensorleap-server-0 $*
 }
 
@@ -177,21 +181,21 @@ function check_docker_requirements() {
     $DOCKER pull alpine 1> /dev/null
     DF_TMP_FILE=$(mktemp)
     echo Checking docker storage limits...
-    $DOCKER run --rm -it alpine df -t overlay -P > $DF_TMP_FILE
-    DF_OUTPUT=$(cat $DF_TMP_FILE | grep overlay | sed 's/  */:/g')
-    DOCKER_TOTAL_STORAGE_KB=$(echo $DF_OUTPUT | cut -f2 -d:)
+    $DOCKER run --rm -it alpine df -t overlay -P > "$DF_TMP_FILE"
+    DF_OUTPUT=$(grep overlay < "$DF_TMP_FILE" | sed 's/  */:/g')
+    DOCKER_TOTAL_STORAGE_KB=$(echo "$DF_OUTPUT" | cut -f2 -d:)
     DOCKER_TOTAL_STORAGE_PRETTY="$(($DOCKER_TOTAL_STORAGE_KB /1024/1024))Gb"
-    DOCKER_FREE_STORAGE_KB=$(echo $DF_OUTPUT | cut -f4 -d:)
+    DOCKER_FREE_STORAGE_KB=$(echo "$DF_OUTPUT" | cut -f4 -d:)
     DOCKER_FREE_STORAGE_PRETTY="$(($DOCKER_FREE_STORAGE_KB /1024/1024))Gb"
     echo "Docker has $DOCKER_FREE_STORAGE_PRETTY free storage available ($DOCKER_TOTAL_STORAGE_PRETTY total)."
 
-    if [ $DOCKER_MEMORY -lt $REQUIRED_MEMORY ];
+    if [ "$DOCKER_MEMORY" -lt $REQUIRED_MEMORY ];
     then
       echo "Please increase docker memory limit to at least $REQUIRED_MEMORY_PRETTY"
       NO_RESOURCES=true
     fi
 
-    if [ $DOCKER_FREE_STORAGE_KB -lt $REQUIRED_STORAGE_KB ];
+    if [ "$DOCKER_FREE_STORAGE_KB" -lt $REQUIRED_STORAGE_KB ];
     then
       echo "Please increase docker storage limit, tensorleap required at least $REQUIRED_STORAGE_PRETTY free storage"
       NO_RESOURCES=true
@@ -201,7 +205,7 @@ function check_docker_requirements() {
     then
       report_status "{\"type\":\"install-script-no-resources\",\"installId\":\"$INSTALL_ID\",\"totalMemory\":\"$DOCKER_MEMORY_PRETTY\",\"totalStorage\":\"$DOCKER_TOTAL_STORAGE_PRETTY\",\"freeStorage\":\"$DOCKER_FREE_STORAGE_PRETTY\"}"
       echo Please retry installation after updating your docker config.
-      exit -1
+      exit 1
     fi
   fi
 }
@@ -263,15 +267,15 @@ function cache_images_in_registry() {
   fi
   echo "Caching needed images in local registry..."
   cat \
-    <($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt | grep -v 'engine') \
-    <($HTTP_GET https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt) \
+    <($HTTP_GET "https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/images.txt" | grep -v 'engine') \
+    <($HTTP_GET "https://github.com/k3s-io/k3s/releases/download/$k3s_version/k3s-images.txt") \
     | xargs -P0 -IXXX bash -c "cache_image XXX"
 }
 
 function cache_engine_in_background() {
   local engine_image;
   local target_image;
-  engine_image=$($HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image);
+  engine_image=$($HTTP_GET "https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/engine-latest-image");
   target_image=$(echo "$engine_image" | sed 's/[^\/]*\//k3d-tensorleap-registry:5000\//');
   if check_image_in_registry "$engine_image";
   then
@@ -313,7 +317,7 @@ image: $GPU_IMAGE
 "
   fi
 
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml | \
+  $HTTP_GET "https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/k3d-config.yaml" | \
     sed "$sed_script" \
     > $VAR_DIR/manifests/k3d-config.yaml
 }
@@ -334,14 +338,14 @@ function download_and_patch_helm_chart_manifest() {
 \ \ \ \ \ \ ${VOLUME_ENGINE_VALUES}\\
 \ \ \ \ \ \ ${GPU_ENGINE_VALUES}
 "
-  $HTTP_GET https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml | \
+  $HTTP_GET "https://raw.githubusercontent.com/tensorleap/helm-charts/$FILES_BRANCH/config/tensorleap.yaml" | \
     sed "$sed_script" \
     > $VAR_DIR/manifests/tensorleap.yaml
 }
 
 function create_data_dir_if_needed() {
   local local_path=${DATA_VOLUME/:*/}
-  [ -d "$local_path" ] || mkdir -p $local_path
+  [ -d "$local_path" ] || mkdir -p "$local_path"
 }
 
 function init_var_dir() {
@@ -375,11 +379,11 @@ function create_tensorleap_cluster() {
     echo "$K3D cluster create --config $VAR_DIR/manifests/k3d-config.yaml"
     if [ "$USE_LOCAL_HELM" == "true" ]
     then
-      echo $HELM repo add tensorleap https://helm.tensorleap.ai
-      echo $HELM repo update tensorleap
-      echo $HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
+      echo "$HELM repo add tensorleap https://helm.tensorleap.ai"
+      echo "$HELM repo update tensorleap"
+      echo "$HELM upgrade --install --create-namespace tensorleap tensorleap/tensorleap -n tensorleap \
       --values $VAR_DIR/manifests/helm-values.yaml \
-      --wait
+      --wait"
     fi
     exit 0;
   fi
@@ -412,20 +416,20 @@ function wait_for_cluster_init() {
     report_status "{\"type\":\"install-script-helm-install-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
 
     sleep 10 # wait for helm-install job to start
-    if !(run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
+    if ! (run_in_docker kubectl wait --for=condition=complete --timeout=25m -n kube-system job helm-install-tensorleap);
     then
       report_status "{\"type\":\"install-script-helm-install-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
       echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:4589 If it's not, contact support"
-      exit -1
+      exit 1
     fi
   fi
   echo 'Waiting for containers to initialize... (Just a few more minutes!)'
   report_status "{\"type\":\"install-script-deployment-wait\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
-  if !(run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
+  if ! (run_in_docker kubectl wait --for=condition=available --timeout=25m -n tensorleap deploy -l app.kubernetes.io/managed-by=Helm);
   then
     report_status "{\"type\":\"install-script-deployment-timeout\",\"installId\":\"$INSTALL_ID\",\"version\":\"$LATEST_CHART_VERSION\"}"
     echo "Timeout! Cluster is starting in the background, wait a few minutes and see if Tensorleap is available on http://127.0.0.1:4589 If it's not, contact support"
-    exit -1
+    exit 1
   fi
 }
 
@@ -446,7 +450,7 @@ function check_installed_version() {
     cache_engine_in_background
     exit 0
   fi
-  echo Installed Version: $INSTALLED_CHART_VERSION
+  echo "Installed Version: $INSTALLED_CHART_VERSION"
 }
 
 function install_new_tensorleap_cluster() {
