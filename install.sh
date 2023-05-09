@@ -52,11 +52,15 @@ function report_status() {
   local report_url=https://us-central1-tensorleap-ops3.cloudfunctions.net/demo-contact-bot
   if [ "$DISABLE_REPORTING" != "true" ]
   then
+    log "trying to report $1"
     if type curl > /dev/null; then
+      log "report using curl"
       curl -s --fail -XPOST -H 'Content-Type: application/json' $EXTRA_CURL_PARAMS $report_url -d "$1" &> /dev/null &
     elif type wget > /dev/null; then
+      log "report using wget"
       wget -q --method POST --header 'Content-Type: application/json' $EXTRA_WGET_PARAMS -O- --body-data "$1" $report_url &> /dev/null &
     else
+      log "no curl or wget installed"
       echo you must have either curl or wget installed.
       exit -1
     fi
