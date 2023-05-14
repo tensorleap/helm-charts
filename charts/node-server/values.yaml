@@ -1,4 +1,4 @@
-image_tag: master-ab8913ae-stable
+image_tag: master-ad81acea-stable
 
 ingress:
   enabled: true
