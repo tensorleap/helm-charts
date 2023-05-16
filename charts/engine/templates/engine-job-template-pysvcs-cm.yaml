@@ -30,9 +30,6 @@ data:
                   mountPath: {{ .Values.localDataDirectory }}
 {{ end }}
           restartPolicy: Never
-{{ if .Values.schedulerName }}
-          schedulerName: {{ .Values.schedulerName }}
-{{ end }}
           volumes:
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
