@@ -2,5 +2,6 @@ image_tag: master-076f50f5-stable
 
 localDataDirectory: ""
 gpu: false
+addGpuTolerations: false
 
 additional_pvcs: []
