@@ -24,7 +24,9 @@ data:
               envFrom:
                 - configMapRef:
                     name: engine-cm
+{{- if or .Values.additional_pvcs .Values.localDataDirectory }}      
               volumeMounts:
+{{- end}}
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
@@ -43,7 +45,9 @@ data:
               operator: Exists
               effect: NoSchedule
 {{ end}}
+{{- if or .Values.additional_pvcs .Values.localDataDirectory }}
           volumes:
+{{- end}}
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
