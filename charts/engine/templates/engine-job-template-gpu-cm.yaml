@@ -37,6 +37,12 @@ data:
 {{ if .Values.schedulerName }}
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}
+{{ if .Values.tolerations }}
+          tolerations:
+            - key: nvidia.com/gpu
+              operator: Exists
+              effect: NoSchedule
+{{ end}}
           volumes:
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
