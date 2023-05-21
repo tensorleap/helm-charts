@@ -20,7 +20,9 @@ data:
               envFrom:
                 - configMapRef:
                     name: engine-cm
+{{- if or .Values.additional_pvcs .Values.localDataDirectory }}      
               volumeMounts:
+{{- end}}
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
@@ -30,7 +32,9 @@ data:
                   mountPath: {{ .Values.localDataDirectory }}
 {{ end }}
           restartPolicy: Never
+{{- if or .Values.additional_pvcs .Values.localDataDirectory }}
           volumes:
+{{- end}}
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
