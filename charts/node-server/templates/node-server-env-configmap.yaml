@@ -4,7 +4,7 @@ metadata:
   name: tensorleap-node-server-env-configmap
 data:
   NODE_ENV: production
-  MONGO_URI: mongodb://mongodb/tensorleap?tls=false&ssl=false
+  MONGO_URI: {{ .Values.mongodb.connectionString }}
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
   BUCKET_NAME: session
   ENSURE_BUCKET_EXISTS: "true"

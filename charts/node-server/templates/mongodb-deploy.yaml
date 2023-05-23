@@ -1,3 +1,4 @@
+{{ if .Values.mongodb.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,3 +60,4 @@ spec:
         - name: datadir
           persistentVolumeClaim:
             claimName: mongodb-data
+{{ end }}
