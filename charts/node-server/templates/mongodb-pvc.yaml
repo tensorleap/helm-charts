@@ -1,3 +1,4 @@
+{{ if .Values.mongodb.enabled }}
 {{ if .Values.global.create_local_volumes }}
 apiVersion: v1
 kind: PersistentVolume
@@ -31,4 +32,5 @@ spec:
   volumeName: mongodb-data
 {{ else if .Values.global.storageClassName }}
   storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}
 {{ end }}
