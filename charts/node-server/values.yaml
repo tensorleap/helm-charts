@@ -2,3 +2,7 @@ image_tag: master-623d35d9-stable
 
 ingress:
   enabled: true
+
+mongodb:
+  enabled: true
+  connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
