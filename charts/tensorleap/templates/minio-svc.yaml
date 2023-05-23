@@ -3,12 +3,11 @@ kind: Service
 metadata:
   name: tensorleap-minio
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: http
       port: 9000
       protocol: TCP
-      nodePort: 32000
   selector:
     app: minio
     release: tensorleap
