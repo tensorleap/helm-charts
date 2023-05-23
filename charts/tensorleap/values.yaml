@@ -16,6 +16,3 @@ global:
   target_namespace: ''
   storageClassName: ''
   create_local_volumes: true
-  elasticsearch:
-    enabled: true
-    url: ''

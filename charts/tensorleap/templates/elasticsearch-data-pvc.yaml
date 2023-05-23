@@ -1,5 +1,4 @@
-{{ if .Values.global.elasticsearch.enabled }}
-{{ if and .Values.global.create_local_volumes }}
+{{ if .Values.global.create_local_volumes }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -32,5 +31,4 @@ spec:
   volumeName: elasticsearch-data
 {{ else if .Values.global.storageClassName }}
   storageClassName: {{ .Values.global.storageClassName }}
-{{ end }}
 {{ end }}

@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: tensorleap-minio
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - name: http
       port: 9000

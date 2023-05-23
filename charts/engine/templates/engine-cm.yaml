@@ -7,11 +7,7 @@ metadata:
 {{ end }}
 data:
   PY_CONFIG: /app/config/config.yaml
-{{ if .Values.global.elasticsearch.url }}
-  ELASTIC_HOST: {{ .Values.global.elasticsearch.url }}
-{{ else }}
   ELASTIC_HOST: http://elasticsearch-master.{{ .Release.Namespace }}.svc:9200
-{{ end }}
   SESSION_BUCKET: session
   RABBIT_HOST: rabbitmq.{{ .Release.Namespace }}.svc
   RABBIT_USER: guest
