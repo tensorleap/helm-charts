@@ -2,7 +2,3 @@ image_tag: master-cdc39dc8-stable
 
 ingress:
   enabled: true
-
-mongodb:
-  enabled: true
-  connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false

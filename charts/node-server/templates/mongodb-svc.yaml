@@ -1,4 +1,3 @@
-{{ if .Values.mongodb.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,4 +12,3 @@ spec:
       targetPort: mongodb
   selector:
     app: mongodb
-{{ end }}

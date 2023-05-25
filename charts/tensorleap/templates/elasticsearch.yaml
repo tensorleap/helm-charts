@@ -1,4 +1,3 @@
-{{ if .Values.global.elasticsearch.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -225,4 +224,3 @@ spec:
                     curl 127.0.0.1:9200/_template/zero-replicas -s --fail -XPUT -H 'Content-Type: application/json' -d '{"index_patterns":["*"],"settings":{"number_of_replicas":0}}'
                     echo 'Updating elastic max bucket query limit'
                     curl 127.0.0.1:9200/_cluster/settings -s --fail -XPUT -H 'Content-Type: application/json' -d '{"persistent":{"search.max_buckets":65000}}'
-{{ end }}
