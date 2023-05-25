@@ -1,4 +1,3 @@
-{{ if .Values.mongodb.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -19,4 +18,3 @@ data:
     chmod 777 $MONGO_DB_PATH
 
     exec mongod --bind_ip_all --dbpath $MONGO_DB_PATH
-{{ end }}

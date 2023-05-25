@@ -4,7 +4,7 @@ metadata:
   name: tensorleap-node-server-env-configmap
 data:
   NODE_ENV: production
-  MONGO_URI: {{ .Values.mongodb.connectionString }}
+  MONGO_URI: mongodb://mongodb/tensorleap?tls=false&ssl=false
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
   BUCKET_NAME: session
   ENSURE_BUCKET_EXISTS: "true"
@@ -17,7 +17,7 @@ data:
   SIGNED_URL_HOST_REPLACEMENT: "true"
   DISABLE_ENGINE_WARMUP: "true"
   SINGLE_USER_MODE: "true"
-  ELASTIC_HOST: {{ .Values.global.elasticsearch.url | default "http://elasticsearch-master:9200" }}
+  ELASTIC_HOST: http://elasticsearch-master:9200
   TRIAL_EXTEND_PUBLIC_KEY: |
     -----BEGIN PUBLIC KEY-----
     MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwdDbxOmK/5iBGUS+Bdj+

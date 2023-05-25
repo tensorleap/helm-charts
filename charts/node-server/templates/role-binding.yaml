@@ -11,7 +11,7 @@ subjects:
     name: node-server-sa
     namespace: {{ .Release.Namespace }}
 ---
-{{ if and .Values.global.target_namespace (ne .Values.global.target_namespace .Release.Namespace) }}
+{{ if .Values.global.target_namespace }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

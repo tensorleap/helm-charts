@@ -11,4 +11,4 @@ spec:
   selector:
     app: tensorleap-web-ui
   sessionAffinity: None
-  type: ClusterIP
+  type: NodePort
