@@ -34,6 +34,10 @@ data:
                   mountPath: {{ .Values.localDataDirectory }}
 {{ end }}
           restartPolicy: Never
+{{ if .Values.gpuTolerations }}
+          tolerations:
+{{ toYaml .Values.gpuTolerations | indent 12 }}
+{{ end }}
 {{ if .Values.schedulerName }}
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}

@@ -2,5 +2,6 @@ image_tag: master-e4d65a24-stable
 
 localDataDirectory: ""
 gpu: false
+gpuTolerations: []
 
 additional_pvcs: []
