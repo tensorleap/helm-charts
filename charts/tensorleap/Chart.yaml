@@ -1,7 +1,7 @@
 apiVersion: v2
 name: tensorleap
 type: application
-version: 1.0.246
+version: 1.0.249
 dependencies:
   - name: ingress-nginx
     version: 4.1.2
