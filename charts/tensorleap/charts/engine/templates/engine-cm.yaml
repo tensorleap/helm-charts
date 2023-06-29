@@ -10,7 +10,7 @@ data:
 {{ if .Values.global.elasticsearch.url }}
   ELASTIC_HOST: {{ .Values.global.elasticsearch.url }}
 {{ else }}
-  ELASTIC_HOST: http://elasticsearch-master.{{ .Release.Namespace }}.svc:9200
+  ELASTIC_HOST: http://tl-elasticsearch-es-master:9200
 {{ end }}
   SESSION_BUCKET: session
   RABBIT_HOST: rabbitmq.{{ .Release.Namespace }}.svc
