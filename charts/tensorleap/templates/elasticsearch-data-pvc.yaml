@@ -9,25 +9,25 @@ spec:
   accessModes:
     - ReadWriteOnce
   capacity:
-    storage: 30Gi
+    storage: 60Gi
   hostPath:
     path: /var/lib/tensorleap/standalone/storage/elasticsearch
     type: DirectoryOrCreate
   claimRef:
-    name: elasticsearch-master-elasticsearch-master-0
+    name: elasticsearch-data-tl-elasticsearch-es-master-0
     namespace: {{ .Release.Namespace }}
 {{ end }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: elasticsearch-master-elasticsearch-master-0
+  name: elasticsearch-data-tl-elasticsearch-es-master-0
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi
+      storage: 60Gi
 {{ if .Values.global.create_local_volumes }}
   volumeName: elasticsearch-data
 {{ else if .Values.global.storageClassName }}
