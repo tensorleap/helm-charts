@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2023-07-16T15:15:05.058720043Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.7.0
+    digest: 936a0c3ef14407a13b04844b453d0dd47ca2b8575c057ba3c421bac0210a0824
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.321/tensorleap-1.0.321.tgz
+    version: 1.0.321
+  - apiVersion: v2
     created: "2023-07-16T11:55:14.153608369Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4688,6 +4701,14 @@ entries:
     version: 1.0.0
   tensorleap-engine:
   - apiVersion: v2
+    created: "2023-07-16T15:15:05.193929158Z"
+    digest: 0d1313d763152165fecb549bcfd0514ffd8304e90f5393201af36f3ee48eafce
+    name: tensorleap-engine
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-engine-1.0.180/tensorleap-engine-1.0.180.tgz
+    version: 1.0.180
+  - apiVersion: v2
     created: "2023-07-16T11:55:14.303926437Z"
     digest: ade62147f7f027e3241f2ea3b2ddf0cada46bf588ae4ec2c0e7a9b445b7f7d43
     name: tensorleap-engine
@@ -7513,6 +7534,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-node-server-1.0.0/tensorleap-node-server-1.0.0.tgz
     version: 1.0.0
   tensorleap-web-ui:
+  - apiVersion: v2
+    created: "2023-07-16T15:15:05.329109773Z"
+    digest: f4634a736bc900319a02328c2927790504efe5cc88901ae6ec77bfa065516a45
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.198/tensorleap-web-ui-1.0.198.tgz
+    version: 1.0.198
   - apiVersion: v2
     created: "2023-07-16T11:55:14.422091243Z"
     digest: 1964eb2510513e2fb76602f9bc3410cd50adb5d3afdb7fefc484785e8c380da8
