@@ -4,9 +4,9 @@ To install tensorleap on your local machine run:
 
 ```
 bash <(curl -s https://helm.tensorleap.ai/install.sh)
-
+```
 # or
-
+```
 bash <(wget -O- https://helm.tensorleap.ai/install.sh)
 ```
 
