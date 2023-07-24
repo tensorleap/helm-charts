@@ -6,5 +6,5 @@ quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-d5143268-stable
-us-central1-docker.pkg.dev/tensorleap/main/node-server:master-9dedd140-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-96c9ca62-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-ce2ee8e2-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-ba7b967c-stable
