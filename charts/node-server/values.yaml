@@ -1,5 +1,4 @@
 image_tag: master-153dfaa7-stable
-disableDatadogMetrics: false
 
 ingress:
   enabled: true
