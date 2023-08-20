@@ -17,6 +17,7 @@ data:
   SIGNED_URL_HOST_REPLACEMENT: "true"
   DISABLE_ENGINE_WARMUP: "true"
   SINGLE_USER_MODE: "true"
+  DISABLE_DATADOG_METRICS: {{ .Values.disableDatadogMetrics | quote }}
   ELASTIC_HOST: {{ .Values.global.elasticsearch.url | default "http://elasticsearch-master:9200" }}
   TRIAL_EXTEND_PUBLIC_KEY: |
     -----BEGIN PUBLIC KEY-----
