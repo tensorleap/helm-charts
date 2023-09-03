@@ -1,0 +1,7 @@
+eck-operator:
+  managedNamespaces: 
+    - tensorleap
+
+global:
+  elasticsearch:
+    enabled: true
