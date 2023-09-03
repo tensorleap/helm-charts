@@ -23,3 +23,25 @@ helm-reinstall: helm-uninstall helm-install
 
 helm-deps-up: validate-k-env
 	helm dependency update ./charts/tensorleap -n NAME_SPACE
+
+.PHONY: lint
+lint:
+	@golangci-lint run
+
+.PHONY: fmt
+fmt:
+	@gofmt -w -l ./
+
+.PHONY: check-fmt
+check-fmt:
+	@echo "Checking code formatting..."
+	@result=$$(gofmt -l ./); \
+	if [ -n "$$result" ]; then \
+		echo "Formatting issues found:"; \
+		echo "$$result"; \
+		exit 1; \
+	fi
+
+.PHONY: test
+test: 
+	@go test ./...
