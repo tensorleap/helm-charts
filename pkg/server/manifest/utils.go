@@ -62,7 +62,8 @@ func GetLatestTag() (string, error) {
 func findLatestTensorleapTag(releases []github.Release) (string, error) {
 	for _, release := range releases {
 		tag := release.TagName
-		isCorrectTag := !strings.Contains(tag, "web") && !strings.Contains(tag, "engine") && !strings.Contains(tag, "node")
+		// this code will change when we clean up the releases
+		isCorrectTag := strings.Contains(tag, "tensorleap-") && !strings.Contains(tag, "web") && !strings.Contains(tag, "engine") && !strings.Contains(tag, "node")
 		if isCorrectTag {
 			latestTag := tag
 			log.Infof("Using tag: %s", latestTag)
