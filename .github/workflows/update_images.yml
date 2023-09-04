@@ -44,6 +44,7 @@ jobs:
             const fs = require('fs');
             const yaml = require('js-yaml');
             let updated = false;
+            const chartsPath = 'charts/tensorleap/charts';
             for (let repo of ['engine', 'node-server', 'web-ui']) {
               const { data: { sha } } = await github.rest.repos.getCommit({
                 owner: 'tensorleap',
@@ -51,14 +52,14 @@ jobs:
                 ref: 'master'
               });
               const imageTag = `master-${sha.substring(0,8)}-stable`;
-              const valuesPath = `charts/${repo}/values.yaml`;
+              const valuesPath = `${chartsPath}/${repo}/values.yaml`;
               const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
               const { image_tag: currentImageTag } = yaml.load(valuesFile);
               if (currentImageTag !== imageTag) {
                 const updatedValues = valuesFile.replace(`image_tag: ${currentImageTag}`, `image_tag: ${imageTag}`);
                 fs.writeFileSync(valuesPath, updatedValues);
 
-                const chartPath = `charts/${repo}/Chart.yaml`;
+                const chartPath = `${chartsPath}/${repo}/Chart.yaml`;
                 const chartFile = fs.readFileSync(chartPath, 'utf-8');
                 const { version } = yaml.load(chartFile);
                 const versionParts = version.split('.')
