@@ -13,7 +13,6 @@ import (
 func NewPackInstallationCmd() *cobra.Command {
 	var output string
 	var tag string
-	var branch string
 
 	cmd := &cobra.Command{
 		Use:     "pack-installation [installConfigPath]",
@@ -31,7 +30,7 @@ func NewPackInstallationCmd() *cobra.Command {
 				}
 
 			} else {
-				mnf, err = manifest.GenerateManifest(branch, tag)
+				mnf, err = manifest.GetByTag(tag)
 				if err != nil {
 					return err
 				}
@@ -56,8 +55,7 @@ func NewPackInstallationCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Build manifest for a specific tag")
-	cmd.Flags().StringVarP(&branch, "branch", "b", "", "Build manifest for a specific branch")
+	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Build manifest for a specific manifest tag")
 	cmd.Flags().StringVarP(&output, "output", "o", "pack.tar", "Output file path")
 	return cmd
 }
