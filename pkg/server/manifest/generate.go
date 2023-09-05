@@ -7,22 +7,21 @@ import (
 )
 
 // GenerateManifest builds an installation manifest for the given branch and tag. If tag is empty, the latest tag is used.
-func GenerateManifest(branch, tag string) (*InstallationManifest, error) {
+func GenerateManifest(serverChartVersion string) (*InstallationManifest, error) {
 
-	if len(branch) == 0 && len(tag) == 0 {
+	serverChartTag := ""
+	if len(serverChartVersion) == 0 {
 		var err error
-		tag, err = GetLatestTag()
+		serverChartTag, err = GetLatestHelmChartTag()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get latest verison: %v", err)
 		}
+		serverChartVersion = GetHelmVersionFromTag(serverChartTag)
+	} else {
+		serverChartTag = fmt.Sprintf("tensorleap-%s", serverChartVersion)
 	}
 
-	var serverChartVersion string
-	if len(tag) > 0 {
-		serverChartVersion = GetHelmVersionFromTag(tag)
-	}
-
-	tensorleapRepoRef := getTensorleapRepoRef(branch, tag)
+	tensorleapRepoRef := serverChartTag
 	mnf, err := getManifestWithBasicInfo(tensorleapRepoRef)
 	if err != nil {
 		return nil, err
