@@ -9,6 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const CurrentManifestVersion = "v1"
+
 type InstallationImages struct {
 	K3s                    string `yaml:"k3s"`
 	K3sGpu                 string `yaml:"k3sGpu"`
@@ -31,10 +33,22 @@ type HelmChartMeta struct {
 	ReleaseName string `yaml:"releaseName"`
 }
 
+type InstallationManifestVersion struct {
+	Version string `yaml:"version"`
+}
+
+func (mnf *InstallationManifestVersion) GetVersion() string {
+	return mnf.Version
+}
+
 type InstallationManifest struct {
 	Version         string         `yaml:"version"`
 	Images          ManifestImages `yaml:"images"`
 	ServerHelmChart HelmChartMeta  `yaml:"serverHelmChart"`
+}
+
+type WithVersion interface {
+	GetVersion() string
 }
 
 func Load(installationManifestPath string) (*InstallationManifest, error) {
@@ -48,6 +62,38 @@ func Load(installationManifestPath string) (*InstallationManifest, error) {
 		return nil, fmt.Errorf("failed to parse installation manifest: %v", err)
 	}
 	return mnf, nil
+}
+
+func LoadFromBytes(data []byte) (*InstallationManifest, error) {
+	mnfVersion := &InstallationManifestVersion{}
+	err := yaml.Unmarshal(data, mnfVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ValidateManifestVersion(mnfVersion); err != nil {
+		return nil, err
+	}
+
+	mnf := &InstallationManifest{}
+	err = yaml.Unmarshal(data, mnf)
+	if err != nil {
+		return nil, err
+	}
+	return mnf, nil
+}
+
+var ErrUnsupportedManifestVersion = fmt.Errorf("unsupported installation manifest version, supported manifest version %s", CurrentManifestVersion)
+
+func ValidateManifestVersion(mnf WithVersion) error {
+	if mnf.GetVersion() != CurrentManifestVersion {
+		return ErrUnsupportedManifestVersion
+	}
+	return nil
+}
+
+func (mnf *InstallationManifest) GetVersion() string {
+	return mnf.Version
 }
 
 func (mnf *InstallationManifest) GetManifestVersion() string {

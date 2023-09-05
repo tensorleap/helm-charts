@@ -13,11 +13,12 @@ func TestBuildManifest(t *testing.T) {
 
 	t.Skip("skip test") // For debugging only
 
-	mnf, err := GenerateManifest("", "")
+	mnf, err := GenerateManifest("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "v1", mnf.Version)
+	err = ValidateManifestVersion(mnf)
+	assert.NoError(t, err)
 }
 
 func TestGetHelmVersionFromTag(t *testing.T) {
@@ -26,15 +27,21 @@ func TestGetHelmVersionFromTag(t *testing.T) {
 }
 
 func TestFindLatestTag(t *testing.T) {
-	expectedTag := "tensorleap-1.0.357"
+	expectedServerHelmTag := "tensorleap-1.0.357"
+	expectedManifestTag := "manifest-1.0.357"
+
 	tags := []github.Release{
-		{TagName: "tensorleap-web-ui-1.0.208"},
-		{TagName: "tensorleap-node-server-1.0.183"},
-		{TagName: "tensorleap-engine-1.0.190"},
-		{TagName: expectedTag},
+		{TagName: "v0.0.1"},
+		{TagName: "tensorleap-infra-1.0.357"},
+		{TagName: expectedManifestTag},
+		{TagName: expectedServerHelmTag},
 	}
-	latestTag, _ := findLatestTensorleapTag(tags)
-	assert.Equal(t, expectedTag, latestTag)
+	latestServerHelmTag, _ := findLatestTensorleapTag(tags, serverHelmTagReg)
+	latestManifestTag, _ := findLatestTensorleapTag(tags, manifestTagReg)
+
+	assert.Equal(t, expectedServerHelmTag, latestServerHelmTag)
+	assert.Equal(t, expectedManifestTag, latestManifestTag)
+
 }
 
 type InstallationImagesV1 struct {
