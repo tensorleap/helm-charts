@@ -26,7 +26,7 @@ type InstallFlags struct {
 	AirGapInstallationFilePath string `json:",omitempty"`
 }
 
-func NewInstallCmd(onInstalled func(url string)) *cobra.Command {
+func NewInstallCmd() *cobra.Command {
 	flags := &InstallFlags{}
 
 	cmd := &cobra.Command{
@@ -147,5 +147,5 @@ func SetInstallCmdFlags(cmd *cobra.Command, flags *InstallFlags) {
 }
 
 func init() {
-	RootCommand.AddCommand(NewInstallCmd(nil))
+	RootCommand.AddCommand(NewInstallCmd())
 }
