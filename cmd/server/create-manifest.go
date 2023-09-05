@@ -7,8 +7,7 @@ import (
 
 func NewCreateManifestCmd() *cobra.Command {
 
-	var tag string
-	var branch string
+	var serverChartVersion string
 	var output string
 
 	cmd := &cobra.Command{
@@ -17,7 +16,7 @@ func NewCreateManifestCmd() *cobra.Command {
 		Short:   "Create a manifest for Tensorleap installation",
 		Long:    `Create a manifest for Tensorleap installation`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mnf, err := manifest.GenerateManifest(branch, tag)
+			mnf, err := manifest.GenerateManifest(serverChartVersion)
 			if err != nil {
 				return err
 			}
@@ -26,8 +25,7 @@ func NewCreateManifestCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Build manifest for a specific tag")
-	cmd.Flags().StringVarP(&branch, "branch", "b", "", "Build manifest for a specific branch")
+	cmd.Flags().StringVar(&serverChartVersion, "tensorleap-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
 	cmd.Flags().StringVarP(&output, "output", "o", "manifest.yaml", "Output file path")
 
 	return cmd

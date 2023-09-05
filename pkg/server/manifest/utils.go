@@ -45,25 +45,43 @@ func getImagesFromBytes(imagesFile []byte) ([]string, error) {
 
 var ErrNoTags = fmt.Errorf("no tag found")
 
-func GetLatestTag() (string, error) {
+var manifestTagReg = regexp.MustCompile(`manifest-\d+\.\d+\.\d+`)
+
+func GetLatestManifestTag() (string, error) {
 
 	releases, err := github.GetReleasesPage(tlOwner, tlRepo, 1, 10)
 	if err != nil {
 		return "", err
 	}
 
-	latest, err := findLatestTensorleapTag(releases)
+	latest, err := findLatestTensorleapTag(releases, manifestTagReg)
 	if err != nil {
 		return "", err
 	}
 	return latest, nil
 }
 
-func findLatestTensorleapTag(releases []github.Release) (string, error) {
+var serverHelmTagReg = regexp.MustCompile(`tensorleap-\d+\.\d+\.\d+`)
+
+func GetLatestHelmChartTag() (string, error) {
+
+	releases, err := github.GetReleasesPage(tlOwner, tlRepo, 1, 10)
+	if err != nil {
+		return "", err
+	}
+
+	latest, err := findLatestTensorleapTag(releases, serverHelmTagReg)
+	if err != nil {
+		return "", err
+	}
+	return latest, nil
+}
+
+func findLatestTensorleapTag(releases []github.Release, pattern *regexp.Regexp) (string, error) {
 	for _, release := range releases {
 		tag := release.TagName
 		// this code will change when we clean up the releases
-		isCorrectTag := strings.Contains(tag, "tensorleap-") && !strings.Contains(tag, "web") && !strings.Contains(tag, "engine") && !strings.Contains(tag, "node")
+		isCorrectTag := pattern.MatchString(tag)
 		if isCorrectTag {
 			latestTag := tag
 			log.Infof("Using tag: %s", latestTag)
@@ -132,13 +150,6 @@ func createManifestWithBasicInfo() (*InstallationManifest, error) {
 	}
 
 	return info, nil
-}
-
-func getTensorleapRepoRef(branch, tag string) string {
-	if len(branch) > 0 {
-		return branch
-	}
-	return tag
 }
 
 func getTensorleapImages(ref string) ([]string, error) {

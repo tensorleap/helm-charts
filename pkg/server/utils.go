@@ -32,7 +32,7 @@ func InitInstallationProcess(airgapInstallationFilePath, tag string) (mnf *manif
 			return nil, false, nil, nil, err
 		}
 	} else {
-		mnf, err = manifest.GenerateManifest("", tag)
+		mnf, err = manifest.GetByTag(tag)
 		if err != nil {
 			log.SendCloudReport("error", "Build manifest failed", "Failed",
 				&map[string]interface{}{"error": err.Error()})
