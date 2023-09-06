@@ -1,48 +1,14 @@
-name: Release Charts
+name: Release Installation Manifest
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Release Charts"]
+    types:
+      - completed
 
 jobs:
-  release-helm-charts:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Switch to index branch
-        run: git checkout index
-
-      - name: Update files
-        run: |
-          git checkout master -- install.sh
-
-      - name: Commit
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: "Update static files"
-          
-      - name: Switch to master branch
-        run: git checkout master
-
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.1.0
-
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          CR_PAGES_BRANCH: index
-
-  release-installation-manifest:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
