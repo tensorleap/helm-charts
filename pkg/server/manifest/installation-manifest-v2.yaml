@@ -1,7 +1,9 @@
-version: v1
+version: 1.0.0
+installerVersion: 0.0.0
+appVersion: 0.0.0
 images:
     k3s: docker.io/rancher/k3s:v1.26.4-k3s1
-    k3sGpu: docker.io/rancher/k3s:v1.26.4-k3s1-cuda-11.8.0-ubuntu-22.04
+    k3sGpu: us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.26.4-k3s1-cuda-11.8.0-ubuntu-22.04
     k3dTools: ghcr.io/k3d-io/k3d-tools:5.5.2
     register: docker.io/library/registry:2
     checkDockerRequirement: alpine:3.18.3
@@ -31,11 +33,16 @@ images:
         - quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
         - registry.k8s.io/ingress-nginx/controller:v1.8.0
         - registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-        - us-central1-docker.pkg.dev/tensorleap/main/engine:master-a05f3079-stable
-        - us-central1-docker.pkg.dev/tensorleap/main/node-server:master-0840afb7-stable
-        - us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-25449092-stable
+        - us-central1-docker.pkg.dev/tensorleap/main/engine:master-5c2018ec-stable
+        - us-central1-docker.pkg.dev/tensorleap/main/node-server:master-11dc414e-stable
+        - us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-ff2ea33c-stable
 serverHelmChart:
-    version: 1.0.388
+    version: 1.0.407
     repoUrl: https://helm.tensorleap.ai
     chartName: tensorleap
     releaseName: tensorleap
+infraHelmChart:
+    version: 1.0.0
+    repoUrl: https://helm.tensorleap.ai
+    chartName: tensorleap-infra
+    releaseName: tensorleap-infra

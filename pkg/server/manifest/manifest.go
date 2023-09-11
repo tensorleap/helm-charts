@@ -5,11 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/tensorleap/helm-charts/pkg/helm/chart"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"gopkg.in/yaml.v3"
 )
 
-const CurrentManifestVersion = "v1"
+const CurrentManifestVersion = "1.0.0"
+const CurrentAppVersion = "0.0.0"
 
 type InstallationImages struct {
 	K3s                    string `yaml:"k3s"`
@@ -33,27 +35,38 @@ type HelmChartMeta struct {
 	ReleaseName string `yaml:"releaseName"`
 }
 
-type InstallationManifestVersion struct {
+func (chartMeta *HelmChartMeta) IsLocal() bool {
+	return chart.IsLocalChart(chartMeta.RepoUrl)
+}
+
+type VersionRecord struct {
 	Version string `yaml:"version"`
 }
 
-func (mnf *InstallationManifestVersion) GetVersion() string {
+func (mnf *VersionRecord) GetVersion() string {
 	return mnf.Version
 }
 
 type InstallationManifest struct {
-	Version         string         `yaml:"version"`
-	Images          ManifestImages `yaml:"images"`
-	ServerHelmChart HelmChartMeta  `yaml:"serverHelmChart"`
+	Version          string         `yaml:"version"`
+	InstallerVersion string         `yaml:"installerVersion"` // InstallerVersion determines the version of the installer, if the version is different from the current version we will require the user to update the installer
+	AppVersion       string         `yaml:"appVersion"`       // AppVersion determines the version of the tensorleap application, if the version is different from the current version we will require the user to reinstall the application
+	Images           ManifestImages `yaml:"images"`
+	ServerHelmChart  HelmChartMeta  `yaml:"serverHelmChart"`
+	InfraHelmChart   HelmChartMeta  `yaml:"infraHelmChart"`
 }
 
-type WithVersion interface {
+type VersionGetter interface {
 	GetVersion() string
 }
 
+var ErrManifestNotFound = fmt.Errorf("installation manifest not found")
+
 func Load(installationManifestPath string) (*InstallationManifest, error) {
 	fileBytes, err := os.ReadFile(installationManifestPath)
-	if err != nil {
+	if os.IsNotExist(err) {
+		return nil, ErrManifestNotFound
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to open installation manifest: %v", err)
 	}
 	mnf := &InstallationManifest{}
@@ -65,7 +78,7 @@ func Load(installationManifestPath string) (*InstallationManifest, error) {
 }
 
 func LoadFromBytes(data []byte) (*InstallationManifest, error) {
-	mnfVersion := &InstallationManifestVersion{}
+	mnfVersion := &VersionRecord{}
 	err := yaml.Unmarshal(data, mnfVersion)
 	if err != nil {
 		return nil, err
@@ -85,7 +98,7 @@ func LoadFromBytes(data []byte) (*InstallationManifest, error) {
 
 var ErrUnsupportedManifestVersion = fmt.Errorf("unsupported installation manifest version, supported manifest version %s", CurrentManifestVersion)
 
-func ValidateManifestVersion(mnf WithVersion) error {
+func ValidateManifestVersion(mnf VersionGetter) error {
 	if mnf.GetVersion() != CurrentManifestVersion {
 		return ErrUnsupportedManifestVersion
 	}
