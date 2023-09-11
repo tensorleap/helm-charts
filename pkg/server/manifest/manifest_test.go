@@ -11,19 +11,33 @@ import (
 
 func TestBuildManifest(t *testing.T) {
 
-	t.Skip("skip test") // For debugging only
+	t.Run("Build manifest from local", func(t *testing.T) {
+		mnf, err := GenerateManifestFromLocal(BuildLocalFileGetter("../../../"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ValidateManifestVersion(mnf)
+		assert.NoError(t, err)
+	})
 
-	mnf, err := GenerateManifest("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ValidateManifestVersion(mnf)
-	assert.NoError(t, err)
+	t.Run("Build manifest from github", func(t *testing.T) {
+		t.Skip("Skip github test") // for debugging
+		mnf, err := GenerateManifestFromRemote("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ValidateManifestVersion(mnf)
+		assert.NoError(t, err)
+	})
 }
 
 func TestGetHelmVersionFromTag(t *testing.T) {
-	tag := "tensorleap-1.0.357"
-	assert.Equal(t, "1.0.357", GetHelmVersionFromTag(tag))
+	expectedVersion := "1.0.357"
+	serverTag := "tensorleap-1.0.357"
+	infraTag := "tensorleap-infra-1.0.357"
+
+	assert.Equal(t, expectedVersion, GetHelmVersionFromTag(serverTag))
+	assert.Equal(t, expectedVersion, GetHelmVersionFromTag(infraTag))
 }
 
 func TestFindLatestTag(t *testing.T) {
@@ -31,7 +45,7 @@ func TestFindLatestTag(t *testing.T) {
 	expectedManifestTag := "manifest-1.0.357"
 
 	tags := []github.Release{
-		{TagName: "v0.0.1"},
+		{TagName: "v0.0.1"}, // go tag
 		{TagName: "tensorleap-infra-1.0.357"},
 		{TagName: expectedManifestTag},
 		{TagName: expectedServerHelmTag},
@@ -41,10 +55,9 @@ func TestFindLatestTag(t *testing.T) {
 
 	assert.Equal(t, expectedServerHelmTag, latestServerHelmTag)
 	assert.Equal(t, expectedManifestTag, latestManifestTag)
-
 }
 
-type InstallationImagesV1 struct {
+type InstallationImagesV2 struct {
 	K3s                    string `yaml:"k3s"`
 	K3sGpu                 string `yaml:"k3sGpu"`
 	K3dTools               string `yaml:"k3dTools"`
@@ -52,34 +65,37 @@ type InstallationImagesV1 struct {
 	CheckDockerRequirement string `yaml:"checkDockerRequirement"`
 }
 
-type ManifestImagesV1 struct {
-	InstallationImagesV1 `yaml:",inline"`
+type ManifestImagesV2 struct {
+	InstallationImagesV2 `yaml:",inline"`
 	K3sImages            []string `yaml:"k3sImages"`
 	K3sGpuImages         []string `yaml:"k3sGpuImages"`
 	ServerImages         []string `yaml:"serverImages"`
 }
 
-type HelmChartMetaV1 struct {
+type HelmChartMetaV2 struct {
 	Version     string `yaml:"version"`
 	RepoUrl     string `yaml:"repoUrl"`
 	ChartName   string `yaml:"chartName"`
 	ReleaseName string `yaml:"releaseName"`
 }
 
-type InstallationManifestV1 struct {
-	Version         string           `yaml:"version"`
-	Images          ManifestImagesV1 `yaml:"images"`
-	ServerHelmChart HelmChartMetaV1  `yaml:"serverHelmChart"`
+type InstallationManifestV2 struct {
+	Version          string           `yaml:"version"`
+	InstallerVersion string           `yaml:"installerVersion"`
+	AppVersion       string           `yaml:"appVersion"`
+	Images           ManifestImagesV2 `yaml:"images"`
+	ServerHelmChart  HelmChartMetaV2  `yaml:"serverHelmChart"`
+	InfraHelmChart   HelmChartMetaV2  `yaml:"infraHelmChart"`
 }
 
-func TestManifestV1(t *testing.T) {
-	b, err := os.ReadFile("installation-manifest-v1.yaml")
+func TestManifestV2(t *testing.T) {
+	b, err := os.ReadFile("installation-manifest-v2.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	var mnfV1 InstallationManifestV1
+	var mnfV2 InstallationManifestV2
 	var mnf InstallationManifest
-	err = yaml.Unmarshal(b, &mnfV1)
+	err = yaml.Unmarshal(b, &mnfV2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +103,7 @@ func TestManifestV1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, toMap(mnfV1), toMap(mnf))
+	assert.Equal(t, toMap(mnfV2), toMap(mnf))
 }
 
 func toMap(v interface{}) map[string]interface{} {
