@@ -18,20 +18,13 @@ import (
 
 func Load(file io.Reader) (
 	installationManifest *manifest.InstallationManifest,
-	chart *chart.Chart,
-	clean func(),
+	infraChart, serverChart *chart.Chart,
 	err error,
 ) {
 	tarReader := tar.NewReader(file)
 	var imageLoaded bool
-	var helmLoaded bool
-
-	cleanFuncs := make([]func(), 0)
-	clean = func() {
-		for _, cleanFunc := range cleanFuncs {
-			cleanFunc()
-		}
-	}
+	var infraChartLoaded bool
+	var serverChartLoaded bool
 
 	dockerClient, err := docker.NewClient()
 	if err != nil {
@@ -66,24 +59,16 @@ func Load(file io.Reader) (
 			if err != nil {
 				return nil, nil, nil, err
 			}
-		case HELM_FILE_NAME:
-			helmLoaded = true
-			tempHelmFile, err := os.CreateTemp("", "helm-*.tgz")
+		case INFRA_HELM_CHART_FILE_NAME:
+			infraChartLoaded = true
+			infraChart, err = loadChart(tarReader)
 			if err != nil {
 				return nil, nil, nil, err
 			}
-			cleanFunc := func() {
-				local.CleanupTempFile(tempHelmFile)
-			}
-			cleanFuncs = append(cleanFuncs, cleanFunc)
-			_, err = io.Copy(tempHelmFile, tarReader)
+		case SERVER_HELM_CHART_FILE_NAME:
+			serverChartLoaded = true
+			serverChart, err = loadChart(tarReader)
 			if err != nil {
-				clean()
-				return nil, nil, nil, err
-			}
-			chart, err = loader.Load(tempHelmFile.Name())
-			if err != nil {
-				clean()
 				return nil, nil, nil, err
 			}
 		}
@@ -95,13 +80,33 @@ func Load(file io.Reader) (
 	if !imageLoaded {
 		return nil, nil, nil, fmt.Errorf("not found %s", IMAGES_FILE_NAME)
 	}
-	if !helmLoaded {
-		return nil, nil, nil, fmt.Errorf("not found %s", HELM_FILE_NAME)
+	if !infraChartLoaded {
+		return nil, nil, nil, fmt.Errorf("not found %s", INFRA_HELM_CHART_FILE_NAME)
+	}
+	if !serverChartLoaded {
+		return nil, nil, nil, fmt.Errorf("not found %s", SERVER_HELM_CHART_FILE_NAME)
 	}
 
 	SetupEnvForK3dToolsImage(installationManifest.Images.K3dTools)
 
-	return installationManifest, chart, clean, nil
+	return installationManifest, infraChart, serverChart, nil
+}
+
+func loadChart(tarReader io.Reader) (*chart.Chart, error) {
+	tempHelmFile, err := os.CreateTemp("", "helm-*.tgz")
+	if err != nil {
+		return nil, err
+	}
+	defer local.CleanupTempFile(tempHelmFile)
+	_, err = io.Copy(tempHelmFile, tarReader)
+	if err != nil {
+		return nil, err
+	}
+	chart, err := loader.Load(tempHelmFile.Name())
+	if err != nil {
+		return nil, err
+	}
+	return chart, nil
 }
 
 func SetupEnvForK3dToolsImage(image string) {

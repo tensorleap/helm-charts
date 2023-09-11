@@ -29,16 +29,22 @@ func Pack(mnf *manifest.InstallationManifest, outputFile io.Writer) error {
 		return err
 	}
 
-	err = AddHelm(tarWriter, mnf.ServerHelmChart, HELM_FILE_NAME)
+	err = AddHelm(tarWriter, &mnf.ServerHelmChart, SERVER_HELM_CHART_FILE_NAME)
 	if err != nil {
 		return err
 	}
+
+	err = AddHelm(tarWriter, &mnf.InfraHelmChart, INFRA_HELM_CHART_FILE_NAME)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func AddHelm(tarWriter *tar.Writer, chartMeta manifest.HelmChartMeta, fileName string) error {
+func AddHelm(tarWriter *tar.Writer, chartMeta *manifest.HelmChartMeta, fileName string) error {
 
-	tempHelmFile, clean, err := chart.DownloadIntoTempFile(chartMeta.RepoUrl, chartMeta.ChartName, chartMeta.Version)
+	tempHelmFile, clean, err := loadChartIntoTempFile(chartMeta)
 	if err != nil {
 		return err
 	}
@@ -65,7 +71,7 @@ func AddHelm(tarWriter *tar.Writer, chartMeta manifest.HelmChartMeta, fileName s
 	if err != nil {
 		return err
 	}
-	log.Info("Downloaded helm chart")
+	log.Infof("Packed helm chart: %s", chartMeta.ChartName)
 	return nil
 }
 
@@ -114,6 +120,7 @@ func AddImages(tarWriter *tar.Writer, mnf *manifest.InstallationManifest) error 
 	if err != nil {
 		return err
 	}
+	log.Infof("Packed docker images")
 	return nil
 }
 
@@ -137,5 +144,34 @@ func AddManifest(tarWriter *tar.Writer, mnf *manifest.InstallationManifest) erro
 	if err != nil {
 		return err
 	}
+	log.Infof("Packed installation manifest")
 	return nil
+}
+
+func loadChartIntoTempFile(chartMeta *manifest.HelmChartMeta) (tempHelmFile *os.File, clean func(), err error) {
+
+	if chartMeta.IsLocal() {
+		helmChart, err := chart.Load(chartMeta.RepoUrl, chartMeta.ChartName, chartMeta.Version)
+		if err != nil {
+			return nil, nil, err
+		}
+		tempDir := os.TempDir()
+		filePath, err := chart.Save(helmChart, tempDir)
+		if err != nil {
+			return nil, nil, err
+		}
+		clean = func() { _ = os.Remove(filePath) }
+		tempHelmFile, err = os.Open(filePath)
+		if err != nil {
+			clean()
+			return nil, nil, err
+		}
+	} else {
+		tempHelmFile, clean, err = chart.DownloadIntoTempFile(chartMeta.RepoUrl, chartMeta.ChartName, chartMeta.Version)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return
 }
