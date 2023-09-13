@@ -1,11 +1,7 @@
 package server
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
-	"github.com/tensorleap/helm-charts/pkg/helm"
-	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server"
@@ -14,8 +10,7 @@ import (
 const UpgradeCmdDescription = "Upgrade an existing local tensorleap installation to the latest version"
 
 type UpgradeFlags struct {
-	AirGapInstallationFilePath string `json:",omitempty"`
-	Tag                        string `json:"tag"`
+	server.InstallationSourceFlags `json:",inline"`
 }
 
 func NewUpgradeCmd() *cobra.Command {
@@ -31,14 +26,12 @@ func NewUpgradeCmd() *cobra.Command {
 		},
 	}
 
-	SetUpgradeCmdFlags(cmd, flags)
-
+	flags.SetFlags(cmd)
 	return cmd
 }
 
-func SetUpgradeCmdFlags(cmd *cobra.Command, flags *UpgradeFlags) {
-	cmd.Flags().StringVar(&flags.Tag, "tag", "", "Tag to use for tensorleap upgrade , default using latest")
-	cmd.Flags().StringVar(&flags.AirGapInstallationFilePath, "airgap", "", "Installation file path for air-gap installation")
+func (flags *UpgradeFlags) SetFlags(cmd *cobra.Command) {
+	flags.InstallationSourceFlags.SetFlags(cmd)
 }
 
 func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
@@ -48,70 +41,42 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
 		return err
 	}
 	defer close()
-
-	mnf, isAirgap, chart, clean, err := server.InitInstallationProcess(flags.AirGapInstallationFilePath, flags.Tag)
-	if err != nil {
-		return err
-	}
-	defer clean()
+	ctx := cmd.Context()
 
 	if err := server.ValidateStandaloneDir(); err != nil {
 		return err
 	}
-	ctx := cmd.Context()
+
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags)
+
+	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
+		return err
+	}
 
 	log.SendCloudReport("info", "Starting upgrade", "Starting", &map[string]interface{}{"manifest": mnf})
 
-	err = server.ValidateClusterExists(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = k3d.RunCluster(ctx)
+	installationParams, found, err := server.InitInstallationParamsFromPreviousOrAsk()
 	if err != nil {
 		return err
 	}
 
-	cluster, err := k3d.GetCluster(ctx)
-	if err != nil {
-		return err
-	}
-	isGpuCluster := k3d.IsGpuCluster(cluster)
-
-	kubeConfigPath, clean, err := k3d.CreateTmpClusterKubeConfig(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	defer clean()
-
-	helmConfig, err := helm.CreateHelmConfig(kubeConfigPath, server.KUBE_CONTEXT, server.KUBE_NAMESPACE)
-	if err != nil {
-		return err
+	reinstall := func() error {
+		return server.SafetyReinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	}
 
-	isHelmReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, mnf.ServerHelmChart)
-	if err != nil {
-		return err
-	} else if !isHelmReleaseExisted {
-		return errors.New("not found helm release, Please make sure to install before upgrade")
+	if !found {
+		return reinstall()
 	}
 
-	imagesToCache, imageToCacheInTheBackground := server.CalcWhichImagesToCache(mnf, isGpuCluster, isAirgap)
-
-	registryPort, err := k3d.GetLocalRegistryPort(ctx)
-	if err != nil {
+	err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+	if err == server.ErrReinstallRequired {
+		return reinstall()
+	} else if err != nil {
 		return err
-	}
-	k3d.CacheImagesInParallel(ctx, imagesToCache, registryPort, isAirgap)
-
-	if err := helm.UpgradeTensorleapChartVersion(helmConfig, mnf.ServerHelmChart, chart, nil); err != nil {
-		return err
-	}
-
-	if len(imageToCacheInTheBackground) > 0 {
-		if err = k3d.CacheImageInTheBackground(ctx, imageToCacheInTheBackground); err != nil {
-			return err
-		}
 	}
 
 	log.SendCloudReport("info", "Successfully completed upgrade", "Success", nil)
