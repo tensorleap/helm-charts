@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/tensorleap/helm-charts/pkg/log"
-	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/storage/driver"
@@ -14,69 +13,47 @@ import (
 
 type Record = map[string]interface{}
 
-func IsHelmReleaseExists(config *HelmConfig, helmChart manifest.HelmChartMeta) (bool, error) {
+type ServerHelmValuesParams struct {
+	Gpu                   bool   `json:"gpu"`
+	LocalDataDirectory    string `json:"localDataDirectory"`
+	DisableDatadogMetrics bool   `json:"disableDatadogMetrics"`
+}
+
+var ErrNoRelease = fmt.Errorf("no release")
+
+func IsHelmReleaseExists(config *HelmConfig, releaseName string) (bool, error) {
+	_, err := GetHelmReleaseVersion(config, releaseName)
+	if err == ErrNoRelease {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func GetHelmReleaseVersion(config *HelmConfig, releaseName string) (string, error) {
 	client := action.NewHistory(config.ActionConfig)
 	client.Max = 1
-	_, err := client.Run(helmChart.ReleaseName)
+	history, err := client.Run(releaseName)
+
 	if err == driver.ErrReleaseNotFound {
-		return false, nil
-	} else if err != nil {
-		log.SendCloudReport("error", "Failed validating helm release exists", "Failed", &map[string]interface{}{"error": err.Error()})
-		return false, err
+		return "", ErrNoRelease
+	} else if err != nil || len(history) == 0 {
+		log.SendCloudReport("error", "Failed getting helm release version", "Failed", &map[string]interface{}{"error": err.Error(), releaseName: releaseName})
+		return "", fmt.Errorf("failed getting helm release version: %s", err.Error())
 	}
-	return true, nil
+
+	return history[0].Chart.Metadata.Version, nil
 }
 
-func CreateTensorleapChartValues(useGpu bool, dataDir string, disableMetrics bool) Record {
+func CreateTensorleapChartValues(params *ServerHelmValuesParams) Record {
 	return Record{
 		"tensorleap-engine": Record{
-			"gpu":                useGpu,
-			"localDataDirectory": dataDir,
+			"gpu":                params.Gpu,
+			"localDataDirectory": params.LocalDataDirectory,
 		},
 		"tensorleap-node-server": Record{
-			"disableDatadogMetrics": disableMetrics,
+			"disableDatadogMetrics": params.DisableDatadogMetrics,
 		},
 	}
-}
-
-func CreateTensorleapChartValuesFormOldValues(oldValues Record) (Record, error) {
-
-	disableMetrics := false
-	useGpu := false
-
-	errFailedGettingOldValue := fmt.Errorf("failed getting old values")
-
-	engineVal, ok := oldValues["tensorleap-engine"]
-	if !ok {
-		return nil, errFailedGettingOldValue
-	}
-	engineValMap, ok := engineVal.(map[string]interface{})
-	if !ok {
-		return nil, errFailedGettingOldValue
-	}
-	useGpuVal, ok := engineValMap["gpu"]
-	if ok {
-		useGpu, _ = useGpuVal.(bool)
-	}
-	dataDirVal, ok := engineValMap["localDataDirectory"]
-	if !ok {
-		return nil, errFailedGettingOldValue
-	}
-	dataDir, ok := dataDirVal.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed getting old data directory value, try to install instead of upgrade")
-	}
-
-	nodeServerVal, ok := oldValues["tensorleap-node-server"]
-	if ok {
-		nodeServerMap, ok := nodeServerVal.(map[string]interface{})
-		if ok {
-			disableMetrics, _ = nodeServerMap["disableDatadogMetrics"].(bool)
-		}
-	}
-
-	newValues := CreateTensorleapChartValues(useGpu, dataDir, disableMetrics)
-	return newValues, nil
 }
 
 func GetValues(config *HelmConfig, releaseName string) (Record, error) {

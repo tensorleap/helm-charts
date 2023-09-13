@@ -8,61 +8,24 @@ import (
 
 func TestCreateTensorleapChartValues(t *testing.T) {
 	t.Run("CreateTensorleapChartValues", func(t *testing.T) {
-		useGpu := true
-		dataDir := "some/dir/path"
+		params := &ServerHelmValuesParams{
+			Gpu:                   true,
+			LocalDataDirectory:    "some/dir/path",
+			DisableDatadogMetrics: false,
+		}
+
 		expected := Record{
 			"tensorleap-engine": Record{
-				"gpu":                useGpu,
-				"localDataDirectory": dataDir,
+				"gpu":                params.Gpu,
+				"localDataDirectory": params.LocalDataDirectory,
 			},
 			"tensorleap-node-server": Record{
-				"disableDatadogMetrics": false,
+				"disableDatadogMetrics": params.DisableDatadogMetrics,
 			},
 		}
 
-		result := CreateTensorleapChartValues(useGpu, dataDir, false)
+		result := CreateTensorleapChartValues(params)
 
 		assert.Equal(t, expected, result)
-	})
-}
-
-func TestCreateTensorleapChartValuesFormOldValues(t *testing.T) {
-	t.Run("With no values", func(t *testing.T) {
-		oldValues := Record{
-			"tensorleap-engine": Record{
-				"localDataDirectory": "some/dir/path",
-			},
-			"tensorleap-node-server": Record{},
-		}
-		expected := Record{
-			"tensorleap-engine": Record{
-				"gpu":                false,
-				"localDataDirectory": "some/dir/path",
-			},
-			"tensorleap-node-server": Record{
-				"disableDatadogMetrics": false,
-			},
-		}
-
-		result, err := CreateTensorleapChartValuesFormOldValues(oldValues)
-
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("With values", func(t *testing.T) {
-
-		t.Skip("skipping test") // for debugging
-
-		helmConfig, _ := CreateHelmConfig("", "k3d-tensorleap", "tensorleap")
-		oldVals, err := GetValues(helmConfig, "tensorleap")
-		if err != nil {
-			t.Fatal(err)
-		}
-		newVals, err := CreateTensorleapChartValuesFormOldValues(oldVals)
-		if err != nil {
-			t.Fatal(err)
-		}
-		print(newVals)
 	})
 }
