@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
 	k3dCluster "github.com/k3d-io/k3d/v5/pkg/client"
@@ -37,19 +36,24 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 	return nil, nil
 }
 
-func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, port uint, volumes []string, useGpu bool) error {
-	log.SendCloudReport("info", "Creating cluster", "Running", &map[string]interface{}{"useGpu": useGpu, "port": port})
-	clusterConfig := createClusterConfig(ctx, manifest, port, volumes, useGpu)
+type CreateK3sClusterParams struct {
+	WithGpu bool     `json:"gpu"`
+	Port    uint     `json:"port"`
+	Volumes []string `json:"volumes"`
+}
 
-	if _, err := k3dCluster.ClusterGet(ctx, runtimes.SelectedRuntime, &clusterConfig.Cluster); err == nil {
+func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
+	log.SendCloudReport("info", "Creating cluster", "Running", &map[string]interface{}{"params": params})
+	clusterConfig := createClusterConfig(ctx, manifest, params)
+
+	cluster, err = GetCluster(ctx)
+	if cluster != nil {
 		log.Println("Found existing tensorleap cluster!")
-
-		log.SendCloudReport("info", "Cluster already exists", "Running", &map[string]interface{}{"useGpu": useGpu, "port": port})
-		err = RunCluster(ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+		log.SendCloudReport("info", "Cluster already exists", "Running", &map[string]interface{}{"params": params})
+		return
+	} else if err != nil {
+		log.SendCloudReport("error", "Failed getting cluster", "Failed", &map[string]interface{}{"error": err.Error()})
+		return
 	}
 
 	if err := k3dCluster.ClusterRun(ctx, runtimes.SelectedRuntime, clusterConfig); err != nil {
@@ -77,7 +81,7 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		log.Println(err)
 	}
 
-	return nil
+	return
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {
@@ -171,18 +175,14 @@ func RunCluster(ctx context.Context) error {
 	return err
 }
 
-func IsGpuCluster(cluster *Cluster) bool {
-	return len(cluster.Nodes) > 0 && strings.Contains(cluster.Nodes[0].Image, "cuda")
-}
-
-func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, port uint, volumes []string, useGpu bool) *conf.ClusterConfig {
+func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) *conf.ClusterConfig {
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	image := manifest.Images.K3s
-	if useGpu {
+	if params.WithGpu {
 		image = manifest.Images.K3sGpu
 	}
 
@@ -204,9 +204,9 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 			HostPort: strconv.Itoa(freePort),
 		},
 		Image:   image,
-		Volumes: make([]conf.VolumeWithNodeFilters, len(volumes)),
+		Volumes: make([]conf.VolumeWithNodeFilters, len(params.Volumes)),
 		Ports: []conf.PortWithNodeFilters{{
-			Port:        fmt.Sprintf("%v:80", port),
+			Port:        fmt.Sprintf("%v:80", params.Port),
 			NodeFilters: []string{"server:*:direct"},
 		}},
 		Env: []conf.EnvVarWithNodeFilters{
@@ -265,11 +265,11 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 			},
 		},
 	}
-	if useGpu {
+	if params.WithGpu {
 		simpleK3dConfig.Options.Runtime.GPURequest = "all"
 	}
 
-	for i, v := range volumes {
+	for i, v := range params.Volumes {
 		simpleK3dConfig.Volumes[i] = conf.VolumeWithNodeFilters{
 			Volume:      v,
 			NodeFilters: []string{"server:*"},
@@ -300,6 +300,11 @@ func UninstallCluster(ctx context.Context) error {
 		log.Info("Cluster 'tensorleap' not found")
 		return nil
 	}
+	log.Info("Uninstalling cluster 'tensorleap'")
+	return DeleteCluster(ctx, cluster)
+}
+
+func DeleteCluster(ctx context.Context, cluster *Cluster) (err error) {
 	log.Info("Deleting cluster 'tensorleap'")
 	opt := k3d.ClusterDeleteOpts{
 		SkipRegistryCheck: true,
