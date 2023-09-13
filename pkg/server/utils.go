@@ -1,10 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/airgap"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
@@ -15,38 +18,57 @@ const (
 	KUBE_NAMESPACE = "tensorleap"
 )
 
-func InitInstallationProcess(airgapInstallationFilePath, tag string) (mnf *manifest.InstallationManifest, isAirgap bool, helmChart *chart.Chart, clean func(), err error) {
-
-	isAirgap = airgapInstallationFilePath != ""
-	if isAirgap {
+func InitInstallationProcess(flags *InstallationSourceFlags) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
+	isAirGap = flags.AirGapInstallationFilePath != ""
+	if isAirGap {
 		log.DisableReporting()
 		var file *os.File
-		file, err = os.Open(airgapInstallationFilePath)
+		file, err = os.Open(flags.AirGapInstallationFilePath)
 		if err != nil {
 			return nil, false, nil, nil, err
 		}
-		mnf, helmChart, clean, err = airgap.Load(file)
+		mnf, infraHelmChart, serverHelmChart, err = airgap.Load(file)
 		if err != nil {
 			log.SendCloudReport("error", "Failed to load airgap installation file", "Failed",
 				&map[string]interface{}{"error": err.Error()})
 			return nil, false, nil, nil, err
 		}
 	} else {
-		mnf, err = manifest.GetByTag(tag)
+		var err error
+		if flags.Local {
+			fileGetter := manifest.BuildLocalFileGetter("")
+			mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
+		} else {
+			mnf, err = manifest.GetByTag(flags.Tag)
+		}
 		if err != nil {
 			log.SendCloudReport("error", "Build manifest failed", "Failed",
 				&map[string]interface{}{"error": err.Error()})
 			return nil, false, nil, nil, err
 		}
-		helmChart, clean, err = chart.Load(mnf.ServerHelmChart.RepoUrl, mnf.ServerHelmChart.ChartName, mnf.ServerHelmChart.Version)
+		serverHelmChart, err = chart.Load(mnf.ServerHelmChart.RepoUrl, mnf.ServerHelmChart.ChartName, mnf.ServerHelmChart.Version)
 		if err != nil {
-			log.SendCloudReport("error", "Failed loading helm chart", "Failed",
+			log.SendCloudReport("error", "Failed loading tensorleap helm chart", "Failed",
+				&map[string]interface{}{"error": err.Error()})
+			return nil, false, nil, nil, err
+		}
+		infraHelmChart, err = chart.Load(mnf.InfraHelmChart.RepoUrl, mnf.InfraHelmChart.ChartName, mnf.InfraHelmChart.Version)
+		if err != nil {
+			log.SendCloudReport("error", "Failed loading tensorleap infra helm chart", "Failed",
 				&map[string]interface{}{"error": err.Error()})
 			return nil, false, nil, nil, err
 		}
 	}
 	airgap.SetupEnvForK3dToolsImage(mnf.Images.K3dTools)
 	return
+}
+
+func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *InstallationParams) error {
+	err := mnf.Save(local.GetInstallationManifestPath())
+	if err != nil {
+		return err
+	}
+	return installationParams.Save()
 }
 
 func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string, backgroundImage string) {
@@ -73,4 +95,44 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isA
 	}
 
 	return
+}
+
+func AskForReinstall() (bool, error) {
+	prompt := survey.Confirm{
+		Message: "Reinstall is required to complete the upgrade, It will stop all running jobs, are you sure you want to continue?",
+		Default: true,
+	}
+	confirm := false
+	err := survey.AskOne(&prompt, &confirm)
+	if err != nil {
+		return false, err
+	}
+	if !confirm {
+		log.SendCloudReport("info", "User aborted reinstall", "Failed", nil)
+	} else {
+		log.SendCloudReport("info", "User confirmed reinstall", "Running", nil)
+	}
+	return confirm, nil
+}
+
+func LoadPreviousManifest() (mnf *manifest.InstallationManifest, err error) {
+	mnf, err = manifest.Load(local.GetInstallationManifestPath())
+	if err == manifest.ErrManifestNotFound {
+		return nil, err
+	}
+	if err != nil {
+		log.SendCloudReport("error", "Failed loading manifest", "Failed",
+			&map[string]interface{}{"error": err.Error()})
+		return nil, err
+	}
+	return
+}
+
+func getHomePath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("failed to get home directory: %w", err))
+	}
+
+	return homeDir
 }
