@@ -2,11 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -14,61 +10,85 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 )
 
-func InitUseGPU(useGpu *bool, useCpu bool) error {
-	if *useGpu || useCpu {
-		return nil
+func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
+
+	prvInstallationParams, _ := LoadInstallationParamsFromPrevious()
+	prvMnf, err := LoadPreviousManifest()
+	if err != nil && err != manifest.ErrManifestNotFound {
+		return err
 	}
 
-	prompt := survey.Confirm{
-		Message: "Do you want to use GPU?",
-		Default: false,
+	shouldReinstall, err := IsNeedsToReinstall(ctx, mnf, prvMnf, installationParams, prvInstallationParams)
+	if err != nil {
+		return err
 	}
 
-	err := survey.AskOne(&prompt, useGpu)
-	return err
-}
-
-func InitDatasetDirectory(datasetDirectory *string) error {
-	defaultDatasetDirectory := GetDefaultDataVolume()
-
-	if *datasetDirectory == "" {
-		fromPath := ""
-		prompt := survey.Input{
-			Message: "Enter dataset directory:",
-			Default: defaultDatasetDirectory,
-		}
-		err := survey.AskOne(&prompt, &fromPath)
-		if err != nil {
-			return err
-		}
-		*datasetDirectory = fromPath
+	if shouldReinstall {
+		return SafetyReinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	}
-	if !strings.Contains(*datasetDirectory, ":") {
-		toPath := ""
-		prompt := survey.Input{
-			Message: "Enter container dataset directory:",
-			Default: *datasetDirectory,
-		}
-		err := survey.AskOne(&prompt, &toPath)
-		if err != nil {
-			return err
-		}
-		*datasetDirectory = fmt.Sprintf("%s:%s", *datasetDirectory, toPath)
+
+	if installationParams.FixK3dDns {
+		k3d.FixDockerDns()
 	}
-	log.SendCloudReport("info", "Init data volume", "Starting",
-		&map[string]interface{}{"params": map[string]interface{}{"datasetDirectory": datasetDirectory}},
+
+	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams())
+	if err != nil {
+		return err
+	}
+
+	registryPortStr, err := k3d.GetRegistryPort(ctx, registry)
+	if err != nil {
+		return err
+	}
+
+	imagesToCache, imageToCacheInTheBackground := CalcWhichImagesToCache(mnf, installationParams.UseGpu, isAirgap)
+
+	k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
+
+	_, _, err = InitCluster(
+		ctx,
+		mnf,
+		prvMnf,
+		installationParams,
+		prvInstallationParams,
 	)
+	if err != nil {
+		return err
+	}
 
-	dataPath := strings.Split(*datasetDirectory, ":")[0]
-	return os.MkdirAll(dataPath, 0777)
+	if err := InstallCharts(ctx, mnf, installationParams, infraChart, serverChart); err != nil {
+		return err
+	}
+
+	if len(imageToCacheInTheBackground) > 0 {
+		if err := k3d.CacheImageInTheBackground(ctx, imageToCacheInTheBackground); err != nil {
+			return err
+		}
+	}
+	_ = SaveInstallation(mnf, installationParams)
+	return nil
 }
 
-func GetDefaultDataVolume() string {
-	defaultDataPath := fmt.Sprintf("%s/tensorleap/data", getHomePath())
-	return defaultDataPath
+func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationManifest, installationParams, previousInstallationParams *InstallationParams) (cluster *k3d.Cluster, createNew bool, err error) {
+	cluster, err = k3d.GetCluster(ctx)
+	if err != nil {
+		return
+	}
+
+	clusterNotExists := cluster == nil
+	if clusterNotExists {
+		cluster, err = k3d.CreateCluster(ctx, mnf, installationParams.GetCreateK3sClusterParams())
+		if err != nil {
+			createNew = true
+		}
+		return
+	}
+
+	log.Info("Cluster already exists, skipping creation")
+	return
 }
 
-func InstallHelm(ctx context.Context, chartMeta manifest.HelmChartMeta, chart *chart.Chart, useGpu bool, dataContainerPath string, disableMetrics bool) error {
+func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
 	log.SendCloudReport("info", "Installing helm", "Running", nil)
 
 	cluster, err := k3d.GetCluster(ctx)
@@ -88,49 +108,62 @@ func InstallHelm(ctx context.Context, chartMeta manifest.HelmChartMeta, chart *c
 			&map[string]interface{}{"kubeContext": KUBE_CONTEXT, "kubeNamespace": KUBE_NAMESPACE, "error": err.Error()})
 		return err
 	}
-
-	isHelmReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, chartMeta)
+	infraChartMeta := mnf.InfraHelmChart
+	isInfraReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, infraChartMeta.ReleaseName)
 	if err != nil {
 		log.SendCloudReport("error", "Failed checking if helm release exists", "Failed",
 			&map[string]interface{}{"helmConfig": helmConfig, "error": err.Error()})
 		return err
 	}
-	values := helm.CreateTensorleapChartValues(useGpu, dataContainerPath, disableMetrics)
-	if isHelmReleaseExisted {
-		log.SendCloudReport("info", "Running helm upgrade", "Running", &map[string]interface{}{"isHelmReleaseExisted": isHelmReleaseExisted})
-		if err := helm.UpgradeTensorleapChartVersion(
+	if !isInfraReleaseExisted {
+		log.SendCloudReport("info", "Setting up infra helm repo", "Running", &map[string]interface{}{"version": infraChartMeta.Version})
+		if err := helm.InstallChart(
 			helmConfig,
-			chartMeta,
-			chart,
-			values,
+			infraChartMeta.ReleaseName,
+			infraChart,
+			nil,
 		); err != nil {
-			log.SendCloudReport("error", "Failed upgrading helm charts versions", "Failed",
-				&map[string]interface{}{"isHelmReleaseExisted": isHelmReleaseExisted, "helmConfig": helmConfig, "error": err.Error()})
+			log.SendCloudReport("error", "Failed installing latest chart versions", "Failed",
+				&map[string]interface{}{"version": infraChartMeta.Version, "error": err.Error()})
+			return err
+		}
+	}
+
+	serverChartMeta := mnf.ServerHelmChart
+	isServerReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, serverChartMeta.ReleaseName)
+	if err != nil {
+		log.SendCloudReport("error", "Failed checking if helm release exists", "Failed",
+			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
+		return err
+	}
+	serverValues := helm.CreateTensorleapChartValues(installationParams.GetServerHelmValuesParams())
+	if isServerReleaseExisted {
+		log.SendCloudReport("info", "Running helm upgrade", "Running", &map[string]interface{}{"version": serverChartMeta.Version})
+		if err := helm.UpgradeChart(
+			helmConfig,
+			serverChartMeta.ReleaseName,
+			serverChart,
+			serverValues,
+		); err != nil {
+			log.SendCloudReport("error", "Failed upgrading helm latest charts versions", "Failed",
+				&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
 			return err
 		}
 	} else {
-		log.SendCloudReport("info", "Setting up helm repo", "Running", &map[string]interface{}{"isHelmReleaseExisted": isHelmReleaseExisted})
+		log.SendCloudReport("info", "Setting up server helm repo", "Running", &map[string]interface{}{"version": serverChartMeta.Version})
 		if err := helm.InstallChart(
 			helmConfig,
-			chartMeta,
-			chart,
-			values,
+			serverChartMeta.ReleaseName,
+			serverChart,
+			serverValues,
 		); err != nil {
-			log.SendCloudReport("error", "Failed installing latest chart versions", "Failed",
-				&map[string]interface{}{"isHelmReleaseExisted": isHelmReleaseExisted, "helmConfig": helmConfig, "values": values, "error": err.Error()})
+			log.SendCloudReport("error", "Failed installing latest server chart versions", "Failed",
+				&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
 			return err
 		}
 	}
 
 	log.SendCloudReport("info", "Successfully installed helm charts", "Running", nil)
+	log.Info("Tensorleap installed on local k3d cluster")
 	return nil
-}
-
-func getHomePath() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(fmt.Errorf("failed to get home directory: %w", err))
-	}
-
-	return homeDir
 }
