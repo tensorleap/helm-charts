@@ -5,32 +5,48 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/repo"
 )
 
 type Chart = chart.Chart
 
-func Load(repo, chartName, version string) (chart *Chart, clean func(), err error) {
+func IsLocalChart(repo string) bool {
+	return !strings.HasPrefix(repo, "http")
+}
+
+func Load(repo, chartName, version string) (chart *Chart, err error) {
+	isLocal := IsLocalChart(repo)
+	if isLocal {
+		chart, err = loader.Load(filepath.Join(repo, chartName))
+		if err != nil {
+			return nil, err
+		}
+		return chart, nil
+	}
 	chartFile, _, err := DownloadIntoTempFile(repo, chartName, version)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	tmpChartPath := chartFile.Name()
 	chartFile.Close()
-	clean = func() {
-		os.Remove(tmpChartPath)
-	}
+	defer os.Remove(tmpChartPath)
 	chart, err = loader.Load(chartFile.Name())
 	if err != nil {
 		log.SendCloudReport("error", "Failed loading helm chart", "Failed", &map[string]interface{}{"error": err.Error()})
-		clean()
-		return nil, nil, err
+		return nil, err
 	}
 	return
+}
+
+func Save(chart *Chart, outDir string) (absPath string, err error) {
+	return chartutil.Save(chart, outDir)
 }
 
 func DownloadIntoTempFile(repo, chartName, version string) (*os.File, func(), error) {
