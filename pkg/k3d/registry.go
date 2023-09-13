@@ -64,7 +64,12 @@ func GetRegistryPort(ctx context.Context, reg *Registry) (string, error) {
 	return regPort, nil
 }
 
-func CreateLocalRegistry(ctx context.Context, imageName string, port uint, volumes []string) (*Registry, error) {
+type CreateRegistryParams struct {
+	Port    uint     `json:"port"`
+	Volumes []string `json:"volumes"`
+}
+
+func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRegistryParams) (*Registry, error) {
 	if existingRegistry, _ := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME); existingRegistry != nil {
 		log.Println("Found existing registry!")
 		log.SendCloudReport("info", "Found existing registry", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME, "existingRegistry": existingRegistry})
@@ -72,11 +77,11 @@ func CreateLocalRegistry(ctx context.Context, imageName string, port uint, volum
 		return existingRegistry, nil
 	}
 
-	reg := createRegistryConfig(imageName, port, volumes)
+	reg := createRegistryConfig(imageName, params)
 	_, err := client.RegistryRun(ctx, runtimes.SelectedRuntime, reg)
 	if err != nil {
 		log.SendCloudReport("error", "Failed running k3d registry", "Failed",
-			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "port": port, "volumes": volumes, "error": err.Error()})
+			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "port": params.Port, "volumes": params.Volumes, "error": err.Error()})
 		return nil, err
 	}
 
@@ -84,11 +89,11 @@ func CreateLocalRegistry(ctx context.Context, imageName string, port uint, volum
 	return reg, nil
 }
 
-func createRegistryConfig(imageName string, port uint, volumes []string) *Registry {
-	exposePort, err := cliutil.ParsePortExposureSpec(strconv.FormatUint(uint64(port), 10), k3d.DefaultRegistryPort)
+func createRegistryConfig(imageName string, params *CreateRegistryParams) *Registry {
+	exposePort, err := cliutil.ParsePortExposureSpec(strconv.FormatUint(uint64(params.Port), 10), k3d.DefaultRegistryPort)
 	if err != nil {
 		log.SendCloudReport("error", "Failed creating k3d registry config", "Failed",
-			&map[string]interface{}{"defaultRegistry": k3d.DefaultRegistryPort, "port": port, "error": err.Error()})
+			&map[string]interface{}{"defaultRegistry": k3d.DefaultRegistryPort, "port": params.Port, "exposedPort": exposePort, "error": err.Error()})
 		log.Fatalln(err)
 	}
 
@@ -97,7 +102,7 @@ func createRegistryConfig(imageName string, port uint, volumes []string) *Regist
 		Image:        imageName,
 		ExposureOpts: *exposePort,
 		Network:      k3d.DefaultRuntimeNetwork,
-		Volumes:      volumes,
+		Volumes:      params.Volumes,
 	}
 
 	return reg
