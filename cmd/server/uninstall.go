@@ -2,9 +2,9 @@ package server
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"github.com/tensorleap/helm-charts/pkg/server"
 )
 
 func NewUninstallCmd() *cobra.Command {
@@ -23,21 +23,10 @@ func NewUninstallCmd() *cobra.Command {
 			defer close()
 
 			ctx := cmd.Context()
-			err = k3d.UninstallCluster(ctx)
+			err = server.Uninstall(ctx, purge)
 			if err != nil {
+				log.SendCloudReport("error", "Failed to uninstall", "Failed", &map[string]interface{}{"error": err.Error()})
 				return err
-			}
-
-			err = k3d.UninstallRegister()
-			if err != nil {
-				return err
-			}
-
-			if purge {
-				err = local.PurgeData()
-				if err != nil {
-					return err
-				}
 			}
 
 			log.SendCloudReport("info", "Successfully completed uninstall", "Success", nil)
