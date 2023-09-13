@@ -26,13 +26,20 @@ jobs:
         run: |
           echo "version=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')" >> $GITHUB_OUTPUT
 
+      - name: Get tensorleap infra chart version
+        id: get_tensorleap_infra_chart_version
+        # Create output that contains the version from charts/tensorleap-infra/Chart.yaml
+        run: |
+          echo "version=$(cat charts/tensorleap-infra/Chart.yaml | grep -E '^version:' | awk '{print $2}')" >> $GITHUB_OUTPUT
+
       - name: Create installation manifest
         run: |
-          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --output manifest.yaml
+          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --output manifest.yaml
 
-      - name: Print chart versions
+      - name: Print charts versions
         run: |
           echo "Tensorleap chart version ${{ steps.get_tensorleap_chart_version.outputs.version }}"
+          echo "Tensorleap infra chart version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }}"
 
       - name: Print manifest
         run: cat manifest.yaml
