@@ -89,9 +89,11 @@ jobs:
           helm repo add minio https://charts.min.io
           helm dependency build ./charts/tensorleap
           rm ./charts/tensorleap/Chart.lock
-          helm template ./charts/tensorleap \
+          helm dependency build ./charts/tensorleap-infra
+          rm ./charts/tensorleap-infra/Chart.lock
+          # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
+          {helm template ./charts/tensorleap-infra & helm template ./charts/tensorleap} \
             | grep 'image: ' \
-            | grep -v 'tensorleap/engine' \
             | sed 's/.*: //' \
             | sed 's/\"//g' \
             | sort \
