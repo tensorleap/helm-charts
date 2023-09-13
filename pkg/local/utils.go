@@ -13,7 +13,15 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
-const STANDALONE_DIR = "/var/lib/tensorleap/standalone"
+const (
+	STANDALONE_DIR                  = "/var/lib/tensorleap/standalone"
+	STORAGE_DIR_NAME                = "storage"
+	REGISTRY_DIR_NAME               = "registry"
+	LOGS_DIR_NAME                   = "logs"
+	MANIFEST_DIR_NAME               = "manifests"
+	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
+	INSTALLATION_MANIFEST_FILE_NAME = "manifest.yaml"
+)
 
 func InitStandaloneDir() error {
 	_, err := os.Stat(STANDALONE_DIR)
@@ -36,14 +44,8 @@ func InitStandaloneDir() error {
 	return initStandaloneSubDirs()
 }
 
-const (
-	STORAGE_DIR_NAME  = "storage"
-	REGISTRY_DIR_NAME = "registry"
-	LOGS_DIR_NAME     = "logs"
-)
-
 func initStandaloneSubDirs() error {
-	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME}
+	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(STANDALONE_DIR, dir)
 		_, err := os.Stat(fullPath)
@@ -97,7 +99,7 @@ func OpenLink(link string) error {
 	case "windows":
 		cmd = exec.Command("cmd", "/c", "start", link)
 	default:
-		return fmt.Errorf("Unsupported platform!")
+		return fmt.Errorf("unsupported platform")
 	}
 
 	return cmd.Start()
@@ -105,7 +107,7 @@ func OpenLink(link string) error {
 
 func PurgeData() error {
 	log.Infof("Purging data (you may be asked to enter the root user password)")
-	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME} {
+	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, MANIFEST_DIR_NAME} {
 		path := path.Join(STANDALONE_DIR, dir)
 		log.Infof("Removing directory: %s", path)
 		err := os.RemoveAll(path)
@@ -119,7 +121,14 @@ func PurgeData() error {
 				return err
 			}
 		}
-
 	}
 	return nil
+}
+
+func GetInstallationManifestPath() string {
+	return path.Join(STANDALONE_DIR, MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
+}
+
+func GetInstallationParamsPath() string {
+	return path.Join(STANDALONE_DIR, MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
 }
