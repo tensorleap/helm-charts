@@ -1,0 +1,11 @@
+docker.elastic.co/eck/eck-operator:2.8.0
+docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+docker.io/bitnami/mongodb:5.0.9-debian-11-r3
+docker.io/library/mongo:5.0.11
+docker.io/library/rabbitmq:3.9.22
+quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
+registry.k8s.io/ingress-nginx/controller:v1.8.0
+registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-2b6558b7-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-0554d9dd-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-276e0f8a-stable
