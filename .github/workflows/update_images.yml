@@ -91,13 +91,7 @@ jobs:
           rm ./charts/tensorleap/Chart.lock
           helm dependency build ./charts/tensorleap-infra
           rm ./charts/tensorleap-infra/Chart.lock
-          # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
-          {helm template ./charts/tensorleap-infra & helm template ./charts/tensorleap} \
-            | grep 'image: ' \
-            | sed 's/.*: //' \
-            | sed 's/\"//g' \
-            | sort \
-            | uniq > images.txt
+          make update-images
       - name: Commit
         uses: EndBug/add-and-commit@v9
         with:

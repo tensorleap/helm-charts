@@ -45,3 +45,13 @@ check-fmt:
 .PHONY: test
 test: 
 	@go test ./...
+
+# This code run helm template on charts and extracts all image names by simple search of image: [image-name]
+.PHONY: update-images
+update-images:
+	(helm template ./charts/tensorleap-infra && helm template ./charts/tensorleap) \
+		| grep 'image: ' \
+		| sed 's/.*: //' \
+		| sed 's/\"//g' \
+		| sort \
+		| uniq > images.txt
