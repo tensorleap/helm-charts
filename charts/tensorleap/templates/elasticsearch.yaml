@@ -4,9 +4,9 @@ kind: Elasticsearch
 metadata:
   name: tl-elasticsearch
 spec:
-  version: 7.17.0
+  version: 8.10.1
   # It is important to specify the image for extract images script to work
-  image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+  image: docker.elastic.co/elasticsearch/elasticsearch:8.10.1
   http:
     tls:
       selfSignedCertificate:
