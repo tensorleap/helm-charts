@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: docker.io/bitnami/mongodb:6.0.0-debian-11-r0
+          image: {{ .Values.bitnami_mongodb_image }} 
           env:
             - name: MONGO_DB_PATH
               value: /tl/data/db

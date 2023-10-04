@@ -7,3 +7,5 @@ ingress:
 mongodb:
   enabled: true
   connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
+
+bitnami_mongodb_image: docker.io/bitnami/mongodb:6.0.0-debian-11-r0

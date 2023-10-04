@@ -28,7 +28,7 @@ spec:
         - name: db-migration
           securityContext:
             runAsUser: 0
-          image: docker.io/bitnami/mongodb:6.0.0-debian-11-r0
+          image: {{ .Values.bitnami_mongodb_image }} 
           command:
             - bash
             - "-c"
