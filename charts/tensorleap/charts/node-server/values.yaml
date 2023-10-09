@@ -1,4 +1,4 @@
-image_tag: master-129c06dc-stable
+image_tag: master-db9df5d7-stable
 disableDatadogMetrics: false
 
 ingress:
