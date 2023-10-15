@@ -1,7 +1,41 @@
 eck-operator:
-  managedNamespaces: 
+  managedNamespaces:
     - tensorleap
 
 global:
   elasticsearch:
     enabled: true
+
+datadog:
+  enabled: false
+  fullnameOverride: datadog
+  datadog:
+    env:
+      - name: DD_CONTAINER_EXCLUDE
+        value: >-
+          image:gcr.io/datadoghq/.*
+          image:gke.gcr.io/.*
+          image:k8s.gcr.io/.*
+          image:docker.io/library/rabbitmq*
+    apiKeyExistingSecret: 89cc7e3baf9d3c97d3c59e9fb6978742
+    clusterName: on-prem
+    nodeLabelsAsTags:
+      cloud.google.com/gke-nodepool: node-pool
+    podLabelsAsTags:
+      revision: version
+    tags:
+      - "env:on-prem"
+    logs:
+      enabled: true
+      containerCollectAll: true
+    apm:
+      enabled: true
+  agents:
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+  clusterAgent:
+    admissionController:
+      enabled: true
+      mutateUnlabelled: true
