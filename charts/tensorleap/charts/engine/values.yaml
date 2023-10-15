@@ -2,6 +2,8 @@ image_tag: master-d6aeadd9-stable
 
 localDataDirectory: ""
 gpu: false
+datadog: true
+
 gpuTolerations: []
 
 additional_pvcs: []

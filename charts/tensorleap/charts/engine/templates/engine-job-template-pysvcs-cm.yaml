@@ -14,6 +14,11 @@ data:
         spec:
           containers:
             - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+{{ if .Values.datadog }}
+              command: ["ddtrace-run", "python", "-m", "src.engine.run"]
+{{ else }}
+              command: ["python", "-m", "src.engine.run"]
+{{ end }}
               name: engine
               env:
                 - name: JOB_PAYLOAD
