@@ -40,6 +40,16 @@ func InitStandaloneDir() error {
 		}
 	} else if err != nil {
 		return err
+	} else {
+		log.Printf("Directory %s already exists, check permission", STANDALONE_DIR)
+		info, err := os.Stat(STANDALONE_DIR)
+		if err != nil || info.Mode().Perm() != 0777 {
+			log.Printf("Setting directory permissions (you may be asked to enter the root user password)")
+			chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", STANDALONE_DIR))
+			if err := chmodCmd.Run(); err != nil {
+				return err
+			}
+		}
 	}
 
 	return initStandaloneSubDirs()
