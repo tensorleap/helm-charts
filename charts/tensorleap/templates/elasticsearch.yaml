@@ -1,4 +1,3 @@
-{{ if .Values.global.elasticsearch.enabled }}
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
@@ -13,7 +12,7 @@ spec:
         disabled: true
 
   updateStrategy:
-    changeBudget: 
+    changeBudget:
       maxUnavailable: 0
 
   nodeSets:
@@ -25,10 +24,10 @@ spec:
         # xpack.security.enrollment.enabled: false
         xpack.security.authc:
           anonymous:
-            username: anonymous_user 
-            roles: superuser 
+            username: anonymous_user
+            roles: superuser
             authz_exception: false
-   
+
       volumeClaimTemplates:
       - metadata:
           name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
@@ -43,10 +42,20 @@ spec:
           labels:
             app: elastic
         spec:
+          containers:
+            - name: elasticsearch
+              resources:
+                limits:
+                  memory: "6Gi"
+                requests:
+                  memory: "3Gi"
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xmx2g -Xms2g"
+
           initContainers:
             - name: sysctl
               securityContext:
                 privileged: true
                 runAsUser: 0
               command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
-{{ end }}
