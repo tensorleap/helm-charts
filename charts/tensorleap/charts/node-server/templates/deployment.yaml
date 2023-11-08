@@ -126,6 +126,15 @@ spec:
             httpGet:
               path: /api/v2/monitor/healthCheck
               port: http
+          livenessProbe:
+            failureThreshold: 1
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+            httpGet:
+              path: /api/v2/monitor/healthCheck
+              port: http
           envFrom:
             - configMapRef:
                 name: tensorleap-node-server-env-configmap
