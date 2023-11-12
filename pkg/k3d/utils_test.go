@@ -13,8 +13,6 @@ func TestCreateMirrorFromManifest(t *testing.T) {
 
 			ServerImages: []string{
 				"docker.elastic.co/elasticsearch/elasticsearch:7.10.2",
-				"docker.io/bitnami/mongodb:5.0.9-debian-11-r3",
-				"docker.io/library/mongo:5.0.11",
 				"docker.io/library/rabbitmq:3.9.22",
 				"quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z",
 				"registry.k8s.io/ingress-nginx/controller:v1.8.0",

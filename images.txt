@@ -1,7 +1,6 @@
 docker.elastic.co/eck/eck-operator:2.8.0
 docker.elastic.co/elasticsearch/elasticsearch:8.10.1
-docker.io/bitnami/mongodb:5.0.9-debian-11-r3
-docker.io/library/mongo:5.0.11
+docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
