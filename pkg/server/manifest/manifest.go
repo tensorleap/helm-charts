@@ -11,7 +11,7 @@ import (
 )
 
 const CurrentManifestVersion = "1.0.0"
-const CurrentAppVersion = "0.0.0"
+const CurrentAppVersion = "0.1.0"
 
 type InstallationImages struct {
 	K3s                    string `yaml:"k3s"`
