@@ -8,4 +8,4 @@ mongodb:
   enabled: true
   connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
 
-mongodb_image: docker.io/mongo:6.0.5
+mongodb_image: docker.io/library/mongo:6.0.5
