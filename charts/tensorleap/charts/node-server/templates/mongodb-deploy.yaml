@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: {{ .Values.mongodb_image }} 
+          image: {{ .Values.mongodb_image }}
           env:
             - name: MONGO_DB_PATH
               value: /tl/data/db
