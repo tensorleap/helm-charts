@@ -1,7 +1,6 @@
 docker.elastic.co/eck/eck-operator:2.8.0
 docker.elastic.co/elasticsearch/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
-docker.io/library/mongo:6.0.5 
 docker.io/library/rabbitmq:3.9.22
 gcr.io/datadoghq/agent:7.27.0
 gcr.io/datadoghq/cluster-agent:1.12.0
