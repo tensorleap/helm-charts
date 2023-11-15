@@ -2,12 +2,9 @@ docker.elastic.co/eck/eck-operator:2.8.0
 docker.elastic.co/elasticsearch/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
-gcr.io/datadoghq/agent:7.27.0
-gcr.io/datadoghq/cluster-agent:1.12.0
-k8s.gcr.io/kube-state-metrics/kube-state-metrics:v1.9.8
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-us-central1-docker.pkg.dev/tensorleap/main/engine:master-500ee1bf-stable
-us-central1-docker.pkg.dev/tensorleap/main/node-server:master-e887a6e3-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-f74f35e6-stable
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-6d57518d-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-6f9c09c5-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-52b2594a-stable
