@@ -43,6 +43,9 @@ spec:
           labels:
             app: elastic
         spec:
+          securityContext:
+            runAsUser: 1000
+            fsGroup: 1000
           initContainers:
             - name: sysctl
               securityContext:
