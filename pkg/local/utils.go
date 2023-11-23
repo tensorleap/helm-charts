@@ -65,6 +65,10 @@ func initStandaloneSubDirs() error {
 			if err := os.MkdirAll(fullPath, 0777); err != nil {
 				return err
 			}
+			// the permission of the directory not set to 0777 even if we set it in the MkdirAll
+			if err := os.Chmod(fullPath, 0777); err != nil {
+				return err
+			}
 		} else if err != nil {
 			return err
 		}
