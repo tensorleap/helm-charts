@@ -20,6 +20,8 @@ data:
               resources:
                 limits:
                   nvidia.com/gpu: 1
+                requests:
+                  memory: "5Gi"
               env:
                 - name: JOB_PAYLOAD
               envFrom:
