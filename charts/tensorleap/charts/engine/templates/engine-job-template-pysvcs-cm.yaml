@@ -10,8 +10,10 @@ data:
         suffix: svcs
     spec:
       ttlSecondsAfterFinished: 36000 # 10 hours
+      backoffLimit: 0
       template:
         spec:
+          restartPolicy: Never
           containers:
             - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
               name: engine
