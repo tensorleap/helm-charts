@@ -15,6 +15,9 @@ data:
         spec:
           containers:
             - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+              resources:
+                requests:
+                  memory: "5Gi"
               name: engine
               env:
                 - name: JOB_PAYLOAD
