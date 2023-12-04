@@ -18,6 +18,9 @@ data:
   RABBIT_PASSWORD: guest
   FEEDBACK_TOPIC: feedback
   SUBSCRIBER_TOPIC: job-control-channel
+  N_DATASET_PROCESSES: "2"
+  N_METRICS_PROCESSES: "2"
+  N_VISUALIZERS_PROCESSES: "2"
   STORAGE_PROVIDER: minio
   STORAGE_ENDPOINT: tensorleap-minio.{{ .Release.Namespace }}.svc
   STORAGE_PORT: "9000"
