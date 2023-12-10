@@ -5,6 +5,6 @@ docker.io/library/rabbitmq:3.9.22
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-us-central1-docker.pkg.dev/tensorleap/main/engine:master-d4399f9b-stable
-us-central1-docker.pkg.dev/tensorleap/main/node-server:master-58782755-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-740a74d8-stable
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-579c3bb5-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-21f91428-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-e6a75fe6-stable
