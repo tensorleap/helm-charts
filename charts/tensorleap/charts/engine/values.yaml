@@ -1,4 +1,4 @@
-image_tag: master-d155e177-stable
+image_tag: upgrade-tf-ba62d1db
 
 localDataDirectory: ""
 gpu: false

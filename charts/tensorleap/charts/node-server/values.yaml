@@ -1,4 +1,4 @@
-image_tag: master-cf84eae9-stable
+image_tag: upgrade-tf-19bb1b3e-stable
 disableDatadogMetrics: false
 
 ingress:
