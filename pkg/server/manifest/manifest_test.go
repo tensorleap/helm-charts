@@ -36,8 +36,12 @@ func TestGetHelmVersionFromTag(t *testing.T) {
 	serverTag := "tensorleap-1.0.357"
 	infraTag := "tensorleap-infra-1.0.357"
 
+	withExtra := "tensorleap-1.0.357-extra.0"
+	expectedWithExtra := "1.0.357-extra.0"
+
 	assert.Equal(t, expectedVersion, GetHelmVersionFromTag(serverTag))
 	assert.Equal(t, expectedVersion, GetHelmVersionFromTag(infraTag))
+	assert.Equal(t, expectedWithExtra, GetHelmVersionFromTag(withExtra))
 }
 
 func TestFindLatestTag(t *testing.T) {
