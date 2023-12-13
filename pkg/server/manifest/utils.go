@@ -126,9 +126,7 @@ func getLocalChartVersion(chartName string, fileGetter FileGetter) (string, erro
 
 func GetHelmVersionFromTag(tag string) string {
 	// Define a regular expression pattern to match the version number
-	pattern := `(\d+\.\d+\.\d+)`
-
-	regex := regexp.MustCompile(pattern)
+	regex := regexp.MustCompile(`(\d+\.\d+\.\d+.*$)`)
 
 	// Find the first match of the pattern in the tag string
 	match := regex.FindStringSubmatch(tag)
