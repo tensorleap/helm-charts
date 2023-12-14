@@ -12,7 +12,7 @@ This repo hold the charts and installer for standalone installation
    Change the image tags for each image you want to modify. The image tag is located in three files. The easiest way is to replace the current tag with the new image tag - is to repleace the name of the current tag with the new image tag. To find your image tag, navigate to `mark-stable`` -> `set stable tag`` on the branch where you made the changes.
 
 **3. Update Chart Version:**
-   Open the TensorFlow chart file (`charts/tensorflow/chart.yaml`). Update the version from, for example, `0.0.140` to `0.0.141-[beta|alpha|custom-word].0`. When creating a new version, update the last digit (`.0` to `.1`).
+   Open the Tensorleap chart file (`charts/tensorleap/chart.yaml`). Update the version, for example, `0.0.140` to `0.0.141-[beta|alpha|custom-word].0`. When updating the version, update the last digit (`.0` to `.1`).
 
 **4. Publish Helm Chart Workflow:**
    Go to the GitHub Actions on the Helm-Charts repository and run the `Release Charts` workflow on your branch. This workflow publishes the Helm chart from your branch.
