@@ -138,6 +138,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: tensorleap-node-server-env-configmap
+          volumeMounts:
+            - name: minio
+              mountPath: /usr/minio
           env:
             - name: NAMESPACE
               valueFrom:
@@ -154,5 +157,8 @@ spec:
                   name: minio-secret
                   key: rootPassword
       volumes:
+        - name: minio
+          persistentVolumeClaim:
+            claimName: tensorleap-minio
         - name: shared
           emptyDir: {}

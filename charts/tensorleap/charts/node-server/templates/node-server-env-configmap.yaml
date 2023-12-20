@@ -7,6 +7,7 @@ data:
   MONGO_URI: {{ .Values.mongodb.connectionString }}
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
   BUCKET_NAME: session
+  STORAGE_MOUNT_PATH: /usr/minio/session
   ENSURE_BUCKET_EXISTS: "true"
   SUBSCRIBER_TOPIC: feedback
   AUTO_ACTIVATE_USER: "true"
