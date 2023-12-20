@@ -7,4 +7,4 @@ registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
 us-central1-docker.pkg.dev/tensorleap/main/engine:master-63a0f1c7-stable
 us-central1-docker.pkg.dev/tensorleap/main/node-server:master-4593df99-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-ab6bb0b6-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-df6d1e33-stable
