@@ -127,11 +127,11 @@ spec:
               path: /api/v2/monitor/healthCheck
               port: http
           livenessProbe:
-            failureThreshold: 1
+            failureThreshold: 2
             initialDelaySeconds: 5
             periodSeconds: 30
             successThreshold: 1
-            timeoutSeconds: 5
+            timeoutSeconds: 10
             httpGet:
               path: /api/v2/monitor/healthCheck
               port: http
