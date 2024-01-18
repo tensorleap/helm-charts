@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2024-01-18T16:43:47.906629752Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.7.0
+    digest: 5c5c81595ba79b9eefb144386ae6e4a31f1c94da12aa32d04be172ee9315e390
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.651/tensorleap-1.0.651.tgz
+    version: 1.0.651
+  - apiVersion: v2
     created: "2024-01-16T15:40:04.000880909Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2285,6 +2298,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.223/tensorleap-web-ui-1.0.223.tgz
     version: 1.0.223
   - apiVersion: v2
+    created: "2023-09-03T16:43:58.149162012Z"
+    digest: 226cdf6ac08c9510b8fc3f82f12acb5828703bbb8c8dc1df26c79b7f08c83d11
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.222/tensorleap-web-ui-1.0.222.tgz
+    version: 1.0.222
+  - apiVersion: v2
     created: "2023-05-31T10:35:38.933785068Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2298,13 +2319,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.222/tensorleap-1.0.222.tgz
     version: 1.0.222
   - apiVersion: v2
-    created: "2023-09-03T16:43:58.149162012Z"
-    digest: 226cdf6ac08c9510b8fc3f82f12acb5828703bbb8c8dc1df26c79b7f08c83d11
+    created: "2023-08-31T13:21:10.789096297Z"
+    digest: 1889cde6b273feaf5719334ddcfd4c38c722bcb313b38b82fc15feda7eaad61d
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.222/tensorleap-web-ui-1.0.222.tgz
-    version: 1.0.222
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.221/tensorleap-web-ui-1.0.221.tgz
+    version: 1.0.221
   - apiVersion: v2
     created: "2023-05-30T05:51:08.802626048Z"
     dependencies:
@@ -2319,13 +2340,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.221/tensorleap-1.0.221.tgz
     version: 1.0.221
   - apiVersion: v2
-    created: "2023-08-31T13:21:10.789096297Z"
-    digest: 1889cde6b273feaf5719334ddcfd4c38c722bcb313b38b82fc15feda7eaad61d
+    created: "2023-08-30T17:40:11.373669619Z"
+    digest: 82e52c3496f7e6a8f9e5b258fb7597a2b445572596c395e0dd97c2a3b8f764d0
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.221/tensorleap-web-ui-1.0.221.tgz
-    version: 1.0.221
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.220/tensorleap-web-ui-1.0.220.tgz
+    version: 1.0.220
   - apiVersion: v2
     created: "2023-05-29T11:28:05.53785438Z"
     dependencies:
@@ -2338,14 +2359,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.220/tensorleap-1.0.220.tgz
-    version: 1.0.220
-  - apiVersion: v2
-    created: "2023-08-30T17:40:11.373669619Z"
-    digest: 82e52c3496f7e6a8f9e5b258fb7597a2b445572596c395e0dd97c2a3b8f764d0
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.220/tensorleap-web-ui-1.0.220.tgz
     version: 1.0.220
   - apiVersion: v2
     created: "2023-08-29T07:19:26.799205825Z"
@@ -2398,14 +2411,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.217/tensorleap-web-ui-1.0.217.tgz
     version: 1.0.217
   - apiVersion: v2
-    created: "2023-08-24T15:05:30.828788747Z"
-    digest: 2912b1726af5d39c001d038f8bb2a88767b45947bfe3f88d724dfae96886acbe
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.216/tensorleap-web-ui-1.0.216.tgz
-    version: 1.0.216
-  - apiVersion: v2
     created: "2023-05-25T09:18:04.671625099Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2419,6 +2424,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.216/tensorleap-1.0.216.tgz
     version: 1.0.216
   - apiVersion: v2
+    created: "2023-08-24T15:05:30.828788747Z"
+    digest: 2912b1726af5d39c001d038f8bb2a88767b45947bfe3f88d724dfae96886acbe
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.216/tensorleap-web-ui-1.0.216.tgz
+    version: 1.0.216
+  - apiVersion: v2
+    created: "2023-08-23T13:28:21.898856128Z"
+    digest: 0a2ff86b8ca235320a78021176153cff137e41871f32f76e4275b94ac0111b02
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.215/tensorleap-web-ui-1.0.215.tgz
+    version: 1.0.215
+  - apiVersion: v2
     created: "2023-05-23T15:48:46.287676356Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2430,14 +2451,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.215/tensorleap-1.0.215.tgz
-    version: 1.0.215
-  - apiVersion: v2
-    created: "2023-08-23T13:28:21.898856128Z"
-    digest: 0a2ff86b8ca235320a78021176153cff137e41871f32f76e4275b94ac0111b02
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.215/tensorleap-web-ui-1.0.215.tgz
     version: 1.0.215
   - apiVersion: v2
     created: "2023-08-22T07:30:58.81120678Z"
@@ -2503,14 +2516,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.212/tensorleap-1.0.212.tgz
     version: 1.0.212
   - apiVersion: v2
-    created: "2023-08-17T17:44:32.925942382Z"
-    digest: 3f8dc8b003d67ec719193bb788788409a60eaaef4ff6993ee2c87e0b1821dc2c
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.211/tensorleap-web-ui-1.0.211.tgz
-    version: 1.0.211
-  - apiVersion: v2
     created: "2023-05-14T17:07:50.39885975Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2524,13 +2529,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.211/tensorleap-1.0.211.tgz
     version: 1.0.211
   - apiVersion: v2
-    created: "2023-08-17T16:34:00.439653453Z"
-    digest: 4061811ad04bed188e326a382a07b002b80268a0ee32007d91f86e82a3861f03
+    created: "2023-08-17T17:44:32.925942382Z"
+    digest: 3f8dc8b003d67ec719193bb788788409a60eaaef4ff6993ee2c87e0b1821dc2c
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.210/tensorleap-web-ui-1.0.210.tgz
-    version: 1.0.210
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.211/tensorleap-web-ui-1.0.211.tgz
+    version: 1.0.211
   - apiVersion: v2
     created: "2023-05-09T17:32:58.722250468Z"
     dependencies:
@@ -2545,13 +2550,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.210/tensorleap-1.0.210.tgz
     version: 1.0.210
   - apiVersion: v2
-    created: "2023-08-17T11:08:26.027385134Z"
-    digest: 72cc0086e2d242d215ac2dfaf2082b005be9e2bf9c2a548e69227e232dcc04f6
+    created: "2023-08-17T16:34:00.439653453Z"
+    digest: 4061811ad04bed188e326a382a07b002b80268a0ee32007d91f86e82a3861f03
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.209/tensorleap-web-ui-1.0.209.tgz
-    version: 1.0.209
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.210/tensorleap-web-ui-1.0.210.tgz
+    version: 1.0.210
   - apiVersion: v2
     created: "2023-05-07T15:43:56.067465583Z"
     dependencies:
@@ -2564,6 +2569,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.209/tensorleap-1.0.209.tgz
+    version: 1.0.209
+  - apiVersion: v2
+    created: "2023-08-17T11:08:26.027385134Z"
+    digest: 72cc0086e2d242d215ac2dfaf2082b005be9e2bf9c2a548e69227e232dcc04f6
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.209/tensorleap-web-ui-1.0.209.tgz
     version: 1.0.209
   - apiVersion: v2
     created: "2023-08-15T16:35:26.636124536Z"
@@ -2587,14 +2600,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.208/tensorleap-1.0.208.tgz
     version: 1.0.208
   - apiVersion: v2
-    created: "2023-08-05T12:31:20.571358943Z"
-    digest: b672052396ddb883ad86ac6ad8663f54b48ad8ea3db1b901f32e6b4f52961733
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.207/tensorleap-web-ui-1.0.207.tgz
-    version: 1.0.207
-  - apiVersion: v2
     created: "2023-05-01T16:00:44.630068583Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2608,13 +2613,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.207/tensorleap-1.0.207.tgz
     version: 1.0.207
   - apiVersion: v2
-    created: "2023-08-03T14:27:34.177183932Z"
-    digest: a0af9248a031a09530a470e8b497c6bea4f022c6e0316d9e2debc421cdabf829
+    created: "2023-08-05T12:31:20.571358943Z"
+    digest: b672052396ddb883ad86ac6ad8663f54b48ad8ea3db1b901f32e6b4f52961733
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.206/tensorleap-web-ui-1.0.206.tgz
-    version: 1.0.206
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.207/tensorleap-web-ui-1.0.207.tgz
+    version: 1.0.207
   - apiVersion: v2
     created: "2023-04-27T11:24:48.636541887Z"
     dependencies:
@@ -2629,13 +2634,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.206/tensorleap-1.0.206.tgz
     version: 1.0.206
   - apiVersion: v2
-    created: "2023-07-31T17:03:44.310256636Z"
-    digest: 11d1df42f99ca3a1e3d5efcbfb8cfcdd74cff6001a3286e912501202f7d56a2b
+    created: "2023-08-03T14:27:34.177183932Z"
+    digest: a0af9248a031a09530a470e8b497c6bea4f022c6e0316d9e2debc421cdabf829
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.205/tensorleap-web-ui-1.0.205.tgz
-    version: 1.0.205
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.206/tensorleap-web-ui-1.0.206.tgz
+    version: 1.0.206
   - apiVersion: v2
     created: "2023-04-23T09:06:36.001489227Z"
     dependencies:
@@ -2648,6 +2653,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.205/tensorleap-1.0.205.tgz
+    version: 1.0.205
+  - apiVersion: v2
+    created: "2023-07-31T17:03:44.310256636Z"
+    digest: 11d1df42f99ca3a1e3d5efcbfb8cfcdd74cff6001a3286e912501202f7d56a2b
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.205/tensorleap-web-ui-1.0.205.tgz
     version: 1.0.205
   - apiVersion: v2
     created: "2023-07-27T08:49:45.138940418Z"
@@ -2713,6 +2726,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.202/tensorleap-web-ui-1.0.202.tgz
     version: 1.0.202
   - apiVersion: v2
+    created: "2023-07-23T14:26:21.640778658Z"
+    digest: 9272d56dcea9f1603590322c167468df7c91f812d57c0780f7f321bbc5df8f74
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.201/tensorleap-web-ui-1.0.201.tgz
+    version: 1.0.201
+  - apiVersion: v2
     created: "2023-04-16T13:09:01.825876905Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2726,22 +2747,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.201/tensorleap-1.0.201.tgz
     version: 1.0.201
   - apiVersion: v2
-    created: "2023-07-23T14:26:21.640778658Z"
-    digest: 9272d56dcea9f1603590322c167468df7c91f812d57c0780f7f321bbc5df8f74
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.201/tensorleap-web-ui-1.0.201.tgz
-    version: 1.0.201
-  - apiVersion: v2
-    created: "2023-07-18T13:34:40.466093478Z"
-    digest: 257d60b7cba3d5a43f97c087f12bc911e4a368355a5f4753ebef142b0b234259
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.200/tensorleap-web-ui-1.0.200.tgz
-    version: 1.0.200
-  - apiVersion: v2
     created: "2023-04-11T08:42:34.522574977Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2753,6 +2758,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.200/tensorleap-1.0.200.tgz
+    version: 1.0.200
+  - apiVersion: v2
+    created: "2023-07-18T13:34:40.466093478Z"
+    digest: 257d60b7cba3d5a43f97c087f12bc911e4a368355a5f4753ebef142b0b234259
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.200/tensorleap-web-ui-1.0.200.tgz
     version: 1.0.200
   - apiVersion: v2
     created: "2023-04-09T15:18:19.965858802Z"
@@ -2797,14 +2810,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.198/tensorleap-1.0.198.tgz
     version: 1.0.198
   - apiVersion: v2
-    created: "2023-07-16T11:55:14.422091243Z"
-    digest: 1964eb2510513e2fb76602f9bc3410cd50adb5d3afdb7fefc484785e8c380da8
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.197/tensorleap-web-ui-1.0.197.tgz
-    version: 1.0.197
-  - apiVersion: v2
     created: "2023-04-04T14:45:27.979817863Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2816,6 +2821,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.197/tensorleap-1.0.197.tgz
+    version: 1.0.197
+  - apiVersion: v2
+    created: "2023-07-16T11:55:14.422091243Z"
+    digest: 1964eb2510513e2fb76602f9bc3410cd50adb5d3afdb7fefc484785e8c380da8
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.197/tensorleap-web-ui-1.0.197.tgz
     version: 1.0.197
   - apiVersion: v2
     created: "2023-04-04T13:25:01.059623575Z"
@@ -2902,14 +2915,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.193/tensorleap-web-ui-1.0.193.tgz
     version: 1.0.193
   - apiVersion: v2
-    created: "2023-07-09T15:49:32.319854876Z"
-    digest: d5764506956379fc8943c3f6715f113fe53e4e86c6316937d849ad8c16cc3f42
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.192/tensorleap-web-ui-1.0.192.tgz
-    version: 1.0.192
-  - apiVersion: v2
     created: "2023-04-03T09:43:04.91932936Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2923,13 +2928,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.192/tensorleap-1.0.192.tgz
     version: 1.0.192
   - apiVersion: v2
-    created: "2023-07-05T14:15:47.37010988Z"
-    digest: 371e93c7ecb1694e5fe95089f14f4f1721f95e4760c63cecff99417a18746ccf
+    created: "2023-07-09T15:49:32.319854876Z"
+    digest: d5764506956379fc8943c3f6715f113fe53e4e86c6316937d849ad8c16cc3f42
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.191/tensorleap-web-ui-1.0.191.tgz
-    version: 1.0.191
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.192/tensorleap-web-ui-1.0.192.tgz
+    version: 1.0.192
   - apiVersion: v2
     created: "2023-04-02T09:57:39.186349562Z"
     dependencies:
@@ -2944,6 +2949,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.191/tensorleap-1.0.191.tgz
     version: 1.0.191
   - apiVersion: v2
+    created: "2023-07-05T14:15:47.37010988Z"
+    digest: 371e93c7ecb1694e5fe95089f14f4f1721f95e4760c63cecff99417a18746ccf
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.191/tensorleap-web-ui-1.0.191.tgz
+    version: 1.0.191
+  - apiVersion: v2
+    created: "2023-07-04T15:54:26.261471356Z"
+    digest: 9046c4e9351746f595af6357e23dec57ea3291d59291b6a9f703d4426e0d454d
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.190/tensorleap-web-ui-1.0.190.tgz
+    version: 1.0.190
+  - apiVersion: v2
     created: "2023-03-31T10:11:07.650024603Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -2957,13 +2978,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.190/tensorleap-1.0.190.tgz
     version: 1.0.190
   - apiVersion: v2
-    created: "2023-07-04T15:54:26.261471356Z"
-    digest: 9046c4e9351746f595af6357e23dec57ea3291d59291b6a9f703d4426e0d454d
+    created: "2023-07-04T11:17:43.718986371Z"
+    digest: a91ea7772810e9a2012d82bb275d9acd6406962460805d3173dbbd323b387057
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.190/tensorleap-web-ui-1.0.190.tgz
-    version: 1.0.190
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.189/tensorleap-web-ui-1.0.189.tgz
+    version: 1.0.189
   - apiVersion: v2
     created: "2023-03-30T14:29:49.294139151Z"
     dependencies:
@@ -2976,14 +2997,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.189/tensorleap-1.0.189.tgz
-    version: 1.0.189
-  - apiVersion: v2
-    created: "2023-07-04T11:17:43.718986371Z"
-    digest: a91ea7772810e9a2012d82bb275d9acd6406962460805d3173dbbd323b387057
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.189/tensorleap-web-ui-1.0.189.tgz
     version: 1.0.189
   - apiVersion: v2
     created: "2023-03-30T09:26:04.098579587Z"
@@ -3028,6 +3041,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.187/tensorleap-web-ui-1.0.187.tgz
     version: 1.0.187
   - apiVersion: v2
+    created: "2023-06-27T20:48:41.165089462Z"
+    digest: 88f3168f59c537f8655c3fc0bc4cc43342352bbe371ff0d88ca96c4fb87fa62e
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.186/tensorleap-web-ui-1.0.186.tgz
+    version: 1.0.186
+  - apiVersion: v2
     created: "2023-03-30T05:58:19.68545818Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3039,14 +3060,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.186/tensorleap-1.0.186.tgz
-    version: 1.0.186
-  - apiVersion: v2
-    created: "2023-06-27T20:48:41.165089462Z"
-    digest: 88f3168f59c537f8655c3fc0bc4cc43342352bbe371ff0d88ca96c4fb87fa62e
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.186/tensorleap-web-ui-1.0.186.tgz
     version: 1.0.186
   - apiVersion: v2
     created: "2023-06-26T19:06:15.082119494Z"
@@ -3112,6 +3125,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.183/tensorleap-1.0.183.tgz
     version: 1.0.183
   - apiVersion: v2
+    created: "2023-06-19T23:09:09.88886839Z"
+    digest: bd19e01f424bdce023bef7dbe60f1400ebce02aca4d2f1b4a896cd5bc9a6b313
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.182/tensorleap-web-ui-1.0.182.tgz
+    version: 1.0.182
+  - apiVersion: v2
     created: "2023-03-27T12:09:23.176485536Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3123,14 +3144,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.182/tensorleap-1.0.182.tgz
-    version: 1.0.182
-  - apiVersion: v2
-    created: "2023-06-19T23:09:09.88886839Z"
-    digest: bd19e01f424bdce023bef7dbe60f1400ebce02aca4d2f1b4a896cd5bc9a6b313
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.182/tensorleap-web-ui-1.0.182.tgz
     version: 1.0.182
   - apiVersion: v2
     created: "2023-06-15T14:27:38.71960197Z"
@@ -3301,14 +3314,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.174/tensorleap-web-ui-1.0.174.tgz
     version: 1.0.174
   - apiVersion: v2
-    created: "2023-05-30T05:51:09.166960214Z"
-    digest: 5729a7909f5234d24d511a1528505d5932205edf36f3826c73e295e476626306
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.173/tensorleap-web-ui-1.0.173.tgz
-    version: 1.0.173
-  - apiVersion: v2
     created: "2023-03-14T18:34:20.388204778Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3322,6 +3327,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.173/tensorleap-1.0.173.tgz
     version: 1.0.173
   - apiVersion: v2
+    created: "2023-05-30T05:51:09.166960214Z"
+    digest: 5729a7909f5234d24d511a1528505d5932205edf36f3826c73e295e476626306
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.173/tensorleap-web-ui-1.0.173.tgz
+    version: 1.0.173
+  - apiVersion: v2
+    created: "2023-05-29T11:28:06.059501821Z"
+    digest: ab506ea3425451d4b09c2ceee13b6ea11114bf891db8bcaedb4c2a78759a64ea
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.172/tensorleap-web-ui-1.0.172.tgz
+    version: 1.0.172
+  - apiVersion: v2
     created: "2023-03-13T18:27:44.258524156Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3333,14 +3354,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.172/tensorleap-1.0.172.tgz
-    version: 1.0.172
-  - apiVersion: v2
-    created: "2023-05-29T11:28:06.059501821Z"
-    digest: ab506ea3425451d4b09c2ceee13b6ea11114bf891db8bcaedb4c2a78759a64ea
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.172/tensorleap-web-ui-1.0.172.tgz
     version: 1.0.172
   - apiVersion: v2
     created: "2023-03-13T14:24:31.889486752Z"
@@ -3385,14 +3398,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.170/tensorleap-1.0.170.tgz
     version: 1.0.170
   - apiVersion: v2
-    created: "2023-05-25T09:18:05.152111241Z"
-    digest: 635acc26ffe0190d4eec235890623fa6a19f4f37f3d66727c4cd8a2b914b687d
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.169/tensorleap-web-ui-1.0.169.tgz
-    version: 1.0.169
-  - apiVersion: v2
     created: "2023-03-09T11:46:09.866195595Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3404,6 +3409,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.169/tensorleap-1.0.169.tgz
+    version: 1.0.169
+  - apiVersion: v2
+    created: "2023-05-25T09:18:05.152111241Z"
+    digest: 635acc26ffe0190d4eec235890623fa6a19f4f37f3d66727c4cd8a2b914b687d
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.169/tensorleap-web-ui-1.0.169.tgz
     version: 1.0.169
   - apiVersion: v2
     created: "2023-05-23T15:48:46.880122926Z"
@@ -3427,14 +3440,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.168/tensorleap-1.0.168.tgz
     version: 1.0.168
   - apiVersion: v2
-    created: "2023-05-17T19:02:31.287576281Z"
-    digest: 86606ffb0d4ac770465c24bdeeed163f699927a87a698362b44c6c620a55ec62
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.167/tensorleap-web-ui-1.0.167.tgz
-    version: 1.0.167
-  - apiVersion: v2
     created: "2023-03-07T16:34:34.833684641Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3446,6 +3451,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.167/tensorleap-1.0.167.tgz
+    version: 1.0.167
+  - apiVersion: v2
+    created: "2023-05-17T19:02:31.287576281Z"
+    digest: 86606ffb0d4ac770465c24bdeeed163f699927a87a698362b44c6c620a55ec62
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.167/tensorleap-web-ui-1.0.167.tgz
     version: 1.0.167
   - apiVersion: v2
     created: "2023-03-07T13:06:44.058406055Z"
@@ -3517,14 +3530,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.164/tensorleap-1.0.164.tgz
     version: 1.0.164
   - apiVersion: v2
-    created: "2023-05-07T15:43:56.446252273Z"
-    digest: 8028481e594ee9ee0c892995daf867596554ea498afcb91c2ff62ef9f7cdc02b
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.163/tensorleap-web-ui-1.0.163.tgz
-    version: 1.0.163
-  - apiVersion: v2
     created: "2023-03-06T07:38:55.557586432Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3539,6 +3544,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.163/tensorleap-1.0.163.tgz
+    version: 1.0.163
+  - apiVersion: v2
+    created: "2023-05-07T15:43:56.446252273Z"
+    digest: 8028481e594ee9ee0c892995daf867596554ea498afcb91c2ff62ef9f7cdc02b
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.163/tensorleap-web-ui-1.0.163.tgz
     version: 1.0.163
   - apiVersion: v2
     created: "2023-05-02T19:25:37.676032046Z"
@@ -3637,6 +3650,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.159/tensorleap-1.0.159.tgz
     version: 1.0.159
   - apiVersion: v2
+    created: "2023-04-19T08:39:40.987772244Z"
+    digest: 7c3b4a75f18bdbce63d4d776b2ff9a8097333dd4dbf2943bbb3f3c263ad0271a
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.158/tensorleap-web-ui-1.0.158.tgz
+    version: 1.0.158
+  - apiVersion: v2
     created: "2023-02-28T12:43:32.654219572Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3651,14 +3672,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.158/tensorleap-1.0.158.tgz
-    version: 1.0.158
-  - apiVersion: v2
-    created: "2023-04-19T08:39:40.987772244Z"
-    digest: 7c3b4a75f18bdbce63d4d776b2ff9a8097333dd4dbf2943bbb3f3c263ad0271a
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.158/tensorleap-web-ui-1.0.158.tgz
     version: 1.0.158
   - apiVersion: v2
     created: "2023-02-27T19:33:14.053395011Z"
@@ -3709,14 +3722,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.156/tensorleap-1.0.156.tgz
     version: 1.0.156
   - apiVersion: v2
-    created: "2023-04-04T16:24:23.634505665Z"
-    digest: f42e9b7420be131818213d3f54888816c88ba9ec6cd95dba450a01deeb065cdf
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.155/tensorleap-web-ui-1.0.155.tgz
-    version: 1.0.155
-  - apiVersion: v2
     created: "2023-02-26T11:58:01.386438191Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3731,6 +3736,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.155/tensorleap-1.0.155.tgz
+    version: 1.0.155
+  - apiVersion: v2
+    created: "2023-04-04T16:24:23.634505665Z"
+    digest: f42e9b7420be131818213d3f54888816c88ba9ec6cd95dba450a01deeb065cdf
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.155/tensorleap-web-ui-1.0.155.tgz
     version: 1.0.155
   - apiVersion: v2
     created: "2023-04-04T14:45:28.128401048Z"
@@ -3757,6 +3770,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.154/tensorleap-1.0.154.tgz
     version: 1.0.154
   - apiVersion: v2
+    created: "2023-04-04T13:25:01.25335865Z"
+    digest: 93fdfee541186cffc5cb78aebe69ab5d1462f2b72e1a8df8ba7916cad41df725
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.153/tensorleap-web-ui-1.0.153.tgz
+    version: 1.0.153
+  - apiVersion: v2
     created: "2023-02-22T12:45:04.519345225Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3773,13 +3794,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.153/tensorleap-1.0.153.tgz
     version: 1.0.153
   - apiVersion: v2
-    created: "2023-04-04T13:25:01.25335865Z"
-    digest: 93fdfee541186cffc5cb78aebe69ab5d1462f2b72e1a8df8ba7916cad41df725
+    created: "2023-04-04T12:29:17.130892162Z"
+    digest: 8f43e61758b20a69d27a30a384c57afdcfba4f2cfe654f41928d4c63dee00d3b
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.153/tensorleap-web-ui-1.0.153.tgz
-    version: 1.0.153
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.152/tensorleap-web-ui-1.0.152.tgz
+    version: 1.0.152
   - apiVersion: v2
     created: "2023-02-20T10:14:12.049196777Z"
     dependencies:
@@ -3795,14 +3816,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.152/tensorleap-1.0.152.tgz
-    version: 1.0.152
-  - apiVersion: v2
-    created: "2023-04-04T12:29:17.130892162Z"
-    digest: 8f43e61758b20a69d27a30a384c57afdcfba4f2cfe654f41928d4c63dee00d3b
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.152/tensorleap-web-ui-1.0.152.tgz
     version: 1.0.152
   - apiVersion: v2
     created: "2023-04-04T12:02:33.145918136Z"
@@ -3853,14 +3866,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.150/tensorleap-web-ui-1.0.150.tgz
     version: 1.0.150
   - apiVersion: v2
-    created: "2023-04-02T09:57:39.836530854Z"
-    digest: c8e25182643364cdb70931c030392b0de7bba955b407f6ee1a5d90b73649b76f
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.149/tensorleap-web-ui-1.0.149.tgz
-    version: 1.0.149
-  - apiVersion: v2
     created: "2023-02-15T12:25:36.102928808Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3875,6 +3880,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.149/tensorleap-1.0.149.tgz
+    version: 1.0.149
+  - apiVersion: v2
+    created: "2023-04-02T09:57:39.836530854Z"
+    digest: c8e25182643364cdb70931c030392b0de7bba955b407f6ee1a5d90b73649b76f
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.149/tensorleap-web-ui-1.0.149.tgz
     version: 1.0.149
   - apiVersion: v2
     created: "2023-02-15T10:41:40.829015912Z"
@@ -3973,6 +3986,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.145/tensorleap-web-ui-1.0.145.tgz
     version: 1.0.145
   - apiVersion: v2
+    created: "2023-03-28T12:40:54.322780465Z"
+    digest: afc61b17a57418fedc657ebb783edf3d4bbb5b26b5bbcfab81cf11c72f6a5f09
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.144/tensorleap-web-ui-1.0.144.tgz
+    version: 1.0.144
+  - apiVersion: v2
     created: "2023-02-08T15:36:07.284721279Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -3989,13 +4010,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.144/tensorleap-1.0.144.tgz
     version: 1.0.144
   - apiVersion: v2
-    created: "2023-03-28T12:40:54.322780465Z"
-    digest: afc61b17a57418fedc657ebb783edf3d4bbb5b26b5bbcfab81cf11c72f6a5f09
+    created: "2023-03-27T12:09:23.325097058Z"
+    digest: c933aa56aee5b0220742389977923b0c5ae8424598ccfc8f1de392f6ffaac435
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.144/tensorleap-web-ui-1.0.144.tgz
-    version: 1.0.144
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.143/tensorleap-web-ui-1.0.143.tgz
+    version: 1.0.143
   - apiVersion: v2
     created: "2023-02-06T16:58:52.431768335Z"
     dependencies:
@@ -4011,14 +4032,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.143/tensorleap-1.0.143.tgz
-    version: 1.0.143
-  - apiVersion: v2
-    created: "2023-03-27T12:09:23.325097058Z"
-    digest: c933aa56aee5b0220742389977923b0c5ae8424598ccfc8f1de392f6ffaac435
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.143/tensorleap-web-ui-1.0.143.tgz
     version: 1.0.143
   - apiVersion: v2
     created: "2023-02-05T16:18:59.871086494Z"
@@ -4128,14 +4141,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.138/tensorleap-web-ui-1.0.138.tgz
     version: 1.0.138
   - apiVersion: v2
-    created: "2023-03-20T12:14:57.552710338Z"
-    digest: 04262cdad4668e6e3ea3e0eb4c4fe1449cf8da40a57cf8a7907deb9ed74cf617
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.137/tensorleap-web-ui-1.0.137.tgz
-    version: 1.0.137
-  - apiVersion: v2
     created: "2023-01-26T14:10:15.573924064Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4153,6 +4158,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.137/tensorleap-1.0.137.tgz
+    version: 1.0.137
+  - apiVersion: v2
+    created: "2023-03-20T12:14:57.552710338Z"
+    digest: 04262cdad4668e6e3ea3e0eb4c4fe1449cf8da40a57cf8a7907deb9ed74cf617
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.137/tensorleap-web-ui-1.0.137.tgz
     version: 1.0.137
   - apiVersion: v2
     created: "2023-01-25T13:26:04.534793108Z"
@@ -4209,6 +4222,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.135/tensorleap-1.0.135.tgz
     version: 1.0.135
   - apiVersion: v2
+    created: "2023-03-13T14:24:32.29915192Z"
+    digest: 4735c455a19e56699e0fe6f1ffd2fad075fa2f9a629cc39e7f892c36c6615fc1
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.134/tensorleap-web-ui-1.0.134.tgz
+    version: 1.0.134
+  - apiVersion: v2
     created: "2023-01-23T09:19:39.671050778Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4226,14 +4247,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.134/tensorleap-1.0.134.tgz
-    version: 1.0.134
-  - apiVersion: v2
-    created: "2023-03-13T14:24:32.29915192Z"
-    digest: 4735c455a19e56699e0fe6f1ffd2fad075fa2f9a629cc39e7f892c36c6615fc1
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.134/tensorleap-web-ui-1.0.134.tgz
     version: 1.0.134
   - apiVersion: v2
     created: "2023-01-19T11:34:31.513506954Z"
@@ -4263,14 +4276,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.133/tensorleap-web-ui-1.0.133.tgz
     version: 1.0.133
   - apiVersion: v2
-    created: "2023-03-09T11:46:10.174721604Z"
-    digest: 1e3b344c9a6e83f13f6af944479580592378ba35dc171bb70774af2a4f1ba473
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.132/tensorleap-web-ui-1.0.132.tgz
-    version: 1.0.132
-  - apiVersion: v2
     created: "2023-01-17T12:00:15.277133594Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4290,13 +4295,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.132/tensorleap-1.0.132.tgz
     version: 1.0.132
   - apiVersion: v2
-    created: "2023-03-08T18:11:06.886744179Z"
-    digest: 11ad1edff29b5e05ee3fd8a1cc5af406211d59bd2a0abc256614fad2b6989c4b
+    created: "2023-03-09T11:46:10.174721604Z"
+    digest: 1e3b344c9a6e83f13f6af944479580592378ba35dc171bb70774af2a4f1ba473
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.131/tensorleap-web-ui-1.0.131.tgz
-    version: 1.0.131
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.132/tensorleap-web-ui-1.0.132.tgz
+    version: 1.0.132
   - apiVersion: v2
     created: "2023-01-16T16:55:29.566019123Z"
     dependencies:
@@ -4315,6 +4320,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.131/tensorleap-1.0.131.tgz
+    version: 1.0.131
+  - apiVersion: v2
+    created: "2023-03-08T18:11:06.886744179Z"
+    digest: 11ad1edff29b5e05ee3fd8a1cc5af406211d59bd2a0abc256614fad2b6989c4b
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.131/tensorleap-web-ui-1.0.131.tgz
     version: 1.0.131
   - apiVersion: v2
     created: "2023-03-07T12:48:59.115512169Z"
@@ -4371,14 +4384,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.129/tensorleap-1.0.129.tgz
     version: 1.0.129
   - apiVersion: v2
-    created: "2023-02-28T15:54:38.815475731Z"
-    digest: 869e70449da1125976948808e57963aaf836b6ad766cb2d88bdcfd38a3115bca
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.128/tensorleap-web-ui-1.0.128.tgz
-    version: 1.0.128
-  - apiVersion: v2
     created: "2023-01-06T09:38:12.336374095Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -4396,6 +4401,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.128/tensorleap-1.0.128.tgz
+    version: 1.0.128
+  - apiVersion: v2
+    created: "2023-02-28T15:54:38.815475731Z"
+    digest: 869e70449da1125976948808e57963aaf836b6ad766cb2d88bdcfd38a3115bca
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.128/tensorleap-web-ui-1.0.128.tgz
     version: 1.0.128
   - apiVersion: v2
     created: "2023-02-28T15:21:42.670975917Z"
@@ -4478,6 +4491,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.125/tensorleap-web-ui-1.0.125.tgz
     version: 1.0.125
   - apiVersion: v2
+    created: "2023-02-22T12:45:05.213935018Z"
+    digest: dcf540023577baf44ce3e170c6767c11759bfd12bea08606f8049657ceaa1d48
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.124/tensorleap-web-ui-1.0.124.tgz
+    version: 1.0.124
+  - apiVersion: v2
     created: "2022-12-26T10:35:02.952806182Z"
     dependencies:
     - name: ingress-nginx
@@ -4495,22 +4516,6 @@ entries:
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.124/tensorleap-1.0.124.tgz
     version: 1.0.124
-  - apiVersion: v2
-    created: "2023-02-22T12:45:05.213935018Z"
-    digest: dcf540023577baf44ce3e170c6767c11759bfd12bea08606f8049657ceaa1d48
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.124/tensorleap-web-ui-1.0.124.tgz
-    version: 1.0.124
-  - apiVersion: v2
-    created: "2023-02-19T08:53:15.272117875Z"
-    digest: 5aa798b3a7fa19f2fc7982abbfb029f17058170b6499fc2ce7386e35d44d1f42
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.123/tensorleap-web-ui-1.0.123.tgz
-    version: 1.0.123
   - apiVersion: v2
     created: "2022-12-19T15:45:22.045829826Z"
     dependencies:
@@ -4530,13 +4535,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.123/tensorleap-1.0.123.tgz
     version: 1.0.123
   - apiVersion: v2
-    created: "2023-02-15T12:25:36.710873032Z"
-    digest: 5a52066bf5486c60a14a1bc7e86c8ffe9e7f7602df663aaefd33bb804ba22e26
+    created: "2023-02-19T08:53:15.272117875Z"
+    digest: 5aa798b3a7fa19f2fc7982abbfb029f17058170b6499fc2ce7386e35d44d1f42
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.122/tensorleap-web-ui-1.0.122.tgz
-    version: 1.0.122
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.123/tensorleap-web-ui-1.0.123.tgz
+    version: 1.0.123
   - apiVersion: v2
     created: "2022-12-15T15:29:42.803219408Z"
     dependencies:
@@ -4554,6 +4559,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.122/tensorleap-1.0.122.tgz
+    version: 1.0.122
+  - apiVersion: v2
+    created: "2023-02-15T12:25:36.710873032Z"
+    digest: 5a52066bf5486c60a14a1bc7e86c8ffe9e7f7602df663aaefd33bb804ba22e26
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.122/tensorleap-web-ui-1.0.122.tgz
     version: 1.0.122
   - apiVersion: v2
     created: "2022-12-14T09:32:17.36683566Z"
@@ -4634,6 +4647,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.119/tensorleap-web-ui-1.0.119.tgz
     version: 1.0.119
   - apiVersion: v2
+    created: "2023-02-06T16:58:52.759915384Z"
+    digest: b22e61bdab4cce5345695f96069499a3b3a69599facae60a89468eb00715fef8
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.118/tensorleap-web-ui-1.0.118.tgz
+    version: 1.0.118
+  - apiVersion: v2
     created: "2022-12-08T17:55:27.931778816Z"
     dependencies:
     - name: ingress-nginx
@@ -4650,14 +4671,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.118/tensorleap-1.0.118.tgz
-    version: 1.0.118
-  - apiVersion: v2
-    created: "2023-02-06T16:58:52.759915384Z"
-    digest: b22e61bdab4cce5345695f96069499a3b3a69599facae60a89468eb00715fef8
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.118/tensorleap-web-ui-1.0.118.tgz
     version: 1.0.118
   - apiVersion: v2
     created: "2023-02-05T16:19:00.272668372Z"
@@ -4712,14 +4725,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.116/tensorleap-1.0.116.tgz
     version: 1.0.116
   - apiVersion: v2
-    created: "2023-02-01T16:03:46.813431418Z"
-    digest: 00a47bc34b0ea1a3c65a5e5ce37831ae10163532497ec906b9fa10ccb19b0382
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.115/tensorleap-web-ui-1.0.115.tgz
-    version: 1.0.115
-  - apiVersion: v2
     created: "2022-11-29T17:12:46.242970012Z"
     dependencies:
     - name: ingress-nginx
@@ -4736,6 +4741,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.115/tensorleap-1.0.115.tgz
+    version: 1.0.115
+  - apiVersion: v2
+    created: "2023-02-01T16:03:46.813431418Z"
+    digest: 00a47bc34b0ea1a3c65a5e5ce37831ae10163532497ec906b9fa10ccb19b0382
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.115/tensorleap-web-ui-1.0.115.tgz
     version: 1.0.115
   - apiVersion: v2
     created: "2022-11-24T12:10:05.050823881Z"
@@ -4756,14 +4769,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.114/tensorleap-1.0.114.tgz
     version: 1.0.114
   - apiVersion: v2
-    created: "2023-01-30T12:21:52.177241453Z"
-    digest: 3811031fb0bc2f661c27e6d8371abacc7896b8497038c71616ba5797006d3050
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.113/tensorleap-web-ui-1.0.113.tgz
-    version: 1.0.113
-  - apiVersion: v2
     created: "2022-11-23T15:11:35.298291479Z"
     dependencies:
     - name: ingress-nginx
@@ -4781,6 +4786,22 @@ entries:
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.113/tensorleap-1.0.113.tgz
     version: 1.0.113
+  - apiVersion: v2
+    created: "2023-01-30T12:21:52.177241453Z"
+    digest: 3811031fb0bc2f661c27e6d8371abacc7896b8497038c71616ba5797006d3050
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.113/tensorleap-web-ui-1.0.113.tgz
+    version: 1.0.113
+  - apiVersion: v2
+    created: "2023-01-26T14:10:16.086312858Z"
+    digest: 10380dc37855e1831c0720204f81c505157c50d3f38a2756a23cad9c1ee3decd
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.112/tensorleap-web-ui-1.0.112.tgz
+    version: 1.0.112
   - apiVersion: v2
     created: "2022-11-23T08:44:30.227588079Z"
     dependencies:
@@ -4800,22 +4821,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.112/tensorleap-1.0.112.tgz
     version: 1.0.112
   - apiVersion: v2
-    created: "2023-01-26T14:10:16.086312858Z"
-    digest: 10380dc37855e1831c0720204f81c505157c50d3f38a2756a23cad9c1ee3decd
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.112/tensorleap-web-ui-1.0.112.tgz
-    version: 1.0.112
-  - apiVersion: v2
-    created: "2023-01-25T13:26:05.18838685Z"
-    digest: b266905b8115fc74737de9e10c8432deb25f679783fc3426ddc751cd4f21eab9
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.111/tensorleap-web-ui-1.0.111.tgz
-    version: 1.0.111
-  - apiVersion: v2
     created: "2022-11-22T17:53:09.106049669Z"
     dependencies:
     - name: ingress-nginx
@@ -4832,6 +4837,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.111/tensorleap-1.0.111.tgz
+    version: 1.0.111
+  - apiVersion: v2
+    created: "2023-01-25T13:26:05.18838685Z"
+    digest: b266905b8115fc74737de9e10c8432deb25f679783fc3426ddc751cd4f21eab9
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.111/tensorleap-web-ui-1.0.111.tgz
     version: 1.0.111
   - apiVersion: v2
     created: "2023-01-23T14:12:28.954136543Z"
@@ -4860,6 +4873,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.110/tensorleap-1.0.110.tgz
     version: 1.0.110
   - apiVersion: v2
+    created: "2023-01-23T09:19:40.199489174Z"
+    digest: 223cc3c3f60da9c789f6b890455bd11388cc74e5bcf35030b088d258c4ba6503
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.109/tensorleap-web-ui-1.0.109.tgz
+    version: 1.0.109
+  - apiVersion: v2
     created: "2022-11-21T17:34:26.092675359Z"
     dependencies:
     - name: ingress-nginx
@@ -4876,14 +4897,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.109/tensorleap-1.0.109.tgz
-    version: 1.0.109
-  - apiVersion: v2
-    created: "2023-01-23T09:19:40.199489174Z"
-    digest: 223cc3c3f60da9c789f6b890455bd11388cc74e5bcf35030b088d258c4ba6503
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.109/tensorleap-web-ui-1.0.109.tgz
     version: 1.0.109
   - apiVersion: v2
     created: "2022-11-20T18:05:49.3037239Z"
@@ -4912,14 +4925,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.108/tensorleap-web-ui-1.0.108.tgz
     version: 1.0.108
   - apiVersion: v2
-    created: "2023-01-17T12:00:15.525921133Z"
-    digest: 4b7a5f730fcc320dfc51d7441a7b417a0bde0f7b938aab50434509f5a6fde1c0
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.107/tensorleap-web-ui-1.0.107.tgz
-    version: 1.0.107
-  - apiVersion: v2
     created: "2022-11-20T07:55:59.681940315Z"
     dependencies:
     - name: ingress-nginx
@@ -4938,6 +4943,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.107/tensorleap-1.0.107.tgz
     version: 1.0.107
   - apiVersion: v2
+    created: "2023-01-17T12:00:15.525921133Z"
+    digest: 4b7a5f730fcc320dfc51d7441a7b417a0bde0f7b938aab50434509f5a6fde1c0
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.107/tensorleap-web-ui-1.0.107.tgz
+    version: 1.0.107
+  - apiVersion: v2
+    created: "2023-01-16T16:55:30.153967747Z"
+    digest: c6a3396bd2e02ad590b41b7b1a4b83b4e58b9c4b575748c5a930bee94e5dae13
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.106/tensorleap-web-ui-1.0.106.tgz
+    version: 1.0.106
+  - apiVersion: v2
     created: "2022-11-17T10:56:33.221132448Z"
     dependencies:
     - name: ingress-nginx
@@ -4954,14 +4975,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.106/tensorleap-1.0.106.tgz
-    version: 1.0.106
-  - apiVersion: v2
-    created: "2023-01-16T16:55:30.153967747Z"
-    digest: c6a3396bd2e02ad590b41b7b1a4b83b4e58b9c4b575748c5a930bee94e5dae13
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.106/tensorleap-web-ui-1.0.106.tgz
     version: 1.0.106
   - apiVersion: v2
     created: "2023-01-12T12:25:15.250262557Z"
@@ -4990,14 +5003,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.105/tensorleap-1.0.105.tgz
     version: 1.0.105
   - apiVersion: v2
-    created: "2023-01-09T14:55:10.360333299Z"
-    digest: 9c1dbe9ee6432cf31ac2b3bfe1036e1e6d9a1922d1f6301b10670303fe233b08
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.104/tensorleap-web-ui-1.0.104.tgz
-    version: 1.0.104
-  - apiVersion: v2
     created: "2022-11-16T11:24:13.68389725Z"
     dependencies:
     - name: ingress-nginx
@@ -5014,6 +5019,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.104/tensorleap-1.0.104.tgz
+    version: 1.0.104
+  - apiVersion: v2
+    created: "2023-01-09T14:55:10.360333299Z"
+    digest: 9c1dbe9ee6432cf31ac2b3bfe1036e1e6d9a1922d1f6301b10670303fe233b08
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.104/tensorleap-web-ui-1.0.104.tgz
     version: 1.0.104
   - apiVersion: v2
     created: "2023-01-06T09:38:12.740214164Z"
@@ -5042,14 +5055,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.103/tensorleap-1.0.103.tgz
     version: 1.0.103
   - apiVersion: v2
-    created: "2023-01-03T15:58:14.961545038Z"
-    digest: b855835b4c9c7eb312fffb75109d6a28ca5d19840a3524baf8652a8d6c9ed56d
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.102/tensorleap-web-ui-1.0.102.tgz
-    version: 1.0.102
-  - apiVersion: v2
     created: "2022-11-09T17:57:36.003851448Z"
     dependencies:
     - name: ingress-nginx
@@ -5066,6 +5071,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.102/tensorleap-1.0.102.tgz
+    version: 1.0.102
+  - apiVersion: v2
+    created: "2023-01-03T15:58:14.961545038Z"
+    digest: b855835b4c9c7eb312fffb75109d6a28ca5d19840a3524baf8652a8d6c9ed56d
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.102/tensorleap-web-ui-1.0.102.tgz
     version: 1.0.102
   - apiVersion: v2
     created: "2022-11-08T08:25:23.034145481Z"
@@ -5120,6 +5133,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.100/tensorleap-1.0.100.tgz
     version: 1.0.100
   - apiVersion: v2
+    created: "2022-12-26T10:35:03.378891655Z"
+    digest: 9dbd51219a3098844fd79e24a63d8e9ac87b9639e9c51c2f2c0f6d3325c1cc51
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.99/tensorleap-web-ui-1.0.99.tgz
+    version: 1.0.99
+  - apiVersion: v2
     created: "2022-11-06T16:08:50.369156494Z"
     dependencies:
     - name: ingress-nginx
@@ -5136,14 +5157,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.99/tensorleap-1.0.99.tgz
-    version: 1.0.99
-  - apiVersion: v2
-    created: "2022-12-26T10:35:03.378891655Z"
-    digest: 9dbd51219a3098844fd79e24a63d8e9ac87b9639e9c51c2f2c0f6d3325c1cc51
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.99/tensorleap-web-ui-1.0.99.tgz
     version: 1.0.99
   - apiVersion: v2
     created: "2022-11-06T11:59:34.896794856Z"
@@ -5172,6 +5185,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.98/tensorleap-web-ui-1.0.98.tgz
     version: 1.0.98
   - apiVersion: v2
+    created: "2022-12-15T15:29:43.056971662Z"
+    digest: 5ebef67225b6539ae9a75a539360e1cb4cfcba40df6f468d848c5b7cf4278e87
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.97/tensorleap-web-ui-1.0.97.tgz
+    version: 1.0.97
+  - apiVersion: v2
     created: "2022-11-03T18:28:42.458611475Z"
     dependencies:
     - name: ingress-nginx
@@ -5188,14 +5209,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.97/tensorleap-1.0.97.tgz
-    version: 1.0.97
-  - apiVersion: v2
-    created: "2022-12-15T15:29:43.056971662Z"
-    digest: 5ebef67225b6539ae9a75a539360e1cb4cfcba40df6f468d848c5b7cf4278e87
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.97/tensorleap-web-ui-1.0.97.tgz
     version: 1.0.97
   - apiVersion: v2
     created: "2022-12-14T09:32:17.898326797Z"
@@ -5250,6 +5263,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.95/tensorleap-web-ui-1.0.95.tgz
     version: 1.0.95
   - apiVersion: v2
+    created: "2022-12-06T12:38:58.112660017Z"
+    digest: c4b56f9ecc037ed670fd2bcd4f3f434ecef376596f377e400ae961df52b013d4
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.94/tensorleap-web-ui-1.0.94.tgz
+    version: 1.0.94
+  - apiVersion: v2
     created: "2022-10-25T14:50:52.508069705Z"
     dependencies:
     - name: ingress-nginx
@@ -5266,14 +5287,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.94/tensorleap-1.0.94.tgz
-    version: 1.0.94
-  - apiVersion: v2
-    created: "2022-12-06T12:38:58.112660017Z"
-    digest: c4b56f9ecc037ed670fd2bcd4f3f434ecef376596f377e400ae961df52b013d4
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.94/tensorleap-web-ui-1.0.94.tgz
     version: 1.0.94
   - apiVersion: v2
     created: "2022-10-23T13:48:02.58323379Z"
@@ -5406,6 +5419,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.89/tensorleap-web-ui-1.0.89.tgz
     version: 1.0.89
   - apiVersion: v2
+    created: "2022-11-22T17:53:09.558195097Z"
+    digest: b2becdfa4c46a9cd92e6b7724d892e16c8b9209ae0e8f2974ccf8f886dffc734
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.88/tensorleap-web-ui-1.0.88.tgz
+    version: 1.0.88
+  - apiVersion: v2
     created: "2022-10-18T08:00:44.425754631Z"
     dependencies:
     - name: ingress-nginx
@@ -5422,14 +5443,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.88/tensorleap-1.0.88.tgz
-    version: 1.0.88
-  - apiVersion: v2
-    created: "2022-11-22T17:53:09.558195097Z"
-    digest: b2becdfa4c46a9cd92e6b7724d892e16c8b9209ae0e8f2974ccf8f886dffc734
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.88/tensorleap-web-ui-1.0.88.tgz
     version: 1.0.88
   - apiVersion: v2
     created: "2022-11-22T11:06:42.737172378Z"
@@ -5484,6 +5497,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.86/tensorleap-1.0.86.tgz
     version: 1.0.86
   - apiVersion: v2
+    created: "2022-11-20T18:05:49.704698398Z"
+    digest: 9f89691aa3bcd2dd668e2f12e2462bff239b15c511dcdaff2109843ca7538fef
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.85/tensorleap-web-ui-1.0.85.tgz
+    version: 1.0.85
+  - apiVersion: v2
     created: "2022-10-11T12:14:37.801897069Z"
     dependencies:
     - name: ingress-nginx
@@ -5501,22 +5522,6 @@ entries:
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.85/tensorleap-1.0.85.tgz
     version: 1.0.85
-  - apiVersion: v2
-    created: "2022-11-20T18:05:49.704698398Z"
-    digest: 9f89691aa3bcd2dd668e2f12e2462bff239b15c511dcdaff2109843ca7538fef
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.85/tensorleap-web-ui-1.0.85.tgz
-    version: 1.0.85
-  - apiVersion: v2
-    created: "2022-11-16T17:08:23.779708825Z"
-    digest: 3f35f913c485c083d337ec622f21bdcab7b23fdb408e8134e70dd8d477696529
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.84/tensorleap-web-ui-1.0.84.tgz
-    version: 1.0.84
   - apiVersion: v2
     created: "2022-10-11T10:56:09.936280736Z"
     dependencies:
@@ -5536,6 +5541,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.84/tensorleap-1.0.84.tgz
     version: 1.0.84
   - apiVersion: v2
+    created: "2022-11-16T17:08:23.779708825Z"
+    digest: 3f35f913c485c083d337ec622f21bdcab7b23fdb408e8134e70dd8d477696529
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.84/tensorleap-web-ui-1.0.84.tgz
+    version: 1.0.84
+  - apiVersion: v2
+    created: "2022-11-14T16:45:13.74199269Z"
+    digest: 7983893db82fc4c3a06d83646f8c57748d8a0080ea120b1e1c61a6b2dd770a22
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.83/tensorleap-web-ui-1.0.83.tgz
+    version: 1.0.83
+  - apiVersion: v2
     created: "2022-10-11T08:45:22.750920696Z"
     dependencies:
     - name: ingress-nginx
@@ -5552,14 +5573,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.83/tensorleap-1.0.83.tgz
-    version: 1.0.83
-  - apiVersion: v2
-    created: "2022-11-14T16:45:13.74199269Z"
-    digest: 7983893db82fc4c3a06d83646f8c57748d8a0080ea120b1e1c61a6b2dd770a22
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.83/tensorleap-web-ui-1.0.83.tgz
     version: 1.0.83
   - apiVersion: v2
     created: "2022-10-09T09:02:32.163168106Z"
@@ -5614,14 +5627,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.81/tensorleap-1.0.81.tgz
     version: 1.0.81
   - apiVersion: v2
-    created: "2022-11-06T17:13:45.320920187Z"
-    digest: 922c34d72ddb5dd7a201053c003e07779328fb4958df5c062d0c61021ac4efd4
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.80/tensorleap-web-ui-1.0.80.tgz
-    version: 1.0.80
-  - apiVersion: v2
     created: "2022-09-29T07:03:31.320854907Z"
     dependencies:
     - name: ingress-nginx
@@ -5638,6 +5643,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.80/tensorleap-1.0.80.tgz
+    version: 1.0.80
+  - apiVersion: v2
+    created: "2022-11-06T17:13:45.320920187Z"
+    digest: 922c34d72ddb5dd7a201053c003e07779328fb4958df5c062d0c61021ac4efd4
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.80/tensorleap-web-ui-1.0.80.tgz
     version: 1.0.80
   - apiVersion: v2
     created: "2022-11-06T16:08:50.616297595Z"
@@ -5718,6 +5731,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.77/tensorleap-1.0.77.tgz
     version: 1.0.77
   - apiVersion: v2
+    created: "2022-10-27T17:01:41.512055116Z"
+    digest: f68a78ad31386d6fe2f688b5d47d4e43994c7cbf0ec7744951725315efe90de3
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.76/tensorleap-web-ui-1.0.76.tgz
+    version: 1.0.76
+  - apiVersion: v2
     created: "2022-09-18T22:01:01.591986936Z"
     dependencies:
     - name: ingress-nginx
@@ -5736,22 +5757,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.76/tensorleap-1.0.76.tgz
     version: 1.0.76
   - apiVersion: v2
-    created: "2022-10-27T17:01:41.512055116Z"
-    digest: f68a78ad31386d6fe2f688b5d47d4e43994c7cbf0ec7744951725315efe90de3
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.76/tensorleap-web-ui-1.0.76.tgz
-    version: 1.0.76
-  - apiVersion: v2
-    created: "2022-10-25T14:50:53.064095612Z"
-    digest: 600c7158991221276142bff6a1d394985986b7a6626b9e2a45ec0c5187db2e25
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.75/tensorleap-web-ui-1.0.75.tgz
-    version: 1.0.75
-  - apiVersion: v2
     created: "2022-09-18T20:07:53.89155676Z"
     dependencies:
     - name: ingress-nginx
@@ -5768,6 +5773,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.75/tensorleap-1.0.75.tgz
+    version: 1.0.75
+  - apiVersion: v2
+    created: "2022-10-25T14:50:53.064095612Z"
+    digest: 600c7158991221276142bff6a1d394985986b7a6626b9e2a45ec0c5187db2e25
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.75/tensorleap-web-ui-1.0.75.tgz
     version: 1.0.75
   - apiVersion: v2
     created: "2022-10-23T13:48:03.086829092Z"
@@ -5796,6 +5809,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.74/tensorleap-1.0.74.tgz
     version: 1.0.74
   - apiVersion: v2
+    created: "2022-10-20T13:18:54.604541597Z"
+    digest: 7dfb40c47649a2169a19419a363465402f7f327ef4285116863e3cc9d1aae14f
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.73/tensorleap-web-ui-1.0.73.tgz
+    version: 1.0.73
+  - apiVersion: v2
     created: "2022-09-16T21:49:32.072861332Z"
     dependencies:
     - name: ingress-nginx
@@ -5812,14 +5833,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.73/tensorleap-1.0.73.tgz
-    version: 1.0.73
-  - apiVersion: v2
-    created: "2022-10-20T13:18:54.604541597Z"
-    digest: 7dfb40c47649a2169a19419a363465402f7f327ef4285116863e3cc9d1aae14f
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.73/tensorleap-web-ui-1.0.73.tgz
     version: 1.0.73
   - apiVersion: v2
     created: "2022-10-19T15:16:49.506849519Z"
@@ -5900,6 +5913,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.70/tensorleap-web-ui-1.0.70.tgz
     version: 1.0.70
   - apiVersion: v2
+    created: "2022-10-12T11:43:03.72642297Z"
+    digest: f43ce50516db73b0702ef88fbeed2270f81043056f3c62dde92af9e872c9e773
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.69/tensorleap-web-ui-1.0.69.tgz
+    version: 1.0.69
+  - apiVersion: v2
     created: "2022-09-08T08:59:31.568311285Z"
     dependencies:
     - name: ingress-nginx
@@ -5916,14 +5937,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.69/tensorleap-1.0.69.tgz
-    version: 1.0.69
-  - apiVersion: v2
-    created: "2022-10-12T11:43:03.72642297Z"
-    digest: f43ce50516db73b0702ef88fbeed2270f81043056f3c62dde92af9e872c9e773
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.69/tensorleap-web-ui-1.0.69.tgz
     version: 1.0.69
   - apiVersion: v2
     created: "2022-09-06T13:02:24.554124892Z"
@@ -6004,6 +6017,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.66/tensorleap-web-ui-1.0.66.tgz
     version: 1.0.66
   - apiVersion: v2
+    created: "2022-10-11T08:45:23.301355788Z"
+    digest: c8bab063f62bf77f38053b72563e4c5c9202d6c0b8d8aa6c29faa53d8037f35b
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.65/tensorleap-web-ui-1.0.65.tgz
+    version: 1.0.65
+  - apiVersion: v2
     created: "2022-09-01T18:32:21.803020225Z"
     dependencies:
     - name: ingress-nginx
@@ -6023,14 +6044,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.65/tensorleap-1.0.65.tgz
-    version: 1.0.65
-  - apiVersion: v2
-    created: "2022-10-11T08:45:23.301355788Z"
-    digest: c8bab063f62bf77f38053b72563e4c5c9202d6c0b8d8aa6c29faa53d8037f35b
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.65/tensorleap-web-ui-1.0.65.tgz
     version: 1.0.65
   - apiVersion: v2
     created: "2022-10-09T09:02:32.539234628Z"
@@ -6059,14 +6072,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.64/tensorleap-1.0.64.tgz
     version: 1.0.64
   - apiVersion: v2
-    created: "2022-09-29T16:10:36.26051501Z"
-    digest: 36f23606dd6d1902fd59f1c904266f0385e094bf7734e0cf7ffffe9c25e05b2d
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.63/tensorleap-web-ui-1.0.63.tgz
-    version: 1.0.63
-  - apiVersion: v2
     created: "2022-09-01T15:07:14.214961425Z"
     dependencies:
     - name: ingress-nginx
@@ -6086,6 +6091,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.63/tensorleap-1.0.63.tgz
+    version: 1.0.63
+  - apiVersion: v2
+    created: "2022-09-29T16:10:36.26051501Z"
+    digest: 36f23606dd6d1902fd59f1c904266f0385e094bf7734e0cf7ffffe9c25e05b2d
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.63/tensorleap-web-ui-1.0.63.tgz
     version: 1.0.63
   - apiVersion: v2
     created: "2022-09-29T07:03:32.168327161Z"
@@ -6120,6 +6133,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.62/tensorleap-1.0.62.tgz
     version: 1.0.62
   - apiVersion: v2
+    created: "2022-09-25T21:48:08.192555813Z"
+    digest: 26e7325058127c5e9a678741e5c9bcbade4a63634aff3c4e17876f9edb38b7d3
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.61/tensorleap-web-ui-1.0.61.tgz
+    version: 1.0.61
+  - apiVersion: v2
     created: "2022-08-30T17:03:25.256795794Z"
     dependencies:
     - name: ingress-nginx
@@ -6144,13 +6165,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.61/tensorleap-1.0.61.tgz
     version: 1.0.61
   - apiVersion: v2
-    created: "2022-09-25T21:48:08.192555813Z"
-    digest: 26e7325058127c5e9a678741e5c9bcbade4a63634aff3c4e17876f9edb38b7d3
+    created: "2022-09-19T13:54:01.702199682Z"
+    digest: e17b74bdda3edf1ebc08cf73f7890a90a28a11ca8b9bc3f9fd08de87e773f9b6
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.61/tensorleap-web-ui-1.0.61.tgz
-    version: 1.0.61
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.60/tensorleap-web-ui-1.0.60.tgz
+    version: 1.0.60
   - apiVersion: v2
     created: "2022-08-30T15:31:47.402079305Z"
     dependencies:
@@ -6174,14 +6195,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.60/tensorleap-1.0.60.tgz
-    version: 1.0.60
-  - apiVersion: v2
-    created: "2022-09-19T13:54:01.702199682Z"
-    digest: e17b74bdda3edf1ebc08cf73f7890a90a28a11ca8b9bc3f9fd08de87e773f9b6
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.60/tensorleap-web-ui-1.0.60.tgz
     version: 1.0.60
   - apiVersion: v2
     created: "2022-08-29T13:53:30.750976077Z"
@@ -6388,6 +6401,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.54/tensorleap-web-ui-1.0.54.tgz
     version: 1.0.54
   - apiVersion: v2
+    created: "2022-09-06T13:02:24.689434452Z"
+    digest: 6dcf7027434bbf35bc3f7a5ba5f5a2a6f23a13434d2aa58ee8a0d212fabd0473
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.53/tensorleap-web-ui-1.0.53.tgz
+    version: 1.0.53
+  - apiVersion: v2
     created: "2022-08-17T08:45:33.002517069Z"
     dependencies:
     - name: ingress-nginx
@@ -6413,14 +6434,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.53/tensorleap-1.0.53.tgz
-    version: 1.0.53
-  - apiVersion: v2
-    created: "2022-09-06T13:02:24.689434452Z"
-    digest: 6dcf7027434bbf35bc3f7a5ba5f5a2a6f23a13434d2aa58ee8a0d212fabd0473
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.53/tensorleap-web-ui-1.0.53.tgz
     version: 1.0.53
   - apiVersion: v2
     created: "2022-08-15T07:49:41.832153155Z"
@@ -6493,6 +6506,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.51/tensorleap-web-ui-1.0.51.tgz
     version: 1.0.51
   - apiVersion: v2
+    created: "2022-09-01T15:07:14.756380322Z"
+    digest: a67a74e26b43a7abfd098f351a7dfb2839b322c22ae93f8d3a66cc0cec942a39
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.50/tensorleap-web-ui-1.0.50.tgz
+    version: 1.0.50
+  - apiVersion: v2
     created: "2022-08-04T14:35:16.916057072Z"
     dependencies:
     - name: ingress-nginx
@@ -6520,22 +6541,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.50/tensorleap-1.0.50.tgz
     version: 1.0.50
   - apiVersion: v2
-    created: "2022-09-01T15:07:14.756380322Z"
-    digest: a67a74e26b43a7abfd098f351a7dfb2839b322c22ae93f8d3a66cc0cec942a39
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.50/tensorleap-web-ui-1.0.50.tgz
-    version: 1.0.50
-  - apiVersion: v2
-    created: "2022-08-30T15:31:47.863315667Z"
-    digest: 13a59579b7530c9dcd727167adef7626edd951c7f3364866cf54de6cd376611c
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.49/tensorleap-web-ui-1.0.49.tgz
-    version: 1.0.49
-  - apiVersion: v2
     created: "2022-08-04T13:23:04.206510447Z"
     dependencies:
     - name: ingress-nginx
@@ -6561,6 +6566,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.49/tensorleap-1.0.49.tgz
+    version: 1.0.49
+  - apiVersion: v2
+    created: "2022-08-30T15:31:47.863315667Z"
+    digest: 13a59579b7530c9dcd727167adef7626edd951c7f3364866cf54de6cd376611c
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.49/tensorleap-web-ui-1.0.49.tgz
     version: 1.0.49
   - apiVersion: v2
     created: "2022-08-04T08:03:08.985330739Z"
@@ -6598,6 +6611,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.48/tensorleap-web-ui-1.0.48.tgz
     version: 1.0.48
   - apiVersion: v2
+    created: "2022-08-24T18:20:33.832330818Z"
+    digest: f4203245ffa9cdb6ba5c46c549dc0bd3ff3dd981e727b18e87ae195e1acfb749
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.47/tensorleap-web-ui-1.0.47.tgz
+    version: 1.0.47
+  - apiVersion: v2
     created: "2022-08-03T15:12:24.341832631Z"
     dependencies:
     - name: ingress-nginx
@@ -6623,14 +6644,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.47/tensorleap-1.0.47.tgz
-    version: 1.0.47
-  - apiVersion: v2
-    created: "2022-08-24T18:20:33.832330818Z"
-    digest: f4203245ffa9cdb6ba5c46c549dc0bd3ff3dd981e727b18e87ae195e1acfb749
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.47/tensorleap-web-ui-1.0.47.tgz
     version: 1.0.47
   - apiVersion: v2
     created: "2022-08-22T12:01:46.757106089Z"
@@ -6668,14 +6681,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.46/tensorleap-1.0.46.tgz
     version: 1.0.46
   - apiVersion: v2
-    created: "2022-08-21T16:17:14.861601555Z"
-    digest: 8b543386ae768a4f02c651c900a151fc088ddd2986d465622480772641e1c9bd
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.45/tensorleap-web-ui-1.0.45.tgz
-    version: 1.0.45
-  - apiVersion: v2
     created: "2022-07-31T17:43:39.063842969Z"
     dependencies:
     - name: ingress-nginx
@@ -6701,6 +6706,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.45/tensorleap-1.0.45.tgz
+    version: 1.0.45
+  - apiVersion: v2
+    created: "2022-08-21T16:17:14.861601555Z"
+    digest: 8b543386ae768a4f02c651c900a151fc088ddd2986d465622480772641e1c9bd
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.45/tensorleap-web-ui-1.0.45.tgz
     version: 1.0.45
   - apiVersion: v2
     created: "2022-07-28T08:09:12.029973263Z"
@@ -6843,14 +6856,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.41/tensorleap-web-ui-1.0.41.tgz
     version: 1.0.41
   - apiVersion: v2
-    created: "2022-08-07T07:47:59.609232338Z"
-    digest: 8cfbc5d4f7c83c87b32ae9dff8472e65d7e764b8e2dc4def257210888cef1b97
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.40/tensorleap-web-ui-1.0.40.tgz
-    version: 1.0.40
-  - apiVersion: v2
     created: "2022-07-24T10:31:32.696973993Z"
     dependencies:
     - name: ingress-nginx
@@ -6876,6 +6881,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.40/tensorleap-1.0.40.tgz
+    version: 1.0.40
+  - apiVersion: v2
+    created: "2022-08-07T07:47:59.609232338Z"
+    digest: 8cfbc5d4f7c83c87b32ae9dff8472e65d7e764b8e2dc4def257210888cef1b97
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.40/tensorleap-web-ui-1.0.40.tgz
     version: 1.0.40
   - apiVersion: v2
     created: "2022-08-04T14:35:17.08908449Z"
@@ -6913,14 +6926,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.39/tensorleap-1.0.39.tgz
     version: 1.0.39
   - apiVersion: v2
-    created: "2022-08-04T13:23:04.365236006Z"
-    digest: 3cea504559115ae2eac92ed43f120b8fd234b70a99dfabce05bf8b1c05d12d32
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.38/tensorleap-web-ui-1.0.38.tgz
-    version: 1.0.38
-  - apiVersion: v2
     created: "2022-07-21T14:01:43.388945141Z"
     dependencies:
     - name: ingress-nginx
@@ -6948,13 +6953,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.38/tensorleap-1.0.38.tgz
     version: 1.0.38
   - apiVersion: v2
-    created: "2022-08-04T08:03:09.754165767Z"
-    digest: 7e4e0c5566d972a38c5880d735d835645ed4757ee6376a0b152f080836d5518b
+    created: "2022-08-04T13:23:04.365236006Z"
+    digest: 3cea504559115ae2eac92ed43f120b8fd234b70a99dfabce05bf8b1c05d12d32
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.37/tensorleap-web-ui-1.0.37.tgz
-    version: 1.0.37
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.38/tensorleap-web-ui-1.0.38.tgz
+    version: 1.0.38
   - apiVersion: v2
     created: "2022-07-20T17:17:25.142457836Z"
     dependencies:
@@ -6983,6 +6988,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.37/tensorleap-1.0.37.tgz
     version: 1.0.37
   - apiVersion: v2
+    created: "2022-08-04T08:03:09.754165767Z"
+    digest: 7e4e0c5566d972a38c5880d735d835645ed4757ee6376a0b152f080836d5518b
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.37/tensorleap-web-ui-1.0.37.tgz
+    version: 1.0.37
+  - apiVersion: v2
+    created: "2022-08-03T15:12:24.618517776Z"
+    digest: 6efab2ad9b7c696cffc58c0be83e4ca476ecc4285a69231408c620b5f37e46f3
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.36/tensorleap-web-ui-1.0.36.tgz
+    version: 1.0.36
+  - apiVersion: v2
     created: "2022-07-20T08:09:45.861981192Z"
     dependencies:
     - name: ingress-nginx
@@ -7008,14 +7029,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.36/tensorleap-1.0.36.tgz
-    version: 1.0.36
-  - apiVersion: v2
-    created: "2022-08-03T15:12:24.618517776Z"
-    digest: 6efab2ad9b7c696cffc58c0be83e4ca476ecc4285a69231408c620b5f37e46f3
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.36/tensorleap-web-ui-1.0.36.tgz
     version: 1.0.36
   - apiVersion: v2
     created: "2022-07-17T16:02:08.26203791Z"
@@ -7158,14 +7171,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.32/tensorleap-1.0.32.tgz
     version: 1.0.32
   - apiVersion: v2
-    created: "2022-07-24T10:31:32.822048462Z"
-    digest: cb0ee4186922725d188dd7654c749330ff9109fe11990bae37d9254568523e11
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.31/tensorleap-web-ui-1.0.31.tgz
-    version: 1.0.31
-  - apiVersion: v2
     created: "2022-07-12T13:47:34.354691354Z"
     dependencies:
     - name: ingress-nginx
@@ -7191,6 +7196,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.31/tensorleap-1.0.31.tgz
+    version: 1.0.31
+  - apiVersion: v2
+    created: "2022-07-24T10:31:32.822048462Z"
+    digest: cb0ee4186922725d188dd7654c749330ff9109fe11990bae37d9254568523e11
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.31/tensorleap-web-ui-1.0.31.tgz
     version: 1.0.31
   - apiVersion: v2
     created: "2022-07-24T05:28:53.475617742Z"
@@ -7263,14 +7276,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.29/tensorleap-1.0.29.tgz
     version: 1.0.29
   - apiVersion: v2
-    created: "2022-07-20T17:17:25.499892499Z"
-    digest: 12ad019c21e361d62b71b288b98d5009242539a72233c2cbacc70bef75c49f69
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.28/tensorleap-web-ui-1.0.28.tgz
-    version: 1.0.28
-  - apiVersion: v2
     created: "2022-07-10T13:34:45.023780921Z"
     dependencies:
     - name: ingress-nginx
@@ -7296,6 +7301,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.28/tensorleap-1.0.28.tgz
+    version: 1.0.28
+  - apiVersion: v2
+    created: "2022-07-20T17:17:25.499892499Z"
+    digest: 12ad019c21e361d62b71b288b98d5009242539a72233c2cbacc70bef75c49f69
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.28/tensorleap-web-ui-1.0.28.tgz
     version: 1.0.28
   - apiVersion: v2
     created: "2022-07-20T08:09:46.235731961Z"
@@ -7508,6 +7521,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.22/tensorleap-1.0.22.tgz
     version: 1.0.22
   - apiVersion: v2
+    created: "2022-07-10T13:34:45.356583636Z"
+    digest: b6e836bf5d7522facd7edd9d8952dc7a0b0c4ba190183219e2c38fa2675bcda4
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.21/tensorleap-web-ui-1.0.21.tgz
+    version: 1.0.21
+  - apiVersion: v2
     created: "2022-06-30T14:14:29.923975401Z"
     dependencies:
     - name: ingress-nginx
@@ -7533,14 +7554,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.21/tensorleap-1.0.21.tgz
-    version: 1.0.21
-  - apiVersion: v2
-    created: "2022-07-10T13:34:45.356583636Z"
-    digest: b6e836bf5d7522facd7edd9d8952dc7a0b0c4ba190183219e2c38fa2675bcda4
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.21/tensorleap-web-ui-1.0.21.tgz
     version: 1.0.21
   - apiVersion: v2
     created: "2022-06-29T13:53:50.223880977Z"
@@ -7613,14 +7626,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.19/tensorleap-web-ui-1.0.19.tgz
     version: 1.0.19
   - apiVersion: v2
-    created: "2022-07-05T09:43:15.0891351Z"
-    digest: beb7e2a34b8205c09e86b68fd3a3b29369aab49e2b38d0de3d16ae5c710177b3
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.18/tensorleap-web-ui-1.0.18.tgz
-    version: 1.0.18
-  - apiVersion: v2
     created: "2022-06-27T11:01:44.458761377Z"
     dependencies:
     - name: ingress-nginx
@@ -7648,13 +7653,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.18/tensorleap-1.0.18.tgz
     version: 1.0.18
   - apiVersion: v2
-    created: "2022-07-03T15:52:22.314951352Z"
-    digest: 3d4fc460fdd7a046d3b036e3e38352d4e37a9337164fbbd7db49277cd10bd165
+    created: "2022-07-05T09:43:15.0891351Z"
+    digest: beb7e2a34b8205c09e86b68fd3a3b29369aab49e2b38d0de3d16ae5c710177b3
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.17/tensorleap-web-ui-1.0.17.tgz
-    version: 1.0.17
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.18/tensorleap-web-ui-1.0.18.tgz
+    version: 1.0.18
   - apiVersion: v2
     created: "2022-06-23T14:01:36.883317075Z"
     dependencies:
@@ -7683,13 +7688,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.17/tensorleap-1.0.17.tgz
     version: 1.0.17
   - apiVersion: v2
-    created: "2022-06-30T14:14:30.740645074Z"
-    digest: 1e6c5416f7e260a673c76125e3e2dd63f7f9088d2ac572501971b3ace8c8c8a1
+    created: "2022-07-03T15:52:22.314951352Z"
+    digest: 3d4fc460fdd7a046d3b036e3e38352d4e37a9337164fbbd7db49277cd10bd165
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.16/tensorleap-web-ui-1.0.16.tgz
-    version: 1.0.16
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.17/tensorleap-web-ui-1.0.17.tgz
+    version: 1.0.17
   - apiVersion: v2
     created: "2022-06-21T13:20:20.607456457Z"
     dependencies:
@@ -7718,6 +7723,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.16/tensorleap-1.0.16.tgz
     version: 1.0.16
   - apiVersion: v2
+    created: "2022-06-30T14:14:30.740645074Z"
+    digest: 1e6c5416f7e260a673c76125e3e2dd63f7f9088d2ac572501971b3ace8c8c8a1
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.16/tensorleap-web-ui-1.0.16.tgz
+    version: 1.0.16
+  - apiVersion: v2
+    created: "2022-06-29T13:53:50.767623782Z"
+    digest: db95a397295eb1796df9a480e4e965aca5449f79690c5347ba82fbcb86f98f05
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.15/tensorleap-web-ui-1.0.15.tgz
+    version: 1.0.15
+  - apiVersion: v2
     created: "2022-06-21T12:30:26.637157424Z"
     dependencies:
     - name: ingress-nginx
@@ -7743,14 +7764,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.15/tensorleap-1.0.15.tgz
-    version: 1.0.15
-  - apiVersion: v2
-    created: "2022-06-29T13:53:50.767623782Z"
-    digest: db95a397295eb1796df9a480e4e965aca5449f79690c5347ba82fbcb86f98f05
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.15/tensorleap-web-ui-1.0.15.tgz
     version: 1.0.15
   - apiVersion: v2
     created: "2022-06-20T16:39:18.752220383Z"
@@ -7788,14 +7801,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.14/tensorleap-web-ui-1.0.14.tgz
     version: 1.0.14
   - apiVersion: v2
-    created: "2022-06-27T11:01:44.5807754Z"
-    digest: 5b057a557f586a46742b523cc14178b1d9a611039ceaaf3f494f570e9bfe8b65
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.13/tensorleap-web-ui-1.0.13.tgz
-    version: 1.0.13
-  - apiVersion: v2
     created: "2022-06-19T15:41:57.453261886Z"
     dependencies:
     - name: ingress-nginx
@@ -7822,6 +7827,22 @@ entries:
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.13/tensorleap-1.0.13.tgz
     version: 1.0.13
+  - apiVersion: v2
+    created: "2022-06-27T11:01:44.5807754Z"
+    digest: 5b057a557f586a46742b523cc14178b1d9a611039ceaaf3f494f570e9bfe8b65
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.13/tensorleap-web-ui-1.0.13.tgz
+    version: 1.0.13
+  - apiVersion: v2
+    created: "2022-06-23T14:01:37.188899837Z"
+    digest: a0c54b59ae321cac8d4f5a9afaee146a6adf9edc5c0f083860df6aa653289738
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.12/tensorleap-web-ui-1.0.12.tgz
+    version: 1.0.12
   - apiVersion: v2
     created: "2022-06-19T14:00:46.403821429Z"
     dependencies:
@@ -7850,22 +7871,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.12/tensorleap-1.0.12.tgz
     version: 1.0.12
   - apiVersion: v2
-    created: "2022-06-23T14:01:37.188899837Z"
-    digest: a0c54b59ae321cac8d4f5a9afaee146a6adf9edc5c0f083860df6aa653289738
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.12/tensorleap-web-ui-1.0.12.tgz
-    version: 1.0.12
-  - apiVersion: v2
-    created: "2022-06-21T13:20:20.864282292Z"
-    digest: b260333da018a5095118328a9fa1e21a75eba7c5c78f5666e1d54fd9e8c487d2
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.11/tensorleap-web-ui-1.0.11.tgz
-    version: 1.0.11
-  - apiVersion: v2
     created: "2022-06-19T13:14:46.979194766Z"
     dependencies:
     - name: ingress-nginx
@@ -7891,6 +7896,14 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.11/tensorleap-1.0.11.tgz
+    version: 1.0.11
+  - apiVersion: v2
+    created: "2022-06-21T13:20:20.864282292Z"
+    digest: b260333da018a5095118328a9fa1e21a75eba7c5c78f5666e1d54fd9e8c487d2
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.11/tensorleap-web-ui-1.0.11.tgz
     version: 1.0.11
   - apiVersion: v2
     created: "2022-06-17T08:11:47.980593624Z"
@@ -7963,14 +7976,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.9/tensorleap-1.0.9.tgz
     version: 1.0.9
   - apiVersion: v2
-    created: "2022-06-19T15:41:57.953019678Z"
-    digest: 1484d07ba4389cdef5ac2743a2e6f8017860dacec3ed97ef02fdc0165802f68b
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.8/tensorleap-web-ui-1.0.8.tgz
-    version: 1.0.8
-  - apiVersion: v2
     created: "2022-06-16T16:21:51.567003844Z"
     dependencies:
     - name: ingress-nginx
@@ -7998,13 +8003,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.8/tensorleap-1.0.8.tgz
     version: 1.0.8
   - apiVersion: v2
-    created: "2022-06-19T14:00:47.192767743Z"
-    digest: 0b6c18ae3f03df42d8d12643b9022bba250656d93535d0ececebce9f72411d86
+    created: "2022-06-19T15:41:57.953019678Z"
+    digest: 1484d07ba4389cdef5ac2743a2e6f8017860dacec3ed97ef02fdc0165802f68b
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.7/tensorleap-web-ui-1.0.7.tgz
-    version: 1.0.7
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.8/tensorleap-web-ui-1.0.8.tgz
+    version: 1.0.8
   - apiVersion: v2
     created: "2022-06-16T15:59:31.373165904Z"
     dependencies:
@@ -8033,6 +8038,22 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.7/tensorleap-1.0.7.tgz
     version: 1.0.7
   - apiVersion: v2
+    created: "2022-06-19T14:00:47.192767743Z"
+    digest: 0b6c18ae3f03df42d8d12643b9022bba250656d93535d0ececebce9f72411d86
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.7/tensorleap-web-ui-1.0.7.tgz
+    version: 1.0.7
+  - apiVersion: v2
+    created: "2022-06-16T15:59:31.830107981Z"
+    digest: 439b45708f48f3f029cf89ae665d271b79d8f2a363c2c7565f01c7783502f148
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.6/tensorleap-web-ui-1.0.6.tgz
+    version: 1.0.6
+  - apiVersion: v2
     created: "2022-06-16T05:43:18.786856837Z"
     dependencies:
     - name: ingress-nginx
@@ -8058,14 +8079,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.6/tensorleap-1.0.6.tgz
-    version: 1.0.6
-  - apiVersion: v2
-    created: "2022-06-16T15:59:31.830107981Z"
-    digest: 439b45708f48f3f029cf89ae665d271b79d8f2a363c2c7565f01c7783502f148
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.6/tensorleap-web-ui-1.0.6.tgz
     version: 1.0.6
   - apiVersion: v2
     created: "2022-06-14T21:14:08.543957411Z"
@@ -8103,6 +8116,14 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.5/tensorleap-web-ui-1.0.5.tgz
     version: 1.0.5
   - apiVersion: v2
+    created: "2022-06-14T21:14:08.93331053Z"
+    digest: 4e9c9684b9955b310c17be8871025a5eb6dd2fb3f769f6e72726ef7bcd9cdca1
+    name: tensorleap-web-ui
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.4/tensorleap-web-ui-1.0.4.tgz
+    version: 1.0.4
+  - apiVersion: v2
     created: "2022-06-14T11:02:50.461545065Z"
     dependencies:
     - name: ingress-nginx
@@ -8130,13 +8151,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.4/tensorleap-1.0.4.tgz
     version: 1.0.4
   - apiVersion: v2
-    created: "2022-06-14T21:14:08.93331053Z"
-    digest: 4e9c9684b9955b310c17be8871025a5eb6dd2fb3f769f6e72726ef7bcd9cdca1
+    created: "2022-06-14T11:02:50.84736105Z"
+    digest: 95f854cf88f8b60b0f32dfc44295a61b40c96948ef95eada8e92322ce792c5c4
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.4/tensorleap-web-ui-1.0.4.tgz
-    version: 1.0.4
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.3/tensorleap-web-ui-1.0.3.tgz
+    version: 1.0.3
   - apiVersion: v2
     created: "2022-06-13T14:35:26.494832878Z"
     dependencies:
@@ -8165,13 +8186,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.3/tensorleap-1.0.3.tgz
     version: 1.0.3
   - apiVersion: v2
-    created: "2022-06-14T11:02:50.84736105Z"
-    digest: 95f854cf88f8b60b0f32dfc44295a61b40c96948ef95eada8e92322ce792c5c4
+    created: "2022-06-13T14:35:27.249254216Z"
+    digest: bf1db2030f13a0b8560144c879ec30fd2d128b2f93cb4016fe3a9e5071efad10
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.3/tensorleap-web-ui-1.0.3.tgz
-    version: 1.0.3
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.2/tensorleap-web-ui-1.0.2.tgz
+    version: 1.0.2
   - apiVersion: v2
     created: "2022-06-13T12:22:46.512189083Z"
     dependencies:
@@ -8200,13 +8221,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.2/tensorleap-1.0.2.tgz
     version: 1.0.2
   - apiVersion: v2
-    created: "2022-06-13T14:35:27.249254216Z"
-    digest: bf1db2030f13a0b8560144c879ec30fd2d128b2f93cb4016fe3a9e5071efad10
+    created: "2022-06-09T14:26:43.232972466Z"
+    digest: 5c975253d7c5e332659ab43672aabf1aafc8bf0d2fe988aa884a9a994cd8683b
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.2/tensorleap-web-ui-1.0.2.tgz
-    version: 1.0.2
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.1/tensorleap-web-ui-1.0.1.tgz
+    version: 1.0.1
   - apiVersion: v2
     created: "2022-06-09T14:26:42.853295817Z"
     dependencies:
@@ -8235,13 +8256,13 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.1/tensorleap-1.0.1.tgz
     version: 1.0.1
   - apiVersion: v2
-    created: "2022-06-09T14:26:43.232972466Z"
-    digest: 5c975253d7c5e332659ab43672aabf1aafc8bf0d2fe988aa884a9a994cd8683b
+    created: "2022-06-06T15:37:19.715846135Z"
+    digest: fd55cd5c9024e9d81ae36aaba6c6631158bdf32565f47c74b03f22c75f417c63
     name: tensorleap-web-ui
     type: application
     urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.1/tensorleap-web-ui-1.0.1.tgz
-    version: 1.0.1
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.0/tensorleap-web-ui-1.0.0.tgz
+    version: 1.0.0
   - apiVersion: v2
     created: "2022-06-06T15:37:19.148545723Z"
     dependencies:
@@ -8268,14 +8289,6 @@ entries:
     type: application
     urls:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.0/tensorleap-1.0.0.tgz
-    version: 1.0.0
-  - apiVersion: v2
-    created: "2022-06-06T15:37:19.715846135Z"
-    digest: fd55cd5c9024e9d81ae36aaba6c6631158bdf32565f47c74b03f22c75f417c63
-    name: tensorleap-web-ui
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-web-ui-1.0.0/tensorleap-web-ui-1.0.0.tgz
     version: 1.0.0
   tensorleap-infra:
   - apiVersion: v2
