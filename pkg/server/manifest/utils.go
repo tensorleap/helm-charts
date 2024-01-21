@@ -22,6 +22,16 @@ const (
 	tensorleapInfraChartName = "tensorleap-infra"
 	helmRepoUrl              = "https://helm.tensorleap.ai"
 	localHelmRepoUrl         = "charts"
+
+	nvidiaDevicePluginImage = "nvcr.io/nvidia/k8s-device-plugin:v0.14.0"
+	k3dUtilsImage           = "ghcr.io/k3d-io/k3d-tools:5.5.2"
+	registerImage           = "docker.io/library/registry:2"
+	checkDockerRequirement  = "alpine:3.18.3"
+)
+
+var (
+	k3sImage    = fmt.Sprintf("docker.io/rancher/k3s:%s", k3sVersion)
+	k3sGpuImage = fmt.Sprintf("us-central1-docker.pkg.dev/tensorleap/main/k3s:%s-cuda-11.8.0-ubuntu-22.04", k3sVersion)
 )
 
 func getK3sImages(k3sVersion string) ([]string, error) {
@@ -142,7 +152,7 @@ func GetHelmVersionFromTag(tag string) string {
 func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, serverImages []string) (*InstallationManifest, error) {
 
 	k3sImages, err := getK3sImages(k3sVersion)
-	K3sGpuImages := append(k3sImages, "nvcr.io/nvidia/k8s-device-plugin:v0.14.0")
+	K3sGpuImages := append(k3sImages, nvidiaDevicePluginImage)
 
 	if err != nil {
 		return nil, err
@@ -150,11 +160,11 @@ func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, server
 
 	// setup images
 	installationImages := InstallationImages{
-		K3dTools:               "ghcr.io/k3d-io/k3d-tools:5.5.2",
-		K3s:                    fmt.Sprintf("docker.io/rancher/k3s:%s", k3sVersion),
-		K3sGpu:                 fmt.Sprintf("us-central1-docker.pkg.dev/tensorleap/main/k3s:%s-cuda-11.8.0-ubuntu-22.04", k3sVersion),
-		Register:               "docker.io/library/registry:2",
-		CheckDockerRequirement: "alpine:3.18.3",
+		K3dTools:               k3dUtilsImage,
+		K3s:                    k3sImage,
+		K3sGpu:                 k3sGpuImage,
+		Register:               registerImage,
+		CheckDockerRequirement: checkDockerRequirement,
 	}
 
 	// setup server helm
