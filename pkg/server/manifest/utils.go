@@ -142,6 +142,7 @@ func GetHelmVersionFromTag(tag string) string {
 func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, serverImages []string) (*InstallationManifest, error) {
 
 	k3sImages, err := getK3sImages(k3sVersion)
+	K3sGpuImages := append(k3sImages, "nvcr.io/nvidia/k8s-device-plugin:v0.14.0")
 
 	if err != nil {
 		return nil, err
@@ -181,7 +182,7 @@ func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, server
 		Images: ManifestImages{
 			InstallationImages: installationImages,
 			K3sImages:          k3sImages,
-			K3sGpuImages:       k3sImages,
+			K3sGpuImages:       K3sGpuImages,
 			ServerImages:       serverImages,
 		},
 	}
