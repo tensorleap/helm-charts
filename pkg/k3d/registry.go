@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	dockerTypes "github.com/docker/docker/api/types"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
@@ -21,6 +22,7 @@ import (
 	k3d "github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"github.com/tensorleap/helm-charts/pkg/utils"
 )
 
 type Registry = k3d.Registry
@@ -36,6 +38,9 @@ const (
 	REGISTRY_NAME   = "k3d-tensorleap-registry"
 	CONTAINER_NAME  = "k3d-tensorleap-server-0"
 	REGISTRY_DOMAIN = "k3d-tensorleap-registry:5000"
+	// the registry is limited so we can't push too many images in parallel
+	MAX_CONCURRENT_CACHE_IMAGE = 2
+	PUSH_IMAGE_RETRY           = 3
 )
 
 type RegistryTagListResponse struct {
@@ -174,37 +179,25 @@ func isImageInRegistry(ctx context.Context, image string, regPort string) (bool,
 	return false, nil
 }
 
-func CacheImage(ctx context.Context, image string, regPort string, isAirgap bool) error {
-	imageAlreadyInRegistry, err := isImageInRegistry(ctx, image, regPort)
+func PullingImage(ctx context.Context, dockerClient docker.Client, image string) error {
+
+	resp, err := dockerClient.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("docker failed to pull the image '%s': %w", image, err)
 	}
-	if imageAlreadyInRegistry {
-		log.Infof("Image already cached '%s'\n", image)
-		return nil
-	}
+	defer resp.Close()
+	log.Infof("Pulling image '%s'\n", image)
 
-	dockerClient, err := docker.NewClient()
+	// this prints out status of the pull, consider having that under some flags or doing fancy stuff to display it
+	// _, err = io.Copy(os.Stdout, resp)
+	_, err = io.Copy(io.Discard, resp)
 	if err != nil {
-		return err
+		log.Warnf("Couldn't get docker output: %v", err)
 	}
+	return nil
+}
 
-	if !isAirgap {
-		resp, err := dockerClient.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
-		if err != nil {
-			return fmt.Errorf("docker failed to pull the image '%s': %w", image, err)
-		}
-		defer resp.Close()
-		log.Infof("Pulling image '%s'\n", image)
-
-		// this prints out status of the pull, consider having that under some flags or doing fancy stuff to display it
-		// _, err = io.Copy(os.Stdout, resp)
-		_, err = io.Copy(io.Discard, resp)
-		if err != nil {
-			log.Warnf("Couldn't get docker output: %v", err)
-		}
-	}
-
+func CacheImage(ctx context.Context, dockerClient docker.Client, image string, regPort string) error {
 	targetImage := fmt.Sprintf(
 		"127.0.0.1:%s%s",
 		regPort,
@@ -213,45 +206,99 @@ func CacheImage(ctx context.Context, image string, regPort string, isAirgap bool
 		}),
 	)
 
-	if err = dockerClient.ImageTag(ctx, image, targetImage); err != nil {
+	if err := dockerClient.ImageTag(ctx, image, targetImage); err != nil {
 		return err
 	}
 
-	resp, err := dockerClient.ImagePush(ctx, targetImage, dockerTypes.ImagePushOptions{
-		RegistryAuth: "empty auth",
-	})
-	if err != nil {
-		return fmt.Errorf("docker failed to push the image '%s': %w", targetImage, err)
+	retry := PUSH_IMAGE_RETRY
+	for {
+		resp, err := dockerClient.ImagePush(ctx, targetImage, dockerTypes.ImagePushOptions{
+			RegistryAuth: "empty auth",
+		})
+		if err != nil {
+			return fmt.Errorf("docker failed to push the image '%s': %w", targetImage, err)
+		}
+		defer resp.Close()
+
+		log.Infof("Pushing image '%s'\n", targetImage)
+
+		pushImageOutput, err := io.ReadAll(resp)
+		if err != nil {
+			return fmt.Errorf("couldn't get docker output: %v", err)
+		}
+
+		imageAlreadyInRegistry, err := isImageInRegistry(ctx, image, regPort)
+		if err != nil {
+			return fmt.Errorf("failed to re-check image(%s) existents", image)
+		}
+
+		if !imageAlreadyInRegistry {
+
+			if retry > 0 {
+				retry--
+				time.Sleep(10 * time.Second)
+				log.Warnf("Retry to push image %s ", image)
+				continue
+			}
+			log.Warnf("Failed to push image (%s), see docker output bellow:", image)
+			log.Info(string(pushImageOutput))
+			return fmt.Errorf("check docker output above, consider to try again on connection error")
+		}
+		log.Printf("Pushed image '%s'\n", targetImage)
+		break
 	}
-	defer resp.Close()
-
-	log.Infof("Pushing image '%s'\n", targetImage)
-
-	_, err = io.Copy(io.Discard, resp)
-	if err != nil {
-		log.Printf("Couldn't get docker output: %v", err)
-	}
-
-	log.Printf("Pushed image '%s'\n", targetImage)
 
 	return nil
 }
 
-func CacheImagesInParallel(ctx context.Context, images []string, regPort string, isAirgap bool) {
-	var wg sync.WaitGroup
-	log.Info("Downloading docker images...")
+func CacheImagesInParallel(ctx context.Context, images []string, regPort string, isAirgap bool) error {
+	imagesNotInRegistry := []string{}
 	for _, img := range images {
-		wg.Add(1)
+		imageInRegistry, err := isImageInRegistry(ctx, img, regPort)
+		if err != nil {
+			return fmt.Errorf("failed to check if image %s is in registry: %s", img, err)
+		}
+		if !imageInRegistry {
+			imagesNotInRegistry = append(imagesNotInRegistry, img)
+		} else {
+			log.Infof("Image already cached '%s'\n", img)
+		}
+	}
+
+	dockerClient, err := docker.NewClient()
+	if err != nil {
+		return err
+	}
+	if !isAirgap {
+		log.Info("Downloading docker images...")
+		wg := sync.WaitGroup{}
+		for _, img := range imagesNotInRegistry {
+			wg.Add(1)
+			go func(img string) {
+				defer wg.Done()
+				if err := PullingImage(ctx, dockerClient, img); err != nil {
+					log.SendCloudReport("error", "Failed pulling image", "Failed", &map[string]interface{}{"image": img, "error": err.Error()})
+					log.Fatalf("Failed to pull %s: %s", img, err)
+				}
+			}(img)
+		}
+		wg.Wait()
+	}
+
+	tm := utils.NewTaskManager(MAX_CONCURRENT_CACHE_IMAGE)
+	for _, img := range imagesNotInRegistry {
+		tm.Add()
 		go func(img string) {
-			defer wg.Done()
-			if err := CacheImage(ctx, img, regPort, isAirgap); err != nil {
+			defer tm.Done()
+			if err := CacheImage(ctx, dockerClient, img, regPort); err != nil {
 				log.SendCloudReport("error", "Failed caching image", "Failed", &map[string]interface{}{"image": img, "error": err.Error()})
-				log.Fatalf("Failed to cache %s: %s", img, err)
+				log.Fatalf("failed to cache %s: %s", img, err)
 			}
 		}(img)
 	}
-	wg.Wait()
+	tm.Wait()
 	log.SendCloudReport("info", "Successfully cached images in parallel", "Running", nil)
+	return nil
 }
 
 func CacheImageInTheBackground(ctx context.Context, image string) error {

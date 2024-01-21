@@ -43,7 +43,10 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 
 	imagesToCache, imageToCacheInTheBackground := CalcWhichImagesToCache(mnf, installationParams.UseGpu, isAirgap)
 
-	k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
+	err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
+	if err != nil {
+		return err
+	}
 
 	_, _, err = InitCluster(
 		ctx,
