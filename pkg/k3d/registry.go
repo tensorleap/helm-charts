@@ -90,6 +90,16 @@ func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRe
 		return nil, err
 	}
 
+	err = utils.WaitForCondition(func() (bool, error) {
+		port := strconv.FormatUint(uint64(params.Port), 10)
+		return IsRegistryReady(ctx, port)
+	}, 5*time.Second, 2*time.Minute)
+	if err != nil {
+		log.SendCloudReport("error", "Failed waiting for registry to be ready", "Failed",
+			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "port": params.Port, "volumes": params.Volumes, "error": err.Error()})
+		return nil, err
+	}
+
 	log.SendCloudReport("info", "Successfully created k3d regisrty", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME})
 	return reg, nil
 }
@@ -135,6 +145,16 @@ func UninstallRegister() error {
 	}
 	log.SendCloudReport("info", "Registry removed successfully", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME})
 	return nil
+}
+
+func IsRegistryReady(ctx context.Context, regPort string) (bool, error) {
+	_, err := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME)
+	if err != nil {
+		return false, fmt.Errorf("failed to check is registry ready: %s", err)
+	}
+	url := fmt.Sprintf("http://127.0.0.1:%s/v2/_catalog", regPort)
+	_, err = http.Get(url)
+	return err == nil, nil
 }
 
 func isImageInRegistry(ctx context.Context, image string, regPort string) (bool, error) {
