@@ -33,7 +33,7 @@ fmt:
 	@gofmt -w -l ./
 
 create_go_tag:
-	git tag -a $(go run . --version) -m"$(go run . --version)"
+	git tag -a $$(go run . --version) -m"$$(go run . --version)"
 
 .PHONY: check-fmt
 check-fmt:
