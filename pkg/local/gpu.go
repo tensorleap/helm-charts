@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bufio"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -25,8 +24,9 @@ func CheckNvidiaGPU() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error executing lspci command: %s", err)
 	}
+	outString := string(gpuOutput)
 
-	if !strings.Contains(string(gpuOutput), "NVIDIA") {
+	if !strings.Contains(outString, "NVIDIA") {
 		log.Info("No NVIDIA GPU found.")
 		return nil, nil
 	}
@@ -41,19 +41,13 @@ func CheckNvidiaGPU() ([]string, error) {
 	driverVersion := strings.TrimSpace(string(driverOutput))
 	fmt.Printf("NVIDIA Driver Version: %s\n", driverVersion)
 
-	// List NVIDIA GPUs
-	cmd = exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader")
-	listOutput, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("error listing NVIDIA GPUs: %s", err)
-	}
+	// Filter output for NVIDIA GPUs
 	gpus := []string{}
-	scanner := bufio.NewScanner(strings.NewReader(string(listOutput)))
-	for scanner.Scan() {
-		gpus = append(gpus, strings.TrimSpace(scanner.Text()))
+	for _, line := range strings.Split(outString, "\n") {
+		if strings.Contains(line, "NVIDIA") {
+			gpus = append(gpus, line)
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning NVIDIA GPU list: %s", err)
-	}
+
 	return gpus, nil
 }
