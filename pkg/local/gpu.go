@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -41,13 +42,19 @@ func CheckNvidiaGPU() ([]string, error) {
 	driverVersion := strings.TrimSpace(string(driverOutput))
 	fmt.Printf("NVIDIA Driver Version: %s\n", driverVersion)
 
-	// Filter output for NVIDIA GPUs
-	gpus := []string{}
+	// Regular expression to match NVIDIA GPU entries and extract device IDs
+	re := regexp.MustCompile(`([0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]) .* NVIDIA`)
+
+	var deviceIDs []string
 	for _, line := range strings.Split(outString, "\n") {
-		if strings.Contains(line, "NVIDIA") {
-			gpus = append(gpus, line)
+		if re.MatchString(line) {
+			matches := re.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				deviceIDs = append(deviceIDs, matches[1])
+			}
 		}
 	}
 
-	return gpus, nil
+	return deviceIDs, nil
+
 }
