@@ -1,9 +1,9 @@
 package local
 
 import (
+	"bufio"
 	"fmt"
 	"os/exec"
-	"regexp"
 	"runtime"
 	"strings"
 
@@ -25,9 +25,8 @@ func CheckNvidiaGPU() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error executing lspci command: %s", err)
 	}
-	outString := string(gpuOutput)
 
-	if !strings.Contains(outString, "NVIDIA") {
+	if !strings.Contains(string(gpuOutput), "NVIDIA") {
 		log.Info("No NVIDIA GPU found.")
 		return nil, nil
 	}
@@ -42,19 +41,19 @@ func CheckNvidiaGPU() ([]string, error) {
 	driverVersion := strings.TrimSpace(string(driverOutput))
 	fmt.Printf("NVIDIA Driver Version: %s\n", driverVersion)
 
-	// Regular expression to match NVIDIA GPU entries and extract device IDs
-	re := regexp.MustCompile(`([0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]) .* NVIDIA`)
-
-	var deviceIDs []string
-	for _, line := range strings.Split(outString, "\n") {
-		if re.MatchString(line) {
-			matches := re.FindStringSubmatch(line)
-			if len(matches) > 1 {
-				deviceIDs = append(deviceIDs, matches[1])
-			}
-		}
+	// List NVIDIA GPUs
+	cmd = exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader")
+	listOutput, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error listing NVIDIA GPUs: %s", err)
 	}
-
-	return deviceIDs, nil
-
+	gpus := []string{}
+	scanner := bufio.NewScanner(strings.NewReader(string(listOutput)))
+	for scanner.Scan() {
+		gpus = append(gpus, strings.TrimSpace(scanner.Text()))
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning NVIDIA GPU list: %s", err)
+	}
+	return gpus, nil
 }

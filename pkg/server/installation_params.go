@@ -13,7 +13,6 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"gopkg.in/yaml.v3"
-	"k8s.io/utils/strings/slices"
 )
 
 const currentInstallationVersion = "v0.0.1"
@@ -229,11 +228,12 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
 		for _, device := range selectedDeviceArray {
 			trimedDevice := strings.TrimSpace(device)
-			if !slices.Contains(availableDevices, trimedDevice) {
+			asNumber, err := strconv.Atoi(trimedDevice)
+			if err != nil || asNumber >= len(availableDevices) {
 				log.Warnf("Device %s is not available", device)
 				continue
 			}
-			defaultDevices = append(defaultDevices, trimedDevice)
+			defaultDevices = append(defaultDevices, availableDevices[asNumber])
 		}
 	}
 
@@ -258,7 +258,16 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 		return err
 	}
 
-	*selectedGpuDevices = strings.Join(selected, ",")
+	devicesIndexes := []string{}
+	for _, device := range selected {
+		for i, availableDevice := range availableDevices {
+			if device == availableDevice {
+				devicesIndexes = append(devicesIndexes, fmt.Sprint(i))
+			}
+		}
+	}
+
+	*selectedGpuDevices = strings.Join(devicesIndexes, ",")
 
 	return nil
 }
