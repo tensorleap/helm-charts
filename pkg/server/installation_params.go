@@ -257,15 +257,6 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 	if err != nil {
 		return err
 	}
-	// devices := []string{}
-	// for _, selectedDevice := range selected {
-	// 	for index, device := range availableDevices {
-	// 		if selectedDevice == device {
-	// 			devices = append(devices, fmt.Sprint(index))
-	// 			break
-	// 		}
-	// 	}
-	// }
 
 	*selectedGpuDevices = strings.Join(selected, ",")
 
