@@ -13,7 +13,6 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kustomize/kyaml/sliceutil"
 )
 
 const currentInstallationVersion = "v0.0.1"
@@ -110,6 +109,7 @@ func InitUseGPU(useGpu *bool, useCpu bool, gpuDevices *string) error {
 	}
 
 	availableDevices, err := local.CheckNvidiaGPU()
+
 	if err != nil {
 		log.Warnf("Failed to check NVIDIA GPU: %s", err)
 		prompt := survey.Confirm{
@@ -223,14 +223,15 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 		defaultDevices = availableDevices
 	} else if count, err := strconv.Atoi(*selectedGpuDevices); err == nil {
 		defaultDevices = availableDevices[:count]
-	} else if *selectedGpuDevices != "" {
-		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
+	} else if strings.HasPrefix(*selectedGpuDevices, "device=") {
+		selectedDeviceArray := strings.Split(strings.TrimPrefix(*selectedGpuDevices, "device="), ",")
 		for _, device := range selectedDeviceArray {
-			trimedDevice := strings.TrimSpace(device)
-			if !sliceutil.Contains(availableDevices, trimedDevice) {
-				log.Warnf("Device %s is not available", trimedDevice)
+			deviceIndex, err := strconv.Atoi(device)
+			if err == nil && deviceIndex < len(availableDevices) {
+				log.Warnf("Device %s is not available", device)
 				continue
 			}
+			trimedDevice := strings.TrimSpace(device)
 			defaultDevices = append(defaultDevices, trimedDevice)
 		}
 	}
@@ -255,7 +256,18 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 	if err != nil {
 		return err
 	}
-	*selectedGpuDevices = strings.Join(selected, ",")
+	devices := []string{}
+	for _, selectedDevice := range selected {
+		for index, device := range availableDevices {
+			if selectedDevice == device {
+				devices = append(devices, fmt.Sprint(index))
+				break
+			}
+		}
+	}
+
+	*selectedGpuDevices = fmt.Sprintf("device=%s", strings.Join(devices, ","))
+
 	return nil
 }
 
@@ -365,8 +377,8 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 			gpuRequest = AllGpuDevices
 		} else if count, err := strconv.Atoi(params.GpuDevices); err == nil {
 			gpuRequest = fmt.Sprintf("count=%d", count)
-		} else {
-			gpuRequest = fmt.Sprintf("devices=%s", params.GpuDevices)
+		} else if strings.HasPrefix(params.GpuDevices, "device=") {
+			gpuRequest = params.GpuDevices
 		}
 	}
 
