@@ -56,13 +56,13 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 	newK3sImage := ""
 	currentK3sImage := ""
 
-	if installationParams.UseGpu {
+	if installationParams.IsUseGpu() {
 		newK3sImage = mnf.Images.K3sGpu
 	} else {
 		newK3sImage = mnf.Images.K3sGpu
 	}
 
-	if previousInstallationParams.UseGpu {
+	if previousInstallationParams.IsUseGpu() {
 		currentK3sImage = previousMnf.Images.K3sGpu
 	} else {
 		currentK3sImage = previousMnf.Images.K3sGpu

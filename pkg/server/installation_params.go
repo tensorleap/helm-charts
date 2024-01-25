@@ -13,6 +13,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"gopkg.in/yaml.v3"
+	"k8s.io/utils/strings/slices"
 )
 
 const currentInstallationVersion = "v0.0.1"
@@ -22,8 +23,8 @@ const AllGpuDevices = "all"
 
 type InstallationParams struct {
 	Version          string `json:"version"`
-	UseGpu           bool   `json:"useGpu"`
-	GpuDevices       string `json:"gpuDevices"`
+	GpuDevices       string `json:"gpuDevices,omitempty"`
+	Gpus             uint   `json:"gpus,omitempty"`
 	ClusterPort      uint   `json:"clusterPort"`
 	RegistryPort     uint   `json:"registryPort"`
 	DisableMetrics   bool   `json:"disableMetrics"`
@@ -31,11 +32,15 @@ type InstallationParams struct {
 	FixK3dDns        bool   `json:"fixK3dDns"`
 }
 
+func (params *InstallationParams) IsUseGpu() bool {
+	return params.Gpus > 0 || params.GpuDevices != ""
+}
+
 func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, error) {
 
-	if err := InitUseGPU(&flags.UseGpu, flags.UseCpu, &flags.GpuDevices); err != nil {
+	if err := InitUseGPU(&flags.Gpus, &flags.GpuDevices, flags.UseCpu); err != nil {
 		log.SendCloudReport("error", "Failed to initializing with gpu", "Failed",
-			&map[string]interface{}{"useGpu": flags.UseGpu, "error": err.Error()})
+			&map[string]interface{}{"Gpus": flags.Gpus, "GpusDevices": flags.GpuDevices, "error": err.Error()})
 		return nil, err
 	}
 
@@ -47,7 +52,8 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 
 	return &InstallationParams{
 		Version:          currentInstallationVersion,
-		UseGpu:           flags.UseGpu,
+		Gpus:             flags.Gpus,
+		GpuDevices:       flags.GpuDevices,
 		ClusterPort:      flags.Port,
 		RegistryPort:     flags.RegistryPort,
 		DisableMetrics:   flags.DisableMetrics,
@@ -75,9 +81,9 @@ func InitInstallationParamsFromPreviousOrAsk() (params *InstallationParams, foun
 func AskInstallationParams() (*InstallationParams, error) {
 	installationParams := &InstallationParams{}
 
-	if err := InitUseGPU(&installationParams.UseGpu, false, &installationParams.GpuDevices); err != nil {
+	if err := InitUseGPU(&installationParams.Gpus, &installationParams.GpuDevices, false); err != nil {
 		log.SendCloudReport("error", "Failed to initializing with gpu", "Failed",
-			&map[string]interface{}{"useGpu": installationParams.UseGpu, "error": err.Error()})
+			&map[string]interface{}{"Gpus": installationParams.Gpus, "GpuDevices": installationParams.GpuDevices, "error": err.Error()})
 		return nil, err
 	}
 
@@ -103,7 +109,7 @@ func AskInstallationParams() (*InstallationParams, error) {
 	return installationParams, nil
 }
 
-func InitUseGPU(useGpu *bool, useCpu bool, gpuDevices *string) error {
+func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 	if useCpu {
 		return nil
 	}
@@ -122,14 +128,14 @@ func InitUseGPU(useGpu *bool, useCpu bool, gpuDevices *string) error {
 			return err
 		}
 		if continueWithoutGpu {
-			*useGpu = false
+			*gpus = 0
 			return nil
 		} else {
 			return fmt.Errorf("failed to check NVIDIA GPU: %s", err)
 		}
 
 	} else if availableDevices == nil {
-		*useGpu = false
+		*gpus = 0
 		return nil
 	}
 
@@ -160,18 +166,16 @@ func InitUseGPU(useGpu *bool, useCpu bool, gpuDevices *string) error {
 
 	switch gpuOptionIndex {
 	case 0:
-		*useGpu = true
 		*gpuDevices = AllGpuDevices
 	case 1:
-		*useGpu = false
+		*gpus = 0
+		*gpuDevices = ""
 	case 2:
-		*useGpu = true
-		err := selectHowManyGPUs(availableDevices, gpuDevices)
+		err := selectHowManyGPUs(availableDevices, gpus)
 		if err != nil {
 			return err
 		}
 	case 3:
-		*useGpu = true
 		err := selectGpuDevices(availableDevices, gpuDevices)
 		if err != nil {
 			return err
@@ -181,10 +185,10 @@ func InitUseGPU(useGpu *bool, useCpu bool, gpuDevices *string) error {
 	return nil
 }
 
-func selectHowManyGPUs(availableDevices []string, selectedGpuDevices *string) error {
+func selectHowManyGPUs(availableDevices []string, selectedGpus *uint) error {
 	defaultCount := 1
-	if count, err := strconv.Atoi(*selectedGpuDevices); err == nil {
-		defaultCount = count
+	if *selectedGpus > 0 {
+		defaultCount = int(*selectedGpus)
 	}
 
 	prompt := survey.Input{
@@ -212,7 +216,7 @@ func selectHowManyGPUs(availableDevices []string, selectedGpuDevices *string) er
 	if err != nil {
 		return err
 	}
-	*selectedGpuDevices = fmt.Sprint(count)
+	*selectedGpus = uint(count)
 	return nil
 }
 
@@ -221,17 +225,14 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 
 	if *selectedGpuDevices == AllGpuDevices {
 		defaultDevices = availableDevices
-	} else if count, err := strconv.Atoi(*selectedGpuDevices); err == nil {
-		defaultDevices = availableDevices[:count]
-	} else if strings.HasPrefix(*selectedGpuDevices, "device=") {
-		selectedDeviceArray := strings.Split(strings.TrimPrefix(*selectedGpuDevices, "device="), ",")
+	} else {
+		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
 		for _, device := range selectedDeviceArray {
-			deviceIndex, err := strconv.Atoi(device)
-			if err == nil && deviceIndex < len(availableDevices) {
+			trimedDevice := strings.TrimSpace(device)
+			if !slices.Contains(availableDevices, trimedDevice) {
 				log.Warnf("Device %s is not available", device)
 				continue
 			}
-			trimedDevice := strings.TrimSpace(device)
 			defaultDevices = append(defaultDevices, trimedDevice)
 		}
 	}
@@ -256,17 +257,17 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 	if err != nil {
 		return err
 	}
-	devices := []string{}
-	for _, selectedDevice := range selected {
-		for index, device := range availableDevices {
-			if selectedDevice == device {
-				devices = append(devices, fmt.Sprint(index))
-				break
-			}
-		}
-	}
+	// devices := []string{}
+	// for _, selectedDevice := range selected {
+	// 	for index, device := range availableDevices {
+	// 		if selectedDevice == device {
+	// 			devices = append(devices, fmt.Sprint(index))
+	// 			break
+	// 		}
+	// 	}
+	// }
 
-	*selectedGpuDevices = fmt.Sprintf("device=%s", strings.Join(devices, ","))
+	*selectedGpuDevices = strings.Join(selected, ",")
 
 	return nil
 }
@@ -360,7 +361,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 	dataContainerPath := strings.Split(params.DatasetDirectory, ":")[1]
 
 	return &helm.ServerHelmValuesParams{
-		Gpu:                   params.UseGpu,
+		Gpu:                   params.IsUseGpu(),
 		LocalDataDirectory:    dataContainerPath,
 		DisableDatadogMetrics: params.DisableMetrics,
 	}
@@ -371,19 +372,24 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		fmt.Sprintf("%v:%v", local.STANDALONE_DIR, local.STANDALONE_DIR),
 		params.DatasetDirectory,
 	}
+
+	useGpu := params.IsUseGpu()
 	gpuRequest := ""
-	if params.UseGpu {
-		if params.GpuDevices == AllGpuDevices || params.GpuDevices == "" {
+
+	if useGpu {
+		if params.GpuDevices == AllGpuDevices {
 			gpuRequest = AllGpuDevices
-		} else if count, err := strconv.Atoi(params.GpuDevices); err == nil {
-			gpuRequest = fmt.Sprintf("count=%d", count)
-		} else if strings.HasPrefix(params.GpuDevices, "device=") {
-			gpuRequest = params.GpuDevices
+		} else if params.GpuDevices != "" {
+			gpuRequest = fmt.Sprintf("\"device=%s\"", params.GpuDevices)
+		} else if params.Gpus > 0 {
+			gpuRequest = fmt.Sprintf("\"count=%s\"", fmt.Sprint(params.Gpus))
+		} else {
+			gpuRequest = AllGpuDevices
 		}
 	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu:    params.UseGpu,
+		WithGpu:    useGpu,
 		Port:       params.ClusterPort,
 		Volumes:    volumes,
 		GpuRequest: gpuRequest,
