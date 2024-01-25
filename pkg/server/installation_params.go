@@ -380,9 +380,13 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		if params.GpuDevices == AllGpuDevices {
 			gpuRequest = AllGpuDevices
 		} else if params.GpuDevices != "" {
-			gpuRequest = fmt.Sprintf("\"device=%s\"", params.GpuDevices)
+			gpuRequest = params.GpuDevices
 		} else if params.Gpus > 0 {
-			gpuRequest = fmt.Sprintf("\"count=%s\"", fmt.Sprint(params.Gpus))
+			devices := []string{}
+			for i := 0; i < int(params.Gpus); i++ {
+				devices = append(devices, fmt.Sprint(i))
+			}
+			gpuRequest = strings.Join(devices, ",")
 		} else {
 			gpuRequest = AllGpuDevices
 		}

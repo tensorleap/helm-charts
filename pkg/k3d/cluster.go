@@ -267,7 +267,11 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		},
 	}
 	if params.WithGpu {
-		simpleK3dConfig.Options.Runtime.GPURequest = params.GpuRequest
+		// simpleK3dConfig.Options.Runtime.GPURequest = params.GpuRequest
+		simpleK3dConfig.Env = append(simpleK3dConfig.Env, conf.EnvVarWithNodeFilters{
+			EnvVar:      fmt.Sprintf("NVIDIA_VISIBLE_DEVICES=%s",  params.GpuRequest),
+			NodeFilters: []string{"server:*"},
+		})
 	}
 
 	for i, v := range params.Volumes {

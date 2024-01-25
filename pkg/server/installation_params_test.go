@@ -20,7 +20,7 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 			Gpus: 2,
 		}
 		createK3sClusterParams := params.GetCreateK3sClusterParams()
-		assert.Equal(t, createK3sClusterParams.GpuRequest, "\"count=2\"")
+		assert.Equal(t, createK3sClusterParams.GpuRequest, "0,1")
 	})
 
 	t.Run("GpuDevices with GPU-0,GPU-1", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 			GpuDevices: "0,1",
 		}
 		createK3sClusterParams := params.GetCreateK3sClusterParams()
-		assert.Equal(t, createK3sClusterParams.GpuRequest, "\"device=0,1\"")
+		assert.Equal(t, createK3sClusterParams.GpuRequest, "0,1")
 	})
 
 }
