@@ -18,6 +18,7 @@ type InstallFlags struct {
 	Port             uint   `json:"port"`
 	RegistryPort     uint   `json:"registryPort"`
 	UseGpu           bool   `json:"useGpu"`
+	GpuDevices       string `json:"gpuDevices"`
 	UseCpu           bool   `json:",omitempty"`
 	DatasetDirectory string `json:"datasetDirectory"`
 	DisableMetrics   bool   `json:"disableMetrics"`
@@ -28,6 +29,7 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().UintVarP(&flags.Port, "port", "p", DefaultClusterPort, "Port to be used for tensorleap installation")
 	cmd.Flags().UintVar(&flags.RegistryPort, "registry-port", DefaultRegistryPort, "Port to be used for docker registry")
 	cmd.Flags().BoolVar(&flags.UseGpu, "gpu", false, "Enable GPU usage for training and evaluating")
+	cmd.Flags().StringVar(&flags.GpuDevices, "gpu-devices", "", "GPU devices to be used (e.g. 1 or GPU-0,GPU-1 or all)")
 	cmd.Flags().BoolVar(&flags.UseCpu, "cpu", false, "Use CPU for training and evaluating")
 	cmd.Flags().StringVar(&flags.DatasetDirectory, "dataset-dir", "", "Dataset directory maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
