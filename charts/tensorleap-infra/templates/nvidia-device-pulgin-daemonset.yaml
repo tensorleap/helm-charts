@@ -31,7 +31,7 @@ spec:
           - name: FAIL_ON_INIT_ERROR
             value: "false"
           - name: NVIDIA_VISIBLE_DEVICES
-            value: {{ .Values.nvidiaGpu.visibleDevices }}
+            value: {{ quote .Values.nvidiaGpu.visibleDevices }}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
