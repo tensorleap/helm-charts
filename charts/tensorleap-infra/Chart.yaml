@@ -1,7 +1,7 @@
 apiVersion: v2
 name: tensorleap-infra
 type: application
-version: 1.1.0
+version: 1.1.0-test.2
 dependencies:
 - name: eck-operator
   repository: https://helm.elastic.co
