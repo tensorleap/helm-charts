@@ -8370,6 +8370,19 @@ entries:
     version: 1.0.0
   tensorleap-infra:
   - apiVersion: v2
+    created: "2024-01-28T17:34:36.61627269Z"
+    dependencies:
+    - condition: eck-operator.enabled
+      name: eck-operator
+      repository: https://helm.elastic.co
+      version: 2.8.0
+    digest: dc472dc5bbb7a171f02ef0762301c78094b7033f3ab0bf46f01da8706f4cd5d8
+    name: tensorleap-infra
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-infra-1.1.1/tensorleap-infra-1.1.1.tgz
+    version: 1.1.1
+  - apiVersion: v2
     created: "2024-01-28T16:26:50.486041242Z"
     dependencies:
     - condition: eck-operator.enabled
