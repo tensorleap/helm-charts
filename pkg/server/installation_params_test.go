@@ -11,24 +11,24 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 		params := InstallationParams{
 			GpuDevices: "all",
 		}
-		createK3sClusterParams := params.GetCreateK3sClusterParams()
-		assert.Equal(t, createK3sClusterParams.GpuRequest, "all")
+		valueParams := params.GetInfraHelmValuesParams()
+		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "all")
 	})
 
-	t.Run("GpuDevices with 1", func(t *testing.T) {
+	t.Run("GpuDevices with gpus count 1", func(t *testing.T) {
 		params := InstallationParams{
 			Gpus: 2,
 		}
-		createK3sClusterParams := params.GetCreateK3sClusterParams()
-		assert.Equal(t, createK3sClusterParams.GpuRequest, "0,1")
+		valueParams := params.GetInfraHelmValuesParams()
+		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
 	})
 
-	t.Run("GpuDevices with GPU-0,GPU-1", func(t *testing.T) {
+	t.Run("GpuDevices with 0,1", func(t *testing.T) {
 		params := InstallationParams{
 			GpuDevices: "0,1",
 		}
-		createK3sClusterParams := params.GetCreateK3sClusterParams()
-		assert.Equal(t, createK3sClusterParams.GpuRequest, "0,1")
+		valueParams := params.GetInfraHelmValuesParams()
+		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
 	})
 
 }

@@ -367,6 +367,33 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 	}
 }
 
+func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
+
+	nvidiaGpuVisibleDevices := ""
+	nvidiaGpuEnable := params.IsUseGpu()
+
+	if nvidiaGpuEnable {
+		if params.GpuDevices == AllGpuDevices {
+			nvidiaGpuVisibleDevices = AllGpuDevices
+		} else if params.GpuDevices != "" {
+			nvidiaGpuVisibleDevices = params.GpuDevices
+		} else if params.Gpus > 0 {
+			devices := []string{}
+			for i := 0; i < int(params.Gpus); i++ {
+				devices = append(devices, fmt.Sprint(i))
+			}
+			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
+		} else {
+			nvidiaGpuVisibleDevices = AllGpuDevices
+		}
+	}
+
+	return &helm.InfraHelmValuesParams{
+		NvidiaGpuEnable:         nvidiaGpuEnable,
+		NvidiaGpuVisibleDevices: nvidiaGpuVisibleDevices,
+	}
+}
+
 func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClusterParams {
 	volumes := []string{
 		fmt.Sprintf("%v:%v", local.STANDALONE_DIR, local.STANDALONE_DIR),
@@ -374,29 +401,11 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	useGpu := params.IsUseGpu()
-	gpuRequest := ""
-
-	if useGpu {
-		if params.GpuDevices == AllGpuDevices {
-			gpuRequest = AllGpuDevices
-		} else if params.GpuDevices != "" {
-			gpuRequest = params.GpuDevices
-		} else if params.Gpus > 0 {
-			devices := []string{}
-			for i := 0; i < int(params.Gpus); i++ {
-				devices = append(devices, fmt.Sprint(i))
-			}
-			gpuRequest = strings.Join(devices, ",")
-		} else {
-			gpuRequest = AllGpuDevices
-		}
-	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu:    useGpu,
-		Port:       params.ClusterPort,
-		Volumes:    volumes,
-		GpuRequest: gpuRequest,
+		WithGpu: useGpu,
+		Port:    params.ClusterPort,
+		Volumes: volumes,
 	}
 }
 

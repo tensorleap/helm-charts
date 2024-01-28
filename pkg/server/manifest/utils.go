@@ -23,10 +23,9 @@ const (
 	helmRepoUrl              = "https://helm.tensorleap.ai"
 	localHelmRepoUrl         = "charts"
 
-	nvidiaDevicePluginImage = "nvcr.io/nvidia/k8s-device-plugin:v0.14.0"
-	k3dUtilsImage           = "ghcr.io/k3d-io/k3d-tools:5.5.2"
-	registerImage           = "docker.io/library/registry:2"
-	checkDockerRequirement  = "alpine:3.18.3"
+	k3dUtilsImage          = "ghcr.io/k3d-io/k3d-tools:5.5.2"
+	registerImage          = "docker.io/library/registry:2"
+	checkDockerRequirement = "alpine:3.18.3"
 )
 
 var (
@@ -152,7 +151,7 @@ func GetHelmVersionFromTag(tag string) string {
 func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, serverImages []string) (*InstallationManifest, error) {
 
 	k3sImages, err := getK3sImages(k3sVersion)
-	K3sGpuImages := append(k3sImages, nvidiaDevicePluginImage)
+	K3sGpuImages := k3sImages
 
 	if err != nil {
 		return nil, err

@@ -19,6 +19,11 @@ type ServerHelmValuesParams struct {
 	DisableDatadogMetrics bool   `json:"disableDatadogMetrics"`
 }
 
+type InfraHelmValuesParams struct {
+	NvidiaGpuEnable         bool   `json:"nvidiaGpuEnable"`
+	NvidiaGpuVisibleDevices string `json:"nvidiaGpuVisibleDevices"`
+}
+
 var ErrNoRelease = fmt.Errorf("no release")
 
 func IsHelmReleaseExists(config *HelmConfig, releaseName string) (bool, error) {
@@ -52,6 +57,15 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) Record {
 		},
 		"tensorleap-node-server": Record{
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
+		},
+	}
+}
+
+func CreateInfraChartValues(params *InfraHelmValuesParams) Record {
+	return Record{
+		"nvidia-gpu": Record{
+			"enabled":        params.NvidiaGpuEnable,
+			"visibleDevices": params.NvidiaGpuVisibleDevices,
 		},
 	}
 }

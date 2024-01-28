@@ -74,9 +74,10 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 	}
 	IsK3sImageChange := currentK3sImage != newK3sImage
 	isAppVersionChanged := mnf.AppVersion != previousMnf.AppVersion
+	isInfraHelmChartParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetInfraHelmValuesParams(), installationParams.GetInfraHelmValuesParams())
 	isCreateClusterParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetCreateK3sClusterParams(), installationParams.GetCreateK3sClusterParams())
 
-	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isCreateClusterParamsChanged
+	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged
 	if shouldReinstall {
 		return true, nil
 	}
