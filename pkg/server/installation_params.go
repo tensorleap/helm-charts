@@ -177,7 +177,7 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 	return nil
 }
 
-func selectHowManyGPUs(availableDevices []string, selectedGpus *uint) error {
+func selectHowManyGPUs(availableDevices []local.GPU, selectedGpus *uint) error {
 	defaultCount := 1
 	if *selectedGpus > 0 {
 		defaultCount = int(*selectedGpus)
@@ -212,11 +212,15 @@ func selectHowManyGPUs(availableDevices []string, selectedGpus *uint) error {
 	return nil
 }
 
-func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) error {
+func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) error {
 	defaultDevices := []string{}
+	availableGpusNames := []string{}
+	for _, device := range availableDevices {
+		availableGpusNames = append(availableGpusNames, device.String())
+	}
 
 	if *selectedGpuDevices == AllGpuDevices {
-		defaultDevices = availableDevices
+		defaultDevices = availableGpusNames
 	} else {
 		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
 		for _, device := range selectedDeviceArray {
@@ -226,13 +230,13 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 				log.Warnf("Device %s is not available", device)
 				continue
 			}
-			defaultDevices = append(defaultDevices, availableDevices[asNumber])
+			defaultDevices = append(defaultDevices, availableGpusNames[asNumber])
 		}
 	}
 
 	prompt := survey.MultiSelect{
 		Message: "Select GPU devices:",
-		Options: availableDevices,
+		Options: availableGpusNames,
 		Default: defaultDevices,
 	}
 	selected := []string{}
@@ -253,7 +257,7 @@ func selectGpuDevices(availableDevices []string, selectedGpuDevices *string) err
 
 	devicesIndexes := []string{}
 	for _, device := range selected {
-		for i, availableDevice := range availableDevices {
+		for i, availableDevice := range availableGpusNames {
 			if device == availableDevice {
 				devicesIndexes = append(devicesIndexes, fmt.Sprint(i))
 			}
