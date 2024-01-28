@@ -85,7 +85,7 @@ func GetFileContent(owner, repo, filePath, ref string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to retrieve file: %s", resp.Status)
+		return nil, fmt.Errorf("failed to retrieve file: %s, status: %s", url, resp.Status)
 	}
 
 	var fileData struct {

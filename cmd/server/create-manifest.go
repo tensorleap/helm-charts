@@ -35,7 +35,7 @@ func NewCreateManifestCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&serverChartVersion, "tensorleap-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
-	cmd.Flags().StringVar(&serverChartVersion, "tensorleap-infra-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
+	cmd.Flags().StringVar(&infraChartVersion, "tensorleap-infra-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
 	cmd.Flags().BoolVar(&fromLocal, "local", false, "Build manifest from local files")
 	cmd.Flags().StringVarP(&output, "output", "o", "manifest.yaml", "Output file path")
 

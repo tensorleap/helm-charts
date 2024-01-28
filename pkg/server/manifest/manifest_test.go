@@ -110,6 +110,15 @@ func TestManifestV2(t *testing.T) {
 	assert.Equal(t, toMap(mnfV2), toMap(mnf))
 }
 
+func TestGetLatestServerHelmChartTag(t *testing.T) {
+	t.Skip("Skip github test") // for debugging
+	mnf, err := GenerateManifestFromRemote("", "1.1.0-test.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, mnf.InfraHelmChart.Version, "1.1.0-test.2")
+}
+
 func toMap(v interface{}) map[string]interface{} {
 	b, err := yaml.Marshal(v)
 	if err != nil {
