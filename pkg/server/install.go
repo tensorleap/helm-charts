@@ -120,11 +120,12 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 	}
 	if !isInfraReleaseExisted {
 		log.SendCloudReport("info", "Setting up infra helm repo", "Running", &map[string]interface{}{"version": infraChartMeta.Version})
+		infraValues := helm.CreateInfraChartValues(installationParams.GetInfraHelmValuesParams())
 		if err := helm.InstallChart(
 			helmConfig,
 			infraChartMeta.ReleaseName,
 			infraChart,
-			nil,
+			infraValues,
 		); err != nil {
 			log.SendCloudReport("error", "Failed installing latest chart versions", "Failed",
 				&map[string]interface{}{"version": infraChartMeta.Version, "error": err.Error()})
