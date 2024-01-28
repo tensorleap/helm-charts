@@ -113,10 +113,10 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 		return nil
 	}
 
-	availableDevices, err := local.CheckNvidiaGPU()
+	availableDevices, checkNvidiaErr := local.CheckNvidiaGPU()
 
-	if err != nil {
-		log.Warnf("Failed to check NVIDIA GPU: %s", err)
+	if checkNvidiaErr != nil {
+		log.Warnf("Failed to check NVIDIA GPU: %s", checkNvidiaErr)
 		prompt := survey.Confirm{
 			Message: "Do you want to continue without GPU?",
 			Default: false,
@@ -130,7 +130,7 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 			*gpus = 0
 			return nil
 		} else {
-			return fmt.Errorf("failed to check NVIDIA GPU: %s", err)
+			return fmt.Errorf("failed to check NVIDIA GPU: %s", checkNvidiaErr)
 		}
 
 	} else if availableDevices == nil {
@@ -145,20 +145,13 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 		"Select specific",
 	}
 
-	if len(availableDevices) == 1 {
-		gpuOptions = []string{
-			"Use GPU",
-			"Not use GPU",
-		}
-	}
-
 	prompt := survey.Select{
 		Message: "Select GPU option:",
 		Default: 0,
 		Options: gpuOptions,
 	}
 	gpuOptionIndex := 0
-	err = survey.AskOne(&prompt, &gpuOptionIndex)
+	err := survey.AskOne(&prompt, &gpuOptionIndex)
 	if err != nil {
 		return err
 	}
@@ -367,6 +360,33 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 	}
 }
 
+func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
+
+	nvidiaGpuVisibleDevices := ""
+	nvidiaGpuEnable := params.IsUseGpu()
+
+	if nvidiaGpuEnable {
+		if params.GpuDevices == AllGpuDevices {
+			nvidiaGpuVisibleDevices = AllGpuDevices
+		} else if params.GpuDevices != "" {
+			nvidiaGpuVisibleDevices = params.GpuDevices
+		} else if params.Gpus > 0 {
+			devices := []string{}
+			for i := 0; i < int(params.Gpus); i++ {
+				devices = append(devices, fmt.Sprint(i))
+			}
+			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
+		} else {
+			nvidiaGpuVisibleDevices = AllGpuDevices
+		}
+	}
+
+	return &helm.InfraHelmValuesParams{
+		NvidiaGpuEnable:         nvidiaGpuEnable,
+		NvidiaGpuVisibleDevices: nvidiaGpuVisibleDevices,
+	}
+}
+
 func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClusterParams {
 	volumes := []string{
 		fmt.Sprintf("%v:%v", local.STANDALONE_DIR, local.STANDALONE_DIR),
@@ -374,29 +394,11 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	useGpu := params.IsUseGpu()
-	gpuRequest := ""
-
-	if useGpu {
-		if params.GpuDevices == AllGpuDevices {
-			gpuRequest = AllGpuDevices
-		} else if params.GpuDevices != "" {
-			gpuRequest = params.GpuDevices
-		} else if params.Gpus > 0 {
-			devices := []string{}
-			for i := 0; i < int(params.Gpus); i++ {
-				devices = append(devices, fmt.Sprint(i))
-			}
-			gpuRequest = strings.Join(devices, ",")
-		} else {
-			gpuRequest = AllGpuDevices
-		}
-	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu:    useGpu,
-		Port:       params.ClusterPort,
-		Volumes:    volumes,
-		GpuRequest: gpuRequest,
+		WithGpu: useGpu,
+		Port:    params.ClusterPort,
+		Volumes: volumes,
 	}
 }
 
