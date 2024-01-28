@@ -25,20 +25,23 @@ func GenerateManifestFromLocal(fileGetter FileGetter) (*InstallationManifest, er
 
 func GenerateManifestFromRemote(serverChartVersion, infraChartVersion string) (*InstallationManifest, error) {
 	serverChartTag := ""
-	IsGetLatestVersions := len(serverChartVersion) == 0 || len(infraChartVersion) == 0
-	if IsGetLatestVersions {
+	if len(serverChartVersion) == 0 {
 		var err error
 		serverChartTag, err = GetLatestServerHelmChartTag()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get latest version: %v", err)
 		}
 		serverChartVersion = GetHelmVersionFromTag(serverChartTag)
+
+	} else {
+		serverChartTag = fmt.Sprintf("tensorleap-%s", serverChartVersion)
+	}
+	if len(infraChartVersion) == 0 {
+		var err error
 		infraChartVersion, err = GetLatestInfraHelmChartVersion()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get latest version: %v", err)
 		}
-	} else {
-		serverChartTag = fmt.Sprintf("tensorleap-%s", serverChartVersion)
 	}
 
 	tensorleapRepoRef := serverChartTag
