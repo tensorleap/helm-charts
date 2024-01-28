@@ -37,10 +37,9 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 }
 
 type CreateK3sClusterParams struct {
-	WithGpu    bool     `json:"gpu"`
-	GpuRequest string   `json:"gpuRequest"`
-	Port       uint     `json:"port"`
-	Volumes    []string `json:"volumes"`
+	WithGpu bool     `json:"gpu"`
+	Port    uint     `json:"port"`
+	Volumes []string `json:"volumes"`
 }
 
 func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
@@ -268,10 +267,6 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 	if params.WithGpu {
 		simpleK3dConfig.Options.Runtime.GPURequest = "all"
-		simpleK3dConfig.Env = append(simpleK3dConfig.Env, conf.EnvVarWithNodeFilters{
-			EnvVar:      fmt.Sprintf("NVIDIA_VISIBLE_DEVICES=%s",  params.GpuRequest),
-			NodeFilters: []string{"server:*"},
-		})
 	}
 
 	for i, v := range params.Volumes {
