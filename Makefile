@@ -52,7 +52,7 @@ test:
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
 .PHONY: update-images
 update-images:
-	(helm template ./charts/tensorleap-infra && helm template ./charts/tensorleap) \
+	(helm template ./charts/tensorleap-infra --set nvidiaGpu.enabled=true && helm template ./charts/tensorleap) \
 		| grep 'image: ' \
 		| sed 's/.*: //' \
 		| sed 's/\"//g' \
