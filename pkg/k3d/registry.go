@@ -289,7 +289,7 @@ func CacheImagesInParallel(ctx context.Context, images []string, regPort string,
 	if err != nil {
 		return err
 	}
-	if !isAirgap {
+	if !isAirgap && len(imagesNotInRegistry) > 0 {
 		log.Info("Downloading docker images...")
 		wg := sync.WaitGroup{}
 		for _, img := range imagesNotInRegistry {
