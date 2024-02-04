@@ -2,11 +2,10 @@ docker.elastic.co/eck/eck-operator:2.8.0
 docker.elastic.co/elasticsearch/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
-image-name
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-us-central1-docker.pkg.dev/tensorleap/main/engine:master-99fbda37-stable
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-368a4167-stable
 us-central1-docker.pkg.dev/tensorleap/main/node-server:master-19400374-stable
 us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-499c9da8-stable
