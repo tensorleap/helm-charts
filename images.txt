@@ -6,6 +6,6 @@ nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-us-central1-docker.pkg.dev/tensorleap/main/engine:master-3e79c64e-stable
-us-central1-docker.pkg.dev/tensorleap/main/node-server:master-19400374-stable
-us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-3aaf7bf3-stable
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-4e0ded49-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-9cff5c70-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-ff0d8866-stable
