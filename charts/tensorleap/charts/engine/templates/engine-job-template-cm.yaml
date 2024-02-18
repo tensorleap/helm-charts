@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engine-job-template-gpu-cm
+data:
+  job: |
+    metadata:
+      labels:
+        engineJob: "true"
+        suffix: placeholder
+    spec:
+      ttlSecondsAfterFinished: 36000 # 10 hours
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+            - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+              name: engine
+              env:
+                - name: JOB_PAYLOAD
+              envFrom:
+                - configMapRef:
+                    name: engine-cm
+              volumeMounts:
+{{- range .Values.additional_pvcs }}
+                - name: {{ .name  }}-vol
+                  mountPath: {{ .mountPath }}
+{{- end }}
+{{ if .Values.localDataDirectory }}
+                - name: local-user-data
+                  mountPath: {{ .Values.localDataDirectory }}
+{{ end }}
+          restartPolicy: Never
+{{ if .Values.schedulerName }}
+          schedulerName: {{ .Values.schedulerName }}
+{{ end }}
+          volumes:
+{{- range .Values.additional_pvcs }}
+            - name: {{ .name  }}-vol
+              persistentVolumeClaim:
+                claimName: {{ .name }}
+{{- end }}
+{{ if .Values.localDataDirectory }}
+            - name: local-user-data
+              hostPath:
+                path: {{ .Values.localDataDirectory }}
+                type: DirectoryOrCreate
+{{ end }}
