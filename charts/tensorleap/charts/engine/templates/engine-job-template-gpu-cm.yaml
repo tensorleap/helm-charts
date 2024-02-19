@@ -15,7 +15,7 @@ data:
       template:
         spec:
           containers:
-            - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+            - image: 898022457080.dkr.ecr.us-east-1.amazonaws.com/engine:{{ .Values.image_tag }}
               name: engine
               resources:
                 limits:

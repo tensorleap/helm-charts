@@ -29,7 +29,7 @@ import (
 //	quay.io:
 //	  endpoint:
 //	    - http://k3d-tensorleap-registry:5000
-//	us-central1-docker.pkg.dev:
+//	898022457080.dkr.ecr.us-east-1.amazonaws.com:
 //	  endpoint:
 //	    - http://k3d-tensorleap-registry:5000
 //	        `
