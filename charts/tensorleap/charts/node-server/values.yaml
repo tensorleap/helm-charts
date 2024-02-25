@@ -1,4 +1,4 @@
-image_tag: master-30ca3eb8-stable
+image_tag: generalize-engine-job-template-4ae4d564
 disableDatadogMetrics: false
 
 ingress:
