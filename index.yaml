@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2024-02-26T14:49:23.032216983Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.7.0
+    digest: a604595a9dee129ef19fdf6409f01f025d6d4affaed4b2f1e7c1e29053ef4c7e
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.0.709-mergejob.1/tensorleap-1.0.709-mergejob.1.tgz
+    version: 1.0.709-mergejob.1
+  - apiVersion: v2
     created: "2024-02-25T16:53:16.12716552Z"
     dependencies:
     - condition: ingress-nginx.enabled
