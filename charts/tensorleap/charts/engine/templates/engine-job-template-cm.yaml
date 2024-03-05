@@ -1,14 +1,13 @@
-{{ if .Values.gpu }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: engine-job-template-gpu-cm
+  name: engine-job-template-cm
 data:
   job: |
     metadata:
       labels:
         engineJob: "true"
-        suffix: k80
+        suffix: placeholder
     spec:
       ttlSecondsAfterFinished: 36000 # 10 hours
       backoffLimit: 0
@@ -17,11 +16,6 @@ data:
           containers:
             - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
               name: engine
-              resources:
-                limits:
-                  nvidia.com/gpu: 1
-                requests:
-                  memory: "5Gi"
               env:
                 - name: JOB_PAYLOAD
               envFrom:
@@ -37,10 +31,6 @@ data:
                   mountPath: {{ .Values.localDataDirectory }}
 {{ end }}
           restartPolicy: Never
-{{ if .Values.gpuTolerations }}
-          tolerations:
-{{ toYaml .Values.gpuTolerations | indent 12 }}
-{{ end }}
 {{ if .Values.schedulerName }}
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}
@@ -55,5 +45,4 @@ data:
               hostPath:
                 path: {{ .Values.localDataDirectory }}
                 type: DirectoryOrCreate
-{{ end }}
 {{ end }}

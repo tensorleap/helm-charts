@@ -8,9 +8,19 @@ data:
   machineTypes: |
     - id: cpu
       displayName: CPU
-      templateConfigMap: engine-job-template-pysvcs-cm
+      resources:
+        requests:
+          memory: "5Gi"
 {{ if .Values.gpu }}
     - id: gpu
       displayName: GPU
-      templateConfigMap: engine-job-template-gpu-cm
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+        requests:
+          memory: "5Gi"
+{{ if .Values.gpuTolerations }}
+      tolerations:
+{{ toYaml .Values.gpuTolerations | indent 12 }}
+{{ end }}
 {{ end }}
