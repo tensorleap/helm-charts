@@ -1,4 +1,5 @@
 image_tag: master-a87cbf11-stable
+image: public.ecr.aws/g9h8h3m5/web-ui
 
 ingress:
   enabled: true
