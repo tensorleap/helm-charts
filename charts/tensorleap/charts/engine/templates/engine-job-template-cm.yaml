@@ -14,7 +14,7 @@ data:
       template:
         spec:
           containers:
-            - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+            - image: public.ecr.aws/g9h8h3m5/engine:{{ .Values.image_tag }}
               name: engine
               env:
                 - name: JOB_PAYLOAD
