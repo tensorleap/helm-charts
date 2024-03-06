@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: web-ui
-          image: us-central1-docker.pkg.dev/tensorleap/main/web-ui:{{ .Values.image_tag }}
+          image: public.ecr.aws/g9h8h3m5/web-ui:{{ .Values.image_tag }}
           imagePullPolicy: Always
           ports:
             - name: http
