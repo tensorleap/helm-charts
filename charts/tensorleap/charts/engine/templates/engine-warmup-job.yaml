@@ -14,7 +14,7 @@ data:
             spec:
                 containers:
                 - name: engine-placeholder
-                  image: public.ecr.aws/g9h8h3m5/engine:{{ .Values.image_tag }}
+                  image: {{ .Values.image }}:{{ .Values.image_tag }}
                   command: ["bash"]
                   args: ["-c", "sleep $WARMUP_TIMEOUT_SEC"]
                   envFrom:
