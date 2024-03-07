@@ -118,7 +118,7 @@ func IsHelmRequiredReinstall(ctx context.Context, mnf *manifest.InstallationMani
 		return false, err
 	}
 
-	isMinorVersionSmaller := version.IsMinorVersionChange(currentServerVersion, mnf.ServerHelmChart.Version) || version.IsMinorVersionSmaller(currentInfraVersion, mnf.InfraHelmChart.Version)
+	isMinorVersionSmaller := version.IsMinorVersionChange(currentServerVersion, mnf.ServerHelmChart.Version) && version.IsMinorVersionSmaller(currentInfraVersion, mnf.InfraHelmChart.Version)
 	if isMinorVersionSmaller {
 		return false, ErrOldManifest
 	}
