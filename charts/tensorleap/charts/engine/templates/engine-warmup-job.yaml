@@ -14,7 +14,7 @@ data:
             spec:
                 containers:
                 - name: engine-placeholder
-                  image: {{ .Values.image }}:{{ .Values.image_tag }}
+                  image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
                   command: ["bash"]
                   args: ["-c", "sleep $WARMUP_TIMEOUT_SEC"]
                   envFrom:

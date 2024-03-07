@@ -17,9 +17,9 @@ func TestCreateMirrorFromManifest(t *testing.T) {
 				"quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z",
 				"registry.k8s.io/ingress-nginx/controller:v1.8.0",
 				"registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407",
-				"public.ecr.aws/g9h8h3m5/engine:master-40246f22-stable",
-				"public.ecr.aws/g9h8h3m5/node-server:master-cc43e60b-stable",
-				"public.ecr.aws/g9h8h3m5/web-ui:master-6ea417b8-stable",
+				"us-central1-docker.pkg.dev/tensorleap/main/engine:master-40246f22-stable",
+				"us-central1-docker.pkg.dev/tensorleap/main/node-server:master-cc43e60b-stable",
+				"us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-6ea417b8-stable",
 			},
 			K3sImages: []string{
 				"docker.io/rancher/klipper-helm:v0.7.7-build20230403",

@@ -61,9 +61,6 @@ registries:
       us-central1-docker.pkg.dev:
         endpoint:
           - http://k3d-tensorleap-registry:5000
-      public.ecr.aws/g9h8h3m5:
-        endpoint:
-          - http://k3d-tensorleap-registry:5000
 options:
   k3d:
     disableLoadbalancer: true

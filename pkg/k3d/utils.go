@@ -33,7 +33,6 @@ import (
 //	  endpoint:
 //	    - http://k3d-tensorleap-registry:5000
 //	        `
-
 func CreateMirrorFromManifest(mfs *manifest.InstallationManifest, registryUrl string) (string, error) {
 	images := mfs.GetRegisterImages()
 	mirrors := make(map[string]interface{})
