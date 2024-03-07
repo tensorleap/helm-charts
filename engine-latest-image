@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 public.ecr.aws/g9h8h3m5/engine:master-c43e76e8-stable
+=======
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-3a3e105b-stable
+>>>>>>> e1eb8ed (generalize engine job template (#172))

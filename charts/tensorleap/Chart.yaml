@@ -1,7 +1,11 @@
 apiVersion: v2
 name: tensorleap
 type: application
+<<<<<<< HEAD
 version: 1.1.2
+=======
+version: 1.0.715
+>>>>>>> e1eb8ed (generalize engine job template (#172))
 dependencies:
   - name: ingress-nginx
     version: 4.7.0

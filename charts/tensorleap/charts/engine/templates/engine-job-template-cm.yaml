@@ -14,7 +14,11 @@ data:
       template:
         spec:
           containers:
+<<<<<<< HEAD
             - image: {{ .Values.image }}:{{ .Values.image_tag }}
+=======
+            - image: us-central1-docker.pkg.dev/tensorleap/main/engine:{{ .Values.image_tag }}
+>>>>>>> e1eb8ed (generalize engine job template (#172))
               name: engine
               env:
                 - name: JOB_PAYLOAD

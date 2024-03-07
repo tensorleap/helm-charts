@@ -1,4 +1,8 @@
 apiVersion: v2
 name: tensorleap-engine
 type: application
+<<<<<<< HEAD
 version: 1.0.290
+=======
+version: 1.0.289
+>>>>>>> e1eb8ed (generalize engine job template (#172))

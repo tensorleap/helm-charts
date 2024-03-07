@@ -9,3 +9,9 @@ public.ecr.aws/g9h8h3m5/web-ui:master-09975148-stable
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
+<<<<<<< HEAD
+=======
+us-central1-docker.pkg.dev/tensorleap/main/engine:master-3a3e105b-stable
+us-central1-docker.pkg.dev/tensorleap/main/node-server:master-899c6872-stable
+us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-3f76cce1-stable
+>>>>>>> e1eb8ed (generalize engine job template (#172))
