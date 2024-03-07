@@ -32,9 +32,9 @@ images:
     - quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
     - registry.k8s.io/ingress-nginx/controller:v1.8.0
     - registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
-    - public.ecr.aws/g9h8h3m5/engine:master-5c2018ec-stable
-    - public.ecr.aws/g9h8h3m5/node-server:master-11dc414e-stable
-    - public.ecr.aws/g9h8h3m5/web-ui:master-ff2ea33c-stable
+    - us-central1-docker.pkg.dev/tensorleap/main/engine:master-5c2018ec-stable
+    - us-central1-docker.pkg.dev/tensorleap/main/node-server:master-11dc414e-stable
+    - us-central1-docker.pkg.dev/tensorleap/main/web-ui:master-ff2ea33c-stable
 serverHelmChart:
   version: 1.0.407
   repoUrl: https://helm.tensorleap.ai

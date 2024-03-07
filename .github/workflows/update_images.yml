@@ -67,7 +67,7 @@ jobs:
                 const newVersion = versionParts.join('.');
                 const updatedChart = chartFile.replace(`version: ${version}`, `version: ${newVersion}`);
                 fs.writeFileSync(chartPath, updatedChart);
-                fs.writeFileSync(`${repo}-latest-image`, `public.ecr.aws/g9h8h3m5/${repo}:${imageTag}`)
+                fs.writeFileSync(`${repo}-latest-image`, `us-central1-docker.pkg.dev/tensorleap/main/${repo}:${imageTag}`)
 
                 updated = true;
               }
