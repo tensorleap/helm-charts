@@ -3,7 +3,7 @@ installerVersion: 0.0.0
 appVersion: 0.0.0
 images:
   k3s: docker.io/rancher/k3s:v1.26.4-k3s1
-  k3sGpu: us-central1-docker.pkg.dev/tensorleap/main/k3s:v1.26.4-k3s1-cuda-11.8.0-ubuntu-22.04
+  k3sGpu: public.ecr.aws/g9h8h3m5/k3s:v1.26.4-k3s1-cuda-11.8.0-ubuntu-22.04-v1
   k3dTools: ghcr.io/k3d-io/k3d-tools:5.5.2
   register: docker.io/library/registry:2
   checkDockerRequirement: alpine:3.18.3
