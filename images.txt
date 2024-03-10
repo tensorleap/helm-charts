@@ -3,9 +3,9 @@ docker.elastic.co/elasticsearch/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-c43e76e8-stable
-public.ecr.aws/g9h8h3m5/node-server:master-0bc9d111-stable
-public.ecr.aws/g9h8h3m5/web-ui:master-09975148-stable
+public.ecr.aws/g9h8h3m5/engine:master-de99c581-stable
+public.ecr.aws/g9h8h3m5/node-server:master-48345902-stable
+public.ecr.aws/g9h8h3m5/web-ui:master-c89e56f7-stable
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
