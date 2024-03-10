@@ -30,7 +30,7 @@ const (
 
 var (
 	k3sImage    = fmt.Sprintf("docker.io/rancher/k3s:%s", k3sVersion)
-	k3sGpuImage = fmt.Sprintf("us-central1-docker.pkg.dev/tensorleap/main/k3s:%s-cuda-11.8.0-ubuntu-22.04-v1", k3sVersion)
+	k3sGpuImage = fmt.Sprintf("public.ecr.aws/g9h8h3m5/k3s:%s-cuda-11.8.0-ubuntu-22.04-v1", k3sVersion)
 )
 
 func getK3sImages(k3sVersion string) ([]string, error) {
