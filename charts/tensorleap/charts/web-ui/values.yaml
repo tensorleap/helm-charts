@@ -1,5 +1,5 @@
-image_tag: master-c89e56f7-stable
-image: public.ecr.aws/g9h8h3m5/web-ui
+image_tag: keycloak-implementation-334f9f25
+image: us-central1-docker.pkg.dev/tensorleap/main/web-ui
 
 ingress:
   enabled: true

@@ -1,5 +1,6 @@
-image_tag: master-48345902-stable
-image: public.ecr.aws/g9h8h3m5/node-server
+image_tag: keycloak-implementation-063ec0b5
+image: us-central1-docker.pkg.dev/tensorleap/main/node-server
+
 disableDatadogMetrics: false
 
 ingress:
