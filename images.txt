@@ -3,7 +3,7 @@ docker.elastic.co/elasticsearch/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-de99c581-stable
+public.ecr.aws/g9h8h3m5/engine:master-d714bd58-stable
 public.ecr.aws/g9h8h3m5/node-server:master-dee8fd9c-stable
 public.ecr.aws/g9h8h3m5/web-ui:master-7ef28106-stable
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
