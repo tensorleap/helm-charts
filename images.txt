@@ -5,7 +5,7 @@ docker.io/library/rabbitmq:3.9.22
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/g9h8h3m5/engine:master-53a3754b-stable
 public.ecr.aws/g9h8h3m5/node-server:master-c569e2db-stable
-public.ecr.aws/g9h8h3m5/web-ui:master-4ca5e718-stable
+public.ecr.aws/g9h8h3m5/web-ui:master-50ac6928-stable
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v20230407
