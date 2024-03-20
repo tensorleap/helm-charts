@@ -19,3 +19,16 @@ global:
   elasticsearch:
     enabled: true
     url: ''
+
+keycloak:
+  replicas: 1
+  extraEnv: |
+    - name: KEYCLOAK_USER
+      value: admin
+    - name: KEYCLOAK_PASSWORD
+      value: admin
+  fullnameOverride: keycloak
+  ingress:
+    enabled: false
+  postgresql:
+    fullnameOverride: "keycloak-postgresql"
