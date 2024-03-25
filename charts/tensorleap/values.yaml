@@ -50,3 +50,18 @@ keycloak:
   pgchecker:
     image:
       repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
+datadog:
+  enabled: true
+  clusterAgent:
+    enabled: false
+  datadog:
+    processAgent:
+      enabled: false
+    tags:
+      - "env:on-prem"
+    logs:
+      enabled: true
+      containerCollectAll: false
+    apiKeyExistingSecret: datadog-secret
+    appKeyExistingSecret: datadog-secret
+    site: datadoghq.com

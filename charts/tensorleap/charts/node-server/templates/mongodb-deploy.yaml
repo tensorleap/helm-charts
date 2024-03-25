@@ -16,6 +16,8 @@ spec:
     metadata:
       labels:
         app: mongodb
+      annotations:
+        ad.datadoghq.com/mongodb.logs: '[{"source": "mongo", "service": "node-server"}]'
     spec:
       containers:
         - name: mongodb
