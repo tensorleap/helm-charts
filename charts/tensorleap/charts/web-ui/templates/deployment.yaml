@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: tensorleap-web-ui
+      annotations:
+        ad.datadoghq.com/web-ui.logs: '[{"source": "nodejs", "service": "web-ui"}]'
     spec:
       containers:
         - name: web-ui

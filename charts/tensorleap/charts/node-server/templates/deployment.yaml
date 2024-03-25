@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: tensorleap-node-server
+      annotations:
+        ad.datadoghq.com/tensorleap-node-server.logs: '[{"source": "nodejs", "service": "node-server"}]'
     spec:
       serviceAccountName: node-server-sa
       initContainers:
