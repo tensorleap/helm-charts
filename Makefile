@@ -15,7 +15,7 @@ cluster-del: validate-k-env
 	k3d cluster delete ${CLUSTER_NAME}
 
 helm-install: validate-k-env
-	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap -n ${NAME_SPACE} --debug
+	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap -n ${NAME_SPACE}
 
 helm-uninstall: validate-k-env
 	helm uninstall ${CLUSTER_NAME} -n ${NAME_SPACE}
