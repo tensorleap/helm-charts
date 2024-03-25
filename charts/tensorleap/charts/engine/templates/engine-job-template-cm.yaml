@@ -12,6 +12,9 @@ data:
       ttlSecondsAfterFinished: 36000 # 10 hours
       backoffLimit: 0
       template:
+        metadata:
+          annotations:
+            ad.datadoghq.com/engine.logs: '[{"source": "python", "service": "engine"}]'
         spec:
           containers:
             - image: {{ .Values.image }}:{{ .Values.image_tag }}
