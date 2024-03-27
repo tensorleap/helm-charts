@@ -1,0 +1,34 @@
+{{ if .Values.global.create_local_volumes }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: keycloak-postgresql-data
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  hostPath:
+    path: /var/lib/tensorleap/standalone/storage/keycloak-postgresql
+    type: DirectoryOrCreate
+  claimRef:
+    name: keycloak-postgresql-data
+    namespace: {{ .Release.Namespace }}
+{{ end }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: keycloak-postgresql-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+{{ if .Values.global.create_local_volumes }}
+  volumeName: keycloak-postgresql-data
+{{ else if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}
