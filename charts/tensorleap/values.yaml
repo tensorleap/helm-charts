@@ -32,3 +32,6 @@ keycloak:
     enabled: false
   postgresql:
     fullnameOverride: "keycloak-postgresql"
+    persistence:
+      enabled: true
+      existingClaim: "keycloak-postgresql-data"
