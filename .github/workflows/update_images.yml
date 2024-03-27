@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           repo: ${{ matrix.repo }}
           ref: master
-          checkName: mark-stable
+          checkName: tag-public-ecr-image-as-stable
 
   update-images:
     runs-on: ubuntu-latest
