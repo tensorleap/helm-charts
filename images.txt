@@ -5,9 +5,9 @@ docker.io/busybox:1.32
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-aa69f698-stable
-public.ecr.aws/g9h8h3m5/node-server:master-e26d2716-stable
-public.ecr.aws/g9h8h3m5/web-ui:master-541ae31a-stable
+public.ecr.aws/g9h8h3m5/engine:master-fa5874e3-stable
+public.ecr.aws/g9h8h3m5/node-server:master-9f124a74-stable
+public.ecr.aws/g9h8h3m5/web-ui:master-b61b67ad-stable
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.8.0
