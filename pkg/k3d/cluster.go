@@ -206,9 +206,11 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		Image:   image,
 		Volumes: make([]conf.VolumeWithNodeFilters, len(params.Volumes)),
 		Ports: []conf.PortWithNodeFilters{{
-			Port:        fmt.Sprintf("%v:80", params.Port),
+			Port:        fmt.Sprintf("%v:443", 4433),
 			NodeFilters: []string{"server:*:direct"},
-		}},
+		},{			Port:        fmt.Sprintf("%v:80", params.Port),
+				NodeFilters: []string{"server:*:direct"},
+			}},
 		Env: []conf.EnvVarWithNodeFilters{
 			{
 				EnvVar:      fmt.Sprintf("all_proxy=%s", os.Getenv("all_proxy")),
