@@ -1,0 +1,9 @@
+dependencies:
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.10.0
+- name: keycloak
+  repository: https://codecentric.github.io/helm-charts
+  version: 18.4.4
+digest: sha256:1516d83b7286f0a7073def686cf0242a559eaa83a3fe6ebac5f3556df8fa580e
+generated: "2024-03-28T12:08:42.2701+02:00"
