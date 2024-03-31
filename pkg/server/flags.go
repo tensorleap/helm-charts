@@ -1,6 +1,8 @@
 package server
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 type InstallationSourceFlags struct {
 	Tag                        string `json:"tag,omitempty"`
@@ -14,6 +16,24 @@ func (flags *InstallationSourceFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.Local, "local", false, "Install tensorleap from local helm charts")
 }
 
+type TLSFlags struct {
+	CertPath  string `json:"certPath,omitempty"`
+	KeyPath   string `json:"keyPath,omitempty"`
+	ChainPath string `json:"chainPath,omitempty"`
+	Port      uint   `json:"port,omitempty"`
+}
+
+func (flags *TLSFlags) SetFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&flags.CertPath, "cert", "c", "", "Path to the TLS certificate file")
+	cmd.Flags().StringVarP(&flags.KeyPath, "key", "k", "", "Path to the TLS key file")
+	cmd.Flags().StringVar(&flags.ChainPath, "chain", "", "Path to the TLS chain file (optional)")
+	cmd.Flags().UintVar(&flags.Port, "tls-port", defaultHttpsPort, "Port to be used for TLS")
+}
+
+func (flags *TLSFlags) IsEnabled() bool {
+	return flags.CertPath != "" && flags.KeyPath != ""
+}
+
 type InstallFlags struct {
 	Port             uint   `json:"port"`
 	RegistryPort     uint   `json:"registryPort"`
@@ -23,15 +43,19 @@ type InstallFlags struct {
 	DatasetDirectory string `json:"datasetDirectory"`
 	DisableMetrics   bool   `json:"disableMetrics"`
 	FixK3dDns        bool   `json:"fixK3dDns"`
+	Domain           string `json:"domain"`
+	TLSFlags
 }
 
 func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
-	cmd.Flags().UintVarP(&flags.Port, "port", "p", DefaultClusterPort, "Port to be used for tensorleap installation")
-	cmd.Flags().UintVar(&flags.RegistryPort, "registry-port", DefaultRegistryPort, "Port to be used for docker registry")
+	cmd.Flags().UintVarP(&flags.Port, "port", "p", defaultHttpPort, "Port to be used for http server")
+	cmd.Flags().UintVar(&flags.RegistryPort, "registry-port", defaultRegistryPort, "Port to be used for docker registry")
 	cmd.Flags().StringVar(&flags.GpuDevices, "gpu-devices", "", "GPU devices to be used (e.g. 1 or 0,1,2 or all)")
 	cmd.Flags().UintVar(&flags.Gpus, "gpus", 0, "Number of GPUs to be used")
 	cmd.Flags().BoolVar(&flags.UseCpu, "cpu", false, "Use CPU for training and evaluating")
 	cmd.Flags().StringVar(&flags.DatasetDirectory, "dataset-dir", "", "Dataset directory maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
+	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
+	flags.TLSFlags.SetFlags(cmd)
 }

@@ -13,10 +13,19 @@ import (
 
 type Record = map[string]interface{}
 
+type TLSParams struct {
+	Enabled bool   `json:"enabled"`
+	Cert    string `json:"cert"`
+	Key     string `json:"key"`
+}
+
 type ServerHelmValuesParams struct {
-	Gpu                   bool   `json:"gpu"`
-	LocalDataDirectory    string `json:"localDataDirectory"`
-	DisableDatadogMetrics bool   `json:"disableDatadogMetrics"`
+	Gpu                   bool      `json:"gpu"`
+	LocalDataDirectory    string    `json:"localDataDirectory"`
+	DisableDatadogMetrics bool      `json:"disableDatadogMetrics"`
+	Domain                string    `json:"domain"`
+	Url                   string    `json:"url"`
+	Tls                   TLSParams `json:"tls"`
 }
 
 type InfraHelmValuesParams struct {
@@ -57,6 +66,15 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) Record {
 		},
 		"tensorleap-node-server": Record{
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
+		},
+		"global": Record{
+			"domain": params.Domain,
+			"url":    params.Url,
+			"tls": Record{
+				"enabled": params.Tls.Enabled,
+				"cert":    params.Tls.Cert,
+				"key":     params.Tls.Key,
+			},
 		},
 	}
 }
