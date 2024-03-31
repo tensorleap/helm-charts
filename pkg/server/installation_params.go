@@ -16,15 +16,16 @@ import (
 )
 
 const currentInstallationVersion = "v0.0.1"
-const DefaultRegistryPort = 5699
-const DefaultClusterPort = 4589
-const AllGpuDevices = "all"
+const defaultRegistryPort = 5699
+const defaultHttpPort = 4589
+const allGpuDevices = "all"
 
 type InstallationParams struct {
 	Version          string `json:"version"`
 	GpuDevices       string `json:"gpuDevices,omitempty"`
 	Gpus             uint   `json:"gpus,omitempty"`
-	ClusterPort      uint   `json:"clusterPort"`
+	Port             uint   `json:"clusterPort"`
+	EndpointUrl      string `json:"endpointUrl,omitempty"`
 	RegistryPort     uint   `json:"registryPort"`
 	DisableMetrics   bool   `json:"disableMetrics"`
 	DatasetDirectory string `json:"datasetDirectory"`
@@ -49,15 +50,36 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		return nil, err
 	}
 
+	previousParams, err := LoadInstallationParamsFromPrevious()
+	endPointUrl := flags.CalcEndpointUrl()
+
+	if err == nil {
+		isUserNotSetEndpointUrl := flags.EndpointUrl == ""
+		isAskUserToUsePreviousUrl := isUserNotSetEndpointUrl && previousParams.EndpointUrl != flags.CalcEndpointUrl()
+		if isAskUserToUsePreviousUrl {
+
+			prompt := survey.Input{
+				Message: "Endpoint URL",
+				Default: previousParams.EndpointUrl,
+			}
+			endPointUrl = ""
+			err := survey.AskOne(&prompt, &endPointUrl)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return &InstallationParams{
 		Version:          currentInstallationVersion,
 		Gpus:             flags.Gpus,
 		GpuDevices:       flags.GpuDevices,
-		ClusterPort:      flags.Port,
+		Port:             flags.Port,
 		RegistryPort:     flags.RegistryPort,
 		DisableMetrics:   flags.DisableMetrics,
 		DatasetDirectory: flags.DatasetDirectory,
 		FixK3dDns:        flags.FixK3dDns,
+		EndpointUrl:      endPointUrl,
 	}, nil
 }
 
@@ -92,10 +114,10 @@ func AskInstallationParams() (*InstallationParams, error) {
 		return nil, err
 	}
 
-	if err := InitClusterPort(&installationParams.ClusterPort); err != nil {
+	if err := InitClusterPort(&installationParams.Port); err != nil {
 		log.SendCloudReport("error", "Failed initializing cluster port", "Failed",
 
-			&map[string]interface{}{"clusterPort": installationParams.ClusterPort, "error": err.Error()})
+			&map[string]interface{}{"clusterPort": installationParams.Port, "error": err.Error()})
 		return nil, err
 	}
 
@@ -158,7 +180,7 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 
 	switch gpuOptionIndex {
 	case 0:
-		*gpuDevices = AllGpuDevices
+		*gpuDevices = allGpuDevices
 	case 1:
 		*gpus = 0
 		*gpuDevices = ""
@@ -219,7 +241,7 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 		availableGpusNames = append(availableGpusNames, device.String())
 	}
 
-	if *selectedGpuDevices == AllGpuDevices {
+	if *selectedGpuDevices == allGpuDevices {
 		defaultDevices = availableGpusNames
 	} else {
 		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
@@ -310,14 +332,14 @@ func GetDefaultDataVolume() string {
 }
 
 func InitClusterPort(clusterPort *uint) error {
-	*clusterPort = DefaultClusterPort
+	*clusterPort = defaultHttpPort
 	return nil
 	// will add this later
 	// return InitPort(clusterPort, DefaultClusterPort, "Enter cluster port:")
 }
 
 func InitRegistryPort(registryPort *uint) error {
-	*registryPort = DefaultRegistryPort
+	*registryPort = defaultRegistryPort
 	return nil
 	// will add this later
 	// return InitPort(registryPort, DefaultRegistryPort, "Enter registry port:")
@@ -361,6 +383,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		Gpu:                   params.IsUseGpu(),
 		LocalDataDirectory:    dataContainerPath,
 		DisableDatadogMetrics: params.DisableMetrics,
+		EndpointUrl:           params.EndpointUrl,
 	}
 }
 
@@ -370,8 +393,8 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 	nvidiaGpuEnable := params.IsUseGpu()
 
 	if nvidiaGpuEnable {
-		if params.GpuDevices == AllGpuDevices {
-			nvidiaGpuVisibleDevices = AllGpuDevices
+		if params.GpuDevices == allGpuDevices {
+			nvidiaGpuVisibleDevices = allGpuDevices
 		} else if params.GpuDevices != "" {
 			nvidiaGpuVisibleDevices = params.GpuDevices
 		} else if params.Gpus > 0 {
@@ -381,7 +404,7 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 			}
 			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
 		} else {
-			nvidiaGpuVisibleDevices = AllGpuDevices
+			nvidiaGpuVisibleDevices = allGpuDevices
 		}
 	}
 
@@ -401,7 +424,7 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 
 	return &k3d.CreateK3sClusterParams{
 		WithGpu: useGpu,
-		Port:    params.ClusterPort,
+		Port:    params.Port,
 		Volumes: volumes,
 	}
 }

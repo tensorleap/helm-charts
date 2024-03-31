@@ -191,6 +191,8 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		log.Fatalln(err)
 	}
 
+	destinationPort := 80
+
 	simpleK3dConfig := conf.SimpleConfig{
 		TypeMeta: k3dConfTypes.TypeMeta{
 			Kind:       "Simple",
@@ -205,10 +207,12 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		},
 		Image:   image,
 		Volumes: make([]conf.VolumeWithNodeFilters, len(params.Volumes)),
-		Ports: []conf.PortWithNodeFilters{{
-			Port:        fmt.Sprintf("%v:80", params.Port),
-			NodeFilters: []string{"server:*:direct"},
-		}},
+		Ports: []conf.PortWithNodeFilters{
+			{
+				Port:        fmt.Sprintf("%v:%v", params.Port, destinationPort),
+				NodeFilters: []string{"server:*:direct"},
+			},
+		},
 		Env: []conf.EnvVarWithNodeFilters{
 			{
 				EnvVar:      fmt.Sprintf("all_proxy=%s", os.Getenv("all_proxy")),
@@ -267,6 +271,14 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 	if params.WithGpu {
 		simpleK3dConfig.Options.Runtime.GPURequest = "all"
+	}
+
+	// backward compatibility for old installations
+	if params.Port != 4589 {
+		simpleK3dConfig.Ports = append(simpleK3dConfig.Ports, conf.PortWithNodeFilters{
+			Port:        "4589:80",
+			NodeFilters: []string{"server:*:direct"},
+		})
 	}
 
 	for i, v := range params.Volumes {

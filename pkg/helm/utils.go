@@ -17,6 +17,7 @@ type ServerHelmValuesParams struct {
 	Gpu                   bool   `json:"gpu"`
 	LocalDataDirectory    string `json:"localDataDirectory"`
 	DisableDatadogMetrics bool   `json:"disableDatadogMetrics"`
+	EndpointUrl           string `json:"endpointUrl"`
 }
 
 type InfraHelmValuesParams struct {
@@ -57,6 +58,9 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) Record {
 		},
 		"tensorleap-node-server": Record{
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
+		},
+		"global": Record{
+			"endpointUrl": params.EndpointUrl,
 		},
 	}
 }

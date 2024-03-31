@@ -12,6 +12,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 			Gpu:                   true,
 			LocalDataDirectory:    "some/dir/path",
 			DisableDatadogMetrics: false,
+			EndpointUrl:           "url",
 		}
 
 		expected := Record{
@@ -21,6 +22,9 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 			},
 			"tensorleap-node-server": Record{
 				"disableDatadogMetrics": params.DisableDatadogMetrics,
+			},
+			"global": Record{
+				"endpointUrl": "url",
 			},
 		}
 

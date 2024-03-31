@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
@@ -77,7 +75,7 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 		return err
 	}
 
-	baseLink := fmt.Sprintf("http://127.0.0.1:%v", flags.Port)
+	baseLink := installationParams.EndpointUrl
 
 	log.SendCloudReport("info", "Successfully completed installation", "Success", nil)
 	log.Info("Successfully completed installation")
