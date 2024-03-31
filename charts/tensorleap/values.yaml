@@ -16,6 +16,13 @@ global:
   target_namespace: ''
   storageClassName: ''
   create_local_volumes: true
+  domain: 'localhost'
+  url: 'http://localhost'
+  tls:
+    enabled: false
+    cert: ''
+    key: ''
+    
   elasticsearch:
     enabled: true
     url: ''
@@ -27,6 +34,9 @@ keycloak:
       value: admin
     - name: KEYCLOAK_PASSWORD
       value: admin
+    - name: PROXY_ADDRESS_FORWARDING
+      value: "true"
+
   fullnameOverride: keycloak
   ingress:
     enabled: false
