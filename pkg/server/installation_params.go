@@ -16,19 +16,68 @@ import (
 )
 
 const currentInstallationVersion = "v0.0.1"
-const DefaultRegistryPort = 5699
-const DefaultClusterPort = 4589
-const AllGpuDevices = "all"
+const defaultRegistryPort = 5699
+const defaultHttpPort = 80
+const defaultHttpsPort = 443
+const allGpuDevices = "all"
 
 type InstallationParams struct {
 	Version          string `json:"version"`
 	GpuDevices       string `json:"gpuDevices,omitempty"`
 	Gpus             uint   `json:"gpus,omitempty"`
-	ClusterPort      uint   `json:"clusterPort"`
+	Port             uint   `json:"clusterPort"`
+	Domain           string `json:"domain"`
 	RegistryPort     uint   `json:"registryPort"`
 	DisableMetrics   bool   `json:"disableMetrics"`
 	DatasetDirectory string `json:"datasetDirectory"`
 	FixK3dDns        bool   `json:"fixK3dDns"`
+	TLSParams
+}
+
+type TLSParams struct {
+	Enabled bool   `json:"enabled"`
+	Cert    string `json:"cert,omitempty"`
+	Key     string `json:"key,omitempty"`
+}
+
+func GetTLSParams(flags TLSFlags) (*TLSParams, error) {
+	if !flags.IsEnabled() {
+		return &TLSParams{
+			Enabled: false,
+		}, nil
+	}
+
+	cert, err := os.ReadFile(flags.CertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read certificate file: %v", err)
+	}
+	key, err := os.ReadFile(flags.KeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read key file: %v", err)
+	}
+
+	// If chain file is provided, append it to the cert
+	if flags.ChainPath != "" {
+		chain, err := os.ReadFile(flags.ChainPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read chain file: %v", err)
+		}
+		cert = append(cert, chain...)
+	}
+
+	return &TLSParams{
+		Enabled: true,
+		Cert:    string(cert),
+		Key:     string(key),
+	}, nil
+}
+
+func (params *TLSParams) GetTLSHelmParams() *helm.TLSParams {
+	return &helm.TLSParams{
+		Enabled: params.Enabled,
+		Cert:    params.Cert,
+		Key:     params.Key,
+	}
 }
 
 func (params *InstallationParams) IsUseGpu() bool {
@@ -49,15 +98,47 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		return nil, err
 	}
 
+	tlsParams, err := GetTLSParams(flags.TLSFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TLS params: %v", err)
+	}
+
+	previousParams, err := LoadInstallationParamsFromPrevious()
+	if err == nil {
+		isAskUserToUsePreviousTlsConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
+		if isAskUserToUsePreviousTlsConfig {
+			prompt := survey.Confirm{
+				Message: "Do you want to use the previous TLS configuration?",
+				Default: true,
+			}
+			usePreviousTlsConfig := true
+			err := survey.AskOne(&prompt, &usePreviousTlsConfig)
+			if err != nil {
+				return nil, err
+			}
+			if usePreviousTlsConfig {
+				tlsParams = &previousParams.TLSParams
+				flags.Domain = previousParams.Domain
+			}
+		}
+	}
+
+	port := flags.Port
+	if tlsParams.Enabled {
+		port = flags.TLSFlags.Port
+	}
+
 	return &InstallationParams{
 		Version:          currentInstallationVersion,
 		Gpus:             flags.Gpus,
 		GpuDevices:       flags.GpuDevices,
-		ClusterPort:      flags.Port,
+		Port:             port,
 		RegistryPort:     flags.RegistryPort,
 		DisableMetrics:   flags.DisableMetrics,
 		DatasetDirectory: flags.DatasetDirectory,
 		FixK3dDns:        flags.FixK3dDns,
+		Domain:           flags.Domain,
+		TLSParams:        *tlsParams,
 	}, nil
 }
 
@@ -92,10 +173,10 @@ func AskInstallationParams() (*InstallationParams, error) {
 		return nil, err
 	}
 
-	if err := InitClusterPort(&installationParams.ClusterPort); err != nil {
+	if err := InitClusterPort(&installationParams.Port); err != nil {
 		log.SendCloudReport("error", "Failed initializing cluster port", "Failed",
 
-			&map[string]interface{}{"clusterPort": installationParams.ClusterPort, "error": err.Error()})
+			&map[string]interface{}{"clusterPort": installationParams.Port, "error": err.Error()})
 		return nil, err
 	}
 
@@ -158,7 +239,7 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
 
 	switch gpuOptionIndex {
 	case 0:
-		*gpuDevices = AllGpuDevices
+		*gpuDevices = allGpuDevices
 	case 1:
 		*gpus = 0
 		*gpuDevices = ""
@@ -219,7 +300,7 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 		availableGpusNames = append(availableGpusNames, device.String())
 	}
 
-	if *selectedGpuDevices == AllGpuDevices {
+	if *selectedGpuDevices == allGpuDevices {
 		defaultDevices = availableGpusNames
 	} else {
 		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
@@ -310,14 +391,14 @@ func GetDefaultDataVolume() string {
 }
 
 func InitClusterPort(clusterPort *uint) error {
-	*clusterPort = DefaultClusterPort
+	*clusterPort = defaultHttpPort
 	return nil
 	// will add this later
 	// return InitPort(clusterPort, DefaultClusterPort, "Enter cluster port:")
 }
 
 func InitRegistryPort(registryPort *uint) error {
-	*registryPort = DefaultRegistryPort
+	*registryPort = defaultRegistryPort
 	return nil
 	// will add this later
 	// return InitPort(registryPort, DefaultRegistryPort, "Enter registry port:")
@@ -354,13 +435,44 @@ func InitPort(port *uint, defaultPort uint, message string) error {
 	return nil
 }
 
+func (params *InstallationParams) CalcUrl() string {
+	var scheme, url string
+
+	port := params.Port
+	if params.TLSParams.Enabled {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+
+	if params.Domain == "" {
+		params.Domain = "localhost"
+	}
+
+	isDefaultPort := params.TLSParams.Enabled && port == defaultHttpsPort || (!params.TLSParams.Enabled && port == defaultHttpPort)
+
+	if isDefaultPort {
+		url = fmt.Sprintf("%s://%s", scheme, params.Domain)
+	} else {
+		url = fmt.Sprintf("%s://%s:%d", scheme, params.Domain, port)
+	}
+
+	return url
+}
+
 func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmValuesParams {
 	dataContainerPath := strings.Split(params.DatasetDirectory, ":")[1]
+
+	tlsParams := params.TLSParams.GetTLSHelmParams()
+	url := params.CalcUrl()
 
 	return &helm.ServerHelmValuesParams{
 		Gpu:                   params.IsUseGpu(),
 		LocalDataDirectory:    dataContainerPath,
 		DisableDatadogMetrics: params.DisableMetrics,
+		Domain:                params.Domain,
+		Url:                   url,
+		Tls:                   *tlsParams,
 	}
 }
 
@@ -370,8 +482,8 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 	nvidiaGpuEnable := params.IsUseGpu()
 
 	if nvidiaGpuEnable {
-		if params.GpuDevices == AllGpuDevices {
-			nvidiaGpuVisibleDevices = AllGpuDevices
+		if params.GpuDevices == allGpuDevices {
+			nvidiaGpuVisibleDevices = allGpuDevices
 		} else if params.GpuDevices != "" {
 			nvidiaGpuVisibleDevices = params.GpuDevices
 		} else if params.Gpus > 0 {
@@ -381,7 +493,7 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 			}
 			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
 		} else {
-			nvidiaGpuVisibleDevices = AllGpuDevices
+			nvidiaGpuVisibleDevices = allGpuDevices
 		}
 	}
 
@@ -401,8 +513,9 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 
 	return &k3d.CreateK3sClusterParams{
 		WithGpu: useGpu,
-		Port:    params.ClusterPort,
+		Port:    params.Port,
 		Volumes: volumes,
+		IsHttps: params.TLSParams.Enabled,
 	}
 }
 
