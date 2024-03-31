@@ -18,7 +18,7 @@ data:
   SIGNED_URL_HOST_REPLACEMENT: "true"
   DISABLE_ENGINE_WARMUP: "true"
   SINGLE_USER_MODE: "true"
-  KEYCLOAK_URL: "http://127.0.0.1:4589"
+  KEYCLOAK_URL: {{ .Values.global.endpointUrl | quote }}
   KEYCLOAK_CLUSTER_URL: "http://keycloak-http.tensorleap.svc.cluster.local/auth"
   KEYCLOAK_REALM: "tensorleap"
   KEYCLOAK_RESOURCE: "tensorleap-client"
