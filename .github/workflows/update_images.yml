@@ -4,15 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  wait-for-stable-images:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repo:
-          - engine
-          - web-ui
-          - node-server
-    steps:
   update-images:
     runs-on: ubuntu-latest
     needs: wait-for-stable-images
