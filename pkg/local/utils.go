@@ -14,11 +14,13 @@ import (
 )
 
 const (
-	STANDALONE_DIR                  = "/var/lib/tensorleap/standalone"
-	REGISTRY_DIR_NAME               = "registry"
-	LOGS_DIR_NAME                   = "logs"
-	STORAGE_DIR_NAME                = "storage"
-	ELASTIC_STORAGE_DIR_NAME        = "storage/elasticsearch"
+	STANDALONE_DIR                     = "/var/lib/tensorleap/standalone"
+	REGISTRY_DIR_NAME                  = "registry"
+	LOGS_DIR_NAME                      = "logs"
+	STORAGE_DIR_NAME                   = "storage"
+	ELASTIC_STORAGE_DIR_NAME           = "storage/keycloak-postgresql"
+	KECKLOCK_POSTGRES_STORAGE_DIR_NAME = "storage/elasticsearch"
+
 	MANIFEST_DIR_NAME               = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
 	INSTALLATION_MANIFEST_FILE_NAME = "manifest.yaml"
@@ -56,7 +58,7 @@ func InitStandaloneDir() error {
 }
 
 func initStandaloneSubDirs() error {
-	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME}
+	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(STANDALONE_DIR, dir)
 		_, err := os.Stat(fullPath)
