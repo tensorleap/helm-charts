@@ -9,7 +9,6 @@ jobs:
     strategy:
       matrix:
         repo:
-          - engine
           - web-ui
     steps:
       - name: Wait for build to succeed
