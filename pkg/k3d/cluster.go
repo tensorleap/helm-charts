@@ -40,7 +40,7 @@ type CreateK3sClusterParams struct {
 	WithGpu bool     `json:"gpu"`
 	Port    uint     `json:"port"`
 	Volumes []string `json:"volumes"`
-	IsHttps bool     `json:"isHttps,omitempty"`
+	TLSPort *uint    `json:"tlsPort,omitempty"`
 }
 
 func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
@@ -192,11 +192,6 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		log.Fatalln(err)
 	}
 
-	destinationPort := 80
-	if params.IsHttps {
-		destinationPort = 443
-	}
-
 	simpleK3dConfig := conf.SimpleConfig{
 		TypeMeta: k3dConfTypes.TypeMeta{
 			Kind:       "Simple",
@@ -213,7 +208,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		Volumes: make([]conf.VolumeWithNodeFilters, len(params.Volumes)),
 		Ports: []conf.PortWithNodeFilters{
 			{
-				Port:        fmt.Sprintf("%v:%v", params.Port, destinationPort),
+				Port:        fmt.Sprintf("%v:80", params.Port),
 				NodeFilters: []string{"server:*:direct"},
 			},
 		},
@@ -277,10 +272,9 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		simpleK3dConfig.Options.Runtime.GPURequest = "all"
 	}
 
-	// backward compatibility for old installations
-	if params.Port != 4589 {
+	if params.TLSPort != nil {
 		simpleK3dConfig.Ports = append(simpleK3dConfig.Ports, conf.PortWithNodeFilters{
-			Port:        "4589:80",
+			Port:        fmt.Sprintf("%v:443", *params.TLSPort),
 			NodeFilters: []string{"server:*:direct"},
 		})
 	}
