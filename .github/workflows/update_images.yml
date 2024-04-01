@@ -13,15 +13,6 @@ jobs:
           - web-ui
           - node-server
     steps:
-      - name: Wait for build to succeed
-        uses: fountainhead/action-wait-for-check@v1.1.0
-        id: wait-for-build
-        with:
-          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          repo: ${{ matrix.repo }}
-          ref: master
-          checkName: tag-public-ecr-image-as-stable
-
   update-images:
     runs-on: ubuntu-latest
     needs: wait-for-stable-images
