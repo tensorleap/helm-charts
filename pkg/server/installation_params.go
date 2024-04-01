@@ -38,6 +38,7 @@ type TLSParams struct {
 	Enabled bool   `json:"enabled"`
 	Cert    string `json:"cert,omitempty"`
 	Key     string `json:"key,omitempty"`
+	Port    uint   `json:"port,omitempty"`
 }
 
 func GetTLSParams(flags TLSFlags) (*TLSParams, error) {
@@ -69,6 +70,7 @@ func GetTLSParams(flags TLSFlags) (*TLSParams, error) {
 		Enabled: true,
 		Cert:    string(cert),
 		Key:     string(key),
+		Port:    flags.Port,
 	}, nil
 }
 
@@ -123,16 +125,11 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		}
 	}
 
-	port := flags.Port
-	if tlsParams.Enabled {
-		port = flags.TLSFlags.Port
-	}
-
 	return &InstallationParams{
 		Version:          currentInstallationVersion,
 		Gpus:             flags.Gpus,
 		GpuDevices:       flags.GpuDevices,
-		Port:             port,
+		Port:             flags.Port,
 		RegistryPort:     flags.RegistryPort,
 		DisableMetrics:   flags.DisableMetrics,
 		DatasetDirectory: flags.DatasetDirectory,
@@ -440,6 +437,10 @@ func (params *InstallationParams) CalcUrl() string {
 
 	port := params.Port
 	if params.TLSParams.Enabled {
+		port = params.TLSParams.Port
+	}
+
+	if params.TLSParams.Enabled {
 		scheme = "https"
 	} else {
 		scheme = "http"
@@ -510,12 +511,16 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	useGpu := params.IsUseGpu()
+	var tlsPort *uint
+	if params.TLSParams.Enabled {
+		tlsPort = &params.TLSParams.Port
+	}
 
 	return &k3d.CreateK3sClusterParams{
 		WithGpu: useGpu,
 		Port:    params.Port,
 		Volumes: volumes,
-		IsHttps: params.TLSParams.Enabled,
+		TLSPort: tlsPort,
 	}
 }
 
