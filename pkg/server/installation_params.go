@@ -17,7 +17,7 @@ import (
 
 const currentInstallationVersion = "v0.0.1"
 const defaultRegistryPort = 5699
-const defaultHttpPort = 80
+const defaultHttpPort = 4589
 const defaultHttpsPort = 443
 const allGpuDevices = "all"
 
