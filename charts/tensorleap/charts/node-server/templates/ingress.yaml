@@ -8,13 +8,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: 1500m
     nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-{{ if and .Values.global.tls.enabled }}
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, DELETE, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-{{ end }}
 spec:
 {{ if .Values.global.tls.enabled }}
   tls:
