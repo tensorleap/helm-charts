@@ -1,4 +1,4 @@
-image_tag: master-83f5f10d-stable
+image_tag: master-434f55d0-stable
 image: public.ecr.aws/g9h8h3m5/web-ui
 
 ingress:
