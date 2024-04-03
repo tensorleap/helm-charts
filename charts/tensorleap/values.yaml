@@ -5,6 +5,8 @@ ingress-nginx:
   enabled: true
   fullnameOverride: ingress-nginx
   controller:
+    extraArgs:
+      default-ssl-certificate: tensorleap/tls-secret
     image:
       digest: ''
     admissionWebhooks:
