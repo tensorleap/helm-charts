@@ -450,7 +450,7 @@ func (params *InstallationParams) CalcUrl() string {
 		params.Domain = "localhost"
 	}
 
-	isDefaultPort := params.TLSParams.Enabled && port == defaultHttpsPort || (!params.TLSParams.Enabled && port == defaultHttpPort)
+	isDefaultPort := params.TLSParams.Enabled && port == 443 || (!params.TLSParams.Enabled && port == 80)
 
 	if isDefaultPort {
 		url = fmt.Sprintf("%s://%s", scheme, params.Domain)
