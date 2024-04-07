@@ -48,7 +48,7 @@ jobs:
                 repo,
                 ref: 'master'
               });
-              const imageTag = `master-${sha.substring(0,8)}-stable`;
+              const imageTag = `master-${sha.substring(0,8)}`;
               const valuesPath = `${chartsPath}/${repo}/values.yaml`;
               const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
               const { image_tag: currentImageTag } = yaml.load(valuesFile);
