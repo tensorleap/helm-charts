@@ -1,4 +1,4 @@
-image_tag: master-a190b609-stable
+image_tag: master-0808c778-stable
 image: public.ecr.aws/g9h8h3m5/engine
 
 localDataDirectory: ""

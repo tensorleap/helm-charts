@@ -1,4 +1,4 @@
-image_tag: master-a732f7bc-stable
+image_tag: master-6a5f1c7e-stable
 image: public.ecr.aws/g9h8h3m5/node-server
 disableDatadogMetrics: false
 
