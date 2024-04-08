@@ -5,9 +5,9 @@ docker.io/busybox:1.32
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-f12a319c
-public.ecr.aws/g9h8h3m5/node-server:master-6a5f1c7e
-public.ecr.aws/g9h8h3m5/web-ui:master-c4eacaf8
+public.ecr.aws/g9h8h3m5/engine:master-f45e0ac7
+public.ecr.aws/g9h8h3m5/node-server:master-eef37f20
+public.ecr.aws/g9h8h3m5/web-ui:master-82d0f3fd
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 redis:latest
