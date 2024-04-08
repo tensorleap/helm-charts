@@ -10,5 +10,6 @@ public.ecr.aws/g9h8h3m5/node-server:master-6a5f1c7e
 public.ecr.aws/g9h8h3m5/web-ui:master-c4eacaf8
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
+redis:latest
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
