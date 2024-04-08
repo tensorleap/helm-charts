@@ -45,3 +45,25 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 }
+
+func TestDictionaryLoading(t *testing.T) {
+	t.Run("AdjectiveList", func(t *testing.T) {
+		list, err := loadAdjectiveList()
+		assert.NoError(t, err)
+		assert.Len(t, list, 1202)
+	})
+	t.Run("AnimalList", func(t *testing.T) {
+		list, err := loadAnimalList()
+		assert.NoError(t, err)
+		assert.Len(t, list, 355)
+	})
+}
+
+func TestRandomNameGeneration(t *testing.T) {
+	t.Run("RandomName", func(t *testing.T) {
+		var fixedSeed int64 = 1337
+		name, err := generateRandomName(&fixedSeed)
+		assert.NoError(t, err)
+		assert.Equal(t, "excessive-roadrunner", name)
+	})
+}

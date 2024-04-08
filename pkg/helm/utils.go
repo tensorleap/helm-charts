@@ -1,9 +1,14 @@
 package helm
 
 import (
+	"bufio"
 	"context"
+	"embed"
 	"fmt"
+	"math/rand"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"helm.sh/helm/v3/pkg/action"
@@ -56,6 +61,71 @@ func GetHelmReleaseVersion(config *HelmConfig, releaseName string) (string, erro
 	}
 
 	return history[0].Chart.Metadata.Version, nil
+}
+
+//go:embed resources/*
+var dictFiles embed.FS
+
+func readFileToList(fs embed.FS, filePath string) ([]string, error) {
+	fileData, err := fs.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(strings.NewReader(string(fileData)))
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return lines, nil
+}
+
+func loadWordList(listName string) ([]string, error) {
+	fileName := fmt.Sprintf("resources/%s_en.txt", listName)
+	list, err := readFileToList(dictFiles, fileName)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return nil, err
+	}
+	return list, nil
+}
+
+func loadAdjectiveList() ([]string, error) {
+	return loadWordList("adjectives")
+}
+
+func loadAnimalList() ([]string, error) {
+	return loadWordList("animals")
+}
+
+func generateRandomName(seed *int64) (string, error) {
+	var s int64
+	if seed != nil {
+		s = *seed
+	} else {
+		s = time.Now().UnixNano()
+	}
+	var r = rand.New(rand.NewSource(s))
+	adjectives, err := loadAdjectiveList()
+	if err != nil {
+		fmt.Println("Error generating random name:", err)
+		return "", err
+	}
+	adjective := adjectives[r.Intn(len(adjectives))]
+
+	animals, err := loadAnimalList()
+	if err != nil {
+		fmt.Println("Error generating random name:", err)
+		return "", err
+	}
+	animal := animals[r.Intn(len(animals))]
+	return fmt.Sprintf("%s-%s", adjective, animal), nil
+}
+
+func readOrGenerateHostname() (string, error) {
+	return "TBD", nil
 }
 
 func CreateTensorleapChartValues(params *ServerHelmValuesParams) Record {
