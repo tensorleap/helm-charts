@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-handler
+  labels:
+    tags.datadoghq.com/env: {{ .Values.env_name }}
+    tags.datadoghq.com/service: {{ .Release.Name }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: engine
+  template:
+    metadata:
+      labels:
+        app: engine
+        tags.datadoghq.com/env: {{ .Values.env_name }}
+        tags.datadoghq.com/service: {{ .Release.Name }}
+    spec:
+      containers:
+        - image: {{ .Values.image }}:{{ .Values.image_tag }}
+          command: ["python", "-m", "src.engine.streaming_handler"]
+          name: engine
+          env:
+            - name: HMAC_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootUser
+            - name: HMAC_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootPassword
+          envFrom:
+            - configMapRef:
+                name: engine-cm
