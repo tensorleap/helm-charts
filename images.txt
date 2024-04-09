@@ -6,9 +6,9 @@ docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-6e71af64
+public.ecr.aws/g9h8h3m5/engine:master-618d4b13
 public.ecr.aws/g9h8h3m5/node-server:master-eef37f20
-public.ecr.aws/g9h8h3m5/web-ui:master-1d9c9bb8
+public.ecr.aws/g9h8h3m5/web-ui:master-a8b25f77
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
