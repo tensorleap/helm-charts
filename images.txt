@@ -4,12 +4,12 @@ docker.io/bitnami/postgresql:11.14.0-debian-10-r28
 docker.io/busybox:1.32
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
+docker.io/library/redis:latest
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/g9h8h3m5/engine:master-f45e0ac7
+public.ecr.aws/g9h8h3m5/engine:master-6e71af64
 public.ecr.aws/g9h8h3m5/node-server:master-eef37f20
-public.ecr.aws/g9h8h3m5/web-ui:master-82d0f3fd
+public.ecr.aws/g9h8h3m5/web-ui:master-1d9c9bb8
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
-redis:latest
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
