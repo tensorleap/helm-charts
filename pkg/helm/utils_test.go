@@ -19,6 +19,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				Cert:    "",
 				Key:     "",
 			},
+			HostName: "nsa.gov",
 		}
 
 		expected := Record{
@@ -38,9 +39,20 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 					"key":     "",
 				},
 			},
+			"datadog": Record{
+				"datadog": Record{
+					"env": []map[string]string{
+						{
+							"name":  "DD_HOSTNAME",
+							"value": params.HostName,
+						},
+					},
+				},
+			},
 		}
 
-		result := CreateTensorleapChartValues(params)
+		result, err := CreateTensorleapChartValues(params)
+		assert.NoError(t, err)
 
 		assert.Equal(t, expected, result)
 	})
