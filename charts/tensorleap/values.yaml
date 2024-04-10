@@ -47,3 +47,6 @@ keycloak:
     persistence:
       enabled: true
       existingClaim: "keycloak-postgresql-data"
+  pgchecker:
+    image:
+      repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
