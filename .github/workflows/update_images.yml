@@ -81,13 +81,7 @@ jobs:
             }
       - name: Extract image names
         run: |
-          helm repo add nginx https://kubernetes.github.io/ingress-nginx
-          helm repo add elastic https://helm.elastic.co
-          helm repo add minio https://charts.min.io
-          helm dependency build ./charts/tensorleap
-          rm ./charts/tensorleap/Chart.lock
-          helm dependency build ./charts/tensorleap-infra
-          rm ./charts/tensorleap-infra/Chart.lock
+          make build-helm
           make update-images
       - name: Commit
         uses: EndBug/add-and-commit@v9
