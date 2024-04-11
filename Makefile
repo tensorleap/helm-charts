@@ -58,3 +58,14 @@ update-images:
 		| sed 's/\"//g' \
 		| sort \
 		| uniq > images.txt
+
+.PHONY: build-helm
+build-helm:
+	helm repo add nginx https://kubernetes.github.io/ingress-nginx
+	helm repo add elastic https://helm.elastic.co
+	helm repo add minio https://charts.min.io
+	helm repo add codecentric https://codecentric.github.io/helm-charts
+	helm dependency build ./charts/tensorleap
+	rm ./charts/tensorleap/Chart.lock
+	helm dependency build ./charts/tensorleap-infra
+	rm ./charts/tensorleap-infra/Chart.lock
