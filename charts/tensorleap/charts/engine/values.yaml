@@ -1,5 +1,6 @@
 image_tag: master-9464ed78
 image: public.ecr.aws/g9h8h3m5/engine
+entry_point: src.engine.metrics_runner
 
 localDataDirectory: ""
 gpu: false
