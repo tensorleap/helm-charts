@@ -25,6 +25,11 @@ spec:
     spec:
       containers:
         - image: {{ .Values.image }}:{{ .Values.image_tag }}
+          resources:
+            requests:
+              memory: 500Mi
+            limits:
+              memory: 1Gi
           command: ["python", "-m", "src.engine.streaming_handler"]
           name: engine
           env:
