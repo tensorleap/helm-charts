@@ -13,6 +13,7 @@ data:
       backoffLimit: 0
       template:
         spec:
+          serviceAccountName: deployment-manager
           containers:
             - image: {{ .Values.image }}:{{ .Values.image_tag }}
               name: engine
