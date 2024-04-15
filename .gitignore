@@ -8,3 +8,5 @@ package.json
 
 # Neovim GPT added context file: https://github.com/Robitx/gp.nvim
 .gp.md
+
+Chart.lock
