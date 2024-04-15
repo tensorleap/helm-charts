@@ -1,5 +1,6 @@
 .PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env
 
+SHELL := /bin/bash
 CLUSTER_NAME ?= tensorleap
 NAME_SPACE ?= tensorleap
 
@@ -14,15 +15,15 @@ cluster-del: validate-k-env
 	k3d cluster delete ${CLUSTER_NAME}
 
 helm-install: validate-k-env
-	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap -n NAME_SPACE
+	helm upgrade --install ${CLUSTER_NAME} ./charts/tensorleap -n ${NAME_SPACE}
 
 helm-uninstall: validate-k-env
-	helm uninstall ${CLUSTER_NAME} -n NAME_SPACE
+	helm uninstall ${CLUSTER_NAME} -n ${NAME_SPACE}
 
 helm-reinstall: helm-uninstall helm-install
 
 helm-deps-up: validate-k-env
-	helm dependency update ./charts/tensorleap -n NAME_SPACE
+	helm dependency update ./charts/tensorleap -n ${NAME_SPACE}
 
 .PHONY: lint
 lint:
@@ -65,6 +66,7 @@ build-helm:
 	helm repo add elastic https://helm.elastic.co
 	helm repo add minio https://charts.min.io
 	helm repo add codecentric https://codecentric.github.io/helm-charts
+	helm repo add datadog https://helm.datadoghq.com
 	helm dependency build ./charts/tensorleap
 	rm ./charts/tensorleap/Chart.lock
 	helm dependency build ./charts/tensorleap-infra

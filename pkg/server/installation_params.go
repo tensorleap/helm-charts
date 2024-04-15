@@ -89,7 +89,7 @@ func (params *InstallationParams) IsUseGpu() bool {
 func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, error) {
 
 	if err := InitUseGPU(&flags.Gpus, &flags.GpuDevices, flags.UseCpu); err != nil {
-		log.SendCloudReport("error", "Failed to initializing with gpu", "Failed",
+		log.SendCloudReport("error", "Failed initializing with GPU", "Failed",
 			&map[string]interface{}{"Gpus": flags.Gpus, "GpusDevices": flags.GpuDevices, "error": err.Error()})
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func AskInstallationParams() (*InstallationParams, error) {
 	installationParams := &InstallationParams{}
 
 	if err := InitUseGPU(&installationParams.Gpus, &installationParams.GpuDevices, false); err != nil {
-		log.SendCloudReport("error", "Failed to initializing with gpu", "Failed",
+		log.SendCloudReport("error", "Failed initializing with GPU", "Failed",
 			&map[string]interface{}{"Gpus": installationParams.Gpus, "GpuDevices": installationParams.GpuDevices, "error": err.Error()})
 		return nil, err
 	}

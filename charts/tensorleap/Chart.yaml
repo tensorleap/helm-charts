@@ -10,3 +10,7 @@ dependencies:
   - name: keycloak
     version: "18.4.4"
     repository: "https://codecentric.github.io/helm-charts"
+  - name: datadog
+    version: 3.59.2
+    repository: https://helm.datadoghq.com
+    condition: datadog.enabled

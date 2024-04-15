@@ -121,10 +121,10 @@ func StopCluster(ctx context.Context) error {
 	}
 	if cluster == nil {
 		log.SendCloudReport("info", "Cluster not found", "Running", nil)
-		log.Info("Cluster 'tensorleap' not found")
+		log.Infof("Cluster '%s' not found", CLUSTER_NAME)
 		return nil
 	}
-	log.Info("Stopping cluster 'tensorleap'")
+	log.Infof("Stopping cluster '%s'", CLUSTER_NAME)
 	err = k3dCluster.ClusterStop(ctx, runtimes.SelectedRuntime, cluster)
 	if err != nil {
 		log.SendCloudReport("error", "Failed stopping cluster", "Failed",
@@ -142,10 +142,10 @@ func RunCluster(ctx context.Context) error {
 	}
 	if cluster == nil {
 		log.SendCloudReport("info", "Cluster not found", "Running", nil)
-		log.Info("Cluster 'tensorleap' not found")
+		log.Infof("Cluster '%s' not found", CLUSTER_NAME)
 		return nil
 	}
-	log.Info("Running cluster 'tensorleap'")
+	log.Infof("Running cluster '%s'", CLUSTER_NAME)
 
 	startClusterOpts := k3d.ClusterStartOpts{}
 	envInfo, err := k3dCluster.GatherEnvironmentInfo(ctx, runtimes.SelectedRuntime, cluster)
@@ -307,15 +307,15 @@ func UninstallCluster(ctx context.Context) error {
 	}
 	if cluster == nil {
 		log.SendCloudReport("info", "Cluster not found", "Running", nil)
-		log.Info("Cluster 'tensorleap' not found")
+		log.Infof("Cluster '%s' not found", CLUSTER_NAME)
 		return nil
 	}
-	log.Info("Uninstalling cluster 'tensorleap'")
+	log.Infof("Uninstalling cluster '%s'", CLUSTER_NAME)
 	return DeleteCluster(ctx, cluster)
 }
 
 func DeleteCluster(ctx context.Context, cluster *Cluster) (err error) {
-	log.Info("Deleting cluster 'tensorleap'")
+	log.Infof("Deleting cluster '%s'", CLUSTER_NAME)
 	opt := k3d.ClusterDeleteOpts{
 		SkipRegistryCheck: true,
 	}

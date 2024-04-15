@@ -20,10 +20,10 @@ const (
 	STORAGE_DIR_NAME                   = "storage"
 	ELASTIC_STORAGE_DIR_NAME           = "storage/keycloak-postgresql"
 	KECKLOCK_POSTGRES_STORAGE_DIR_NAME = "storage/elasticsearch"
-
-	MANIFEST_DIR_NAME               = "manifests"
-	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
-	INSTALLATION_MANIFEST_FILE_NAME = "manifest.yaml"
+	HOSTNAME_FILE                      = "hostname"
+	MANIFEST_DIR_NAME                  = "manifests"
+	INSTALLATION_PARAMS_FILE_NAME      = "params.yaml"
+	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
 )
 
 func InitStandaloneDir() error {
@@ -144,6 +144,10 @@ func PurgeData() error {
 
 func GetInstallationManifestPath() string {
 	return path.Join(STANDALONE_DIR, MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
+}
+
+func GetInstallationHostnamePath() string {
+	return path.Join(STANDALONE_DIR, HOSTNAME_FILE)
 }
 
 func GetInstallationParamsPath() string {
