@@ -27,6 +27,7 @@ data:
   METRIC_CALCULATOR_IMAGE: {{ .Values.image_name }}
   METRIC_CALCULATOR_IMAGE_TAG: {{ .Values.image_tag }}
   METRIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
+  METRIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
 
   REDIS_HOST: redis.tensorleap.svc.cluster.local
   REDIS_PORT: "6379"
