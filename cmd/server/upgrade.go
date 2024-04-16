@@ -22,6 +22,16 @@ func NewUpgradeCmd() *cobra.Command {
 		Short: UpgradeCmdDescription,
 		Long:  UpgradeCmdDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			previousDataDir := local.DEFAULT_DATA_DIR // we are not saving the previous data dir
+			err := local.SetDataDir(previousDataDir, "")
+			if err != nil {
+				return err
+			}
+			_, err = server.TransferData(cmd.Context())
+			if err != nil {
+				return err
+			}
+
 			return RunUpgradeCmd(cmd, flags)
 		},
 	}

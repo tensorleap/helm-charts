@@ -11,10 +11,11 @@ import (
 )
 
 func ValidateStandaloneDir() error {
-	_, err := os.Stat(local.STANDALONE_DIR)
+	standaloneDir := local.GetServerDataDir()
+	_, err := os.Stat(standaloneDir)
 	if os.IsNotExist(err) {
 		log.SendCloudReport("error", "Installation dir not found", "Failed", &map[string]interface{}{"error": err.Error()})
-		return fmt.Errorf("not found data directory(%s) on this machine, Please make sure to install before upgrade", local.STANDALONE_DIR)
+		return fmt.Errorf("not found data directory(%s) on this machine, Please make sure to install before upgrade", standaloneDir)
 	}
 	return err
 }
@@ -27,7 +28,7 @@ func ValidateClusterExists(ctx context.Context) error {
 	}
 	if cluster == nil {
 		log.SendCloudReport("error", "K3d cluster found was null", "Failed", &map[string]interface{}{"error": err.Error()})
-		return fmt.Errorf("not found local Cluster(%s) on this machine, Please make sure to install before upgrade", local.STANDALONE_DIR)
+		return fmt.Errorf("not found local Cluster(%s) on this machine, Please make sure to install before upgrade", local.GetServerDataDir())
 	}
 	return nil
 }
