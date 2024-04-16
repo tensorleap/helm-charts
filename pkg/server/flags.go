@@ -44,6 +44,7 @@ type InstallFlags struct {
 	DisableMetrics   bool   `json:"disableMetrics"`
 	FixK3dDns        bool   `json:"fixK3dDns"`
 	Domain           string `json:"domain"`
+	DataDir          string `json:"dataDir"`
 	TLSFlags
 }
 
@@ -57,5 +58,6 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
 	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
+	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	flags.TLSFlags.SetFlags(cmd)
 }

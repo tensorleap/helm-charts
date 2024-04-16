@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 )
 
 const (
-	STANDALONE_DIR                     = "/var/lib/tensorleap/standalone"
+	DATA_DIR_ENV_NAME                  = "TL_DATA_DIR"
+	DEFAULT_DATA_DIR                   = "/var/lib/tensorleap/standalone"
 	REGISTRY_DIR_NAME                  = "registry"
 	LOGS_DIR_NAME                      = "logs"
 	STORAGE_DIR_NAME                   = "storage"
@@ -26,28 +28,61 @@ const (
 	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
 )
 
+func GetServerDataDir() string {
+	envValue := os.Getenv(DATA_DIR_ENV_NAME)
+	if envValue != "" {
+		return envValue
+	}
+	return DEFAULT_DATA_DIR
+}
+
+var previousDataDir string
+
+func GetPreviousServerDataDir() string {
+	return previousDataDir
+}
+
+func SetDataDir(previous, flag string) error {
+	previousDataDir = previous
+	currentDataDir := flag
+	if currentDataDir == "" {
+		currentDataDir = os.Getenv(DATA_DIR_ENV_NAME)
+	}
+	if currentDataDir == "" {
+		currentDataDir = previous
+	}
+	currentDataDir, err := filepath.Abs(currentDataDir)
+	if err != nil {
+		return err
+	}
+
+	os.Setenv(DATA_DIR_ENV_NAME, currentDataDir)
+	return nil
+}
+
 func InitStandaloneDir() error {
-	_, err := os.Stat(STANDALONE_DIR)
+	standaloneDir := GetServerDataDir()
+	_, err := os.Stat(standaloneDir)
 	if os.IsNotExist(err) {
-		log.Printf("Creating directory: %s (you may be asked to enter the root user password)", STANDALONE_DIR)
-		mkdirCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo mkdir -p %s", STANDALONE_DIR))
+		log.Printf("Creating directory: %s (you may be asked to enter the root user password)", standaloneDir)
+		mkdirCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo mkdir -p %s", standaloneDir))
 		if err := mkdirCmd.Run(); err != nil {
 			return err
 		}
 
 		log.Println("Setting directory permissions")
-		chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", STANDALONE_DIR))
+		chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
 		if err := chmodCmd.Run(); err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	} else {
-		log.Printf("Directory %s already exists, check permission", STANDALONE_DIR)
-		info, err := os.Stat(STANDALONE_DIR)
+		log.Printf("Directory %s already exists, check permission", standaloneDir)
+		info, err := os.Stat(standaloneDir)
 		if err != nil || info.Mode().Perm() != 0777 {
 			log.Printf("Setting directory permissions (you may be asked to enter the root user password)")
-			chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", STANDALONE_DIR))
+			chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
 			if err := chmodCmd.Run(); err != nil {
 				return err
 			}
@@ -58,9 +93,10 @@ func InitStandaloneDir() error {
 }
 
 func initStandaloneSubDirs() error {
+	standaloneDir := GetServerDataDir()
 	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME}
 	for _, dir := range subDirs {
-		fullPath := path.Join(STANDALONE_DIR, dir)
+		fullPath := path.Join(standaloneDir, dir)
 		_, err := os.Stat(fullPath)
 		if os.IsNotExist(err) {
 			log.Printf("Creating directory: %s", fullPath)
@@ -98,7 +134,7 @@ func SetupInfra(cmdName string) (closeLogFile func(), err error) {
 
 func createLogFilePath(cmdName string) string {
 	filePath := fmt.Sprintf("%s/logs/%s_%s.log",
-		STANDALONE_DIR,
+		GetServerDataDir(),
 		cmdName,
 		time.Now().Format("2006-01-02_15-04-05"),
 	)
@@ -125,7 +161,7 @@ func OpenLink(link string) error {
 func PurgeData() error {
 	log.Infof("Purging data (you may be asked to enter the root user password)")
 	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, MANIFEST_DIR_NAME} {
-		path := path.Join(STANDALONE_DIR, dir)
+		path := path.Join(GetServerDataDir(), dir)
 		log.Infof("Removing directory: %s", path)
 		err := os.RemoveAll(path)
 
@@ -143,13 +179,13 @@ func PurgeData() error {
 }
 
 func GetInstallationManifestPath() string {
-	return path.Join(STANDALONE_DIR, MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
+	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
 }
 
 func GetInstallationHostnamePath() string {
-	return path.Join(STANDALONE_DIR, HOSTNAME_FILE)
+	return path.Join(GetServerDataDir(), HOSTNAME_FILE)
 }
 
 func GetInstallationParamsPath() string {
-	return path.Join(STANDALONE_DIR, MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
+	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
 }

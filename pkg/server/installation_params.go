@@ -505,8 +505,9 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 }
 
 func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClusterParams {
+	standaloneDir := local.GetServerDataDir()
 	volumes := []string{
-		fmt.Sprintf("%v:%v", local.STANDALONE_DIR, local.STANDALONE_DIR),
+		fmt.Sprintf("%v:%v", standaloneDir, local.DEFAULT_DATA_DIR),
 		params.DatasetDirectory,
 	}
 
@@ -526,7 +527,7 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 
 func (params *InstallationParams) GetCreateRegistryParams() *k3d.CreateRegistryParams {
 	volumes := []string{
-		fmt.Sprintf("%v:%v", path.Join(local.STANDALONE_DIR, "registry"), "/var/lib/registry"),
+		fmt.Sprintf("%v:%v", path.Join(local.GetServerDataDir(), "registry"), "/var/lib/registry"),
 	}
 
 	return &k3d.CreateRegistryParams{
