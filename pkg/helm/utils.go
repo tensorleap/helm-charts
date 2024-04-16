@@ -203,6 +203,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			},
 		},
 		"datadog": map[string]interface{}{
+			"enabled": !params.DisableDatadogMetrics,
 			"datadog": map[string]interface{}{
 				"env": []map[string]string{
 					{
