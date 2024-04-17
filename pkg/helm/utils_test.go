@@ -40,6 +40,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				},
 			},
 			"datadog": Record{
+				"enabled": !params.DisableDatadogMetrics,
 				"datadog": Record{
 					"env": []map[string]string{
 						{
