@@ -197,7 +197,7 @@ func RemoveDirectory(status FileSystemStatus) error {
 	}
 
 	rmArgs := []string{"rm", "-rf", status.Path}
-	if !status.CanWrite {
+	if !status.CanWrite || !status.CanCreateOnParentDirectory {
 		rmArgs = append([]string{"sudo"}, rmArgs...)
 	}
 	if err := RunCommand(rmArgs...); err != nil {
