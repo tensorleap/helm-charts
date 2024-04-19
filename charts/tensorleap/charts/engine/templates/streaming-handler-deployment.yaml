@@ -24,7 +24,7 @@ spec:
         tags.datadoghq.com/service: {{ .Release.Name }}
     spec:
       containers:
-        - image: {{ .Values.image }}:{{ .Values.image_tag }}
+        - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
             requests:
               memory: 500Mi
