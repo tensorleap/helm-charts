@@ -1,5 +1,5 @@
 image_tag: master-fe274310
-image: public.ecr.aws/g9h8h3m5/node-server
+image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 
 ingress:

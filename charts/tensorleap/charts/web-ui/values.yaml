@@ -1,5 +1,5 @@
 image_tag: master-16b42942
-image: public.ecr.aws/g9h8h3m5/web-ui
+image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
   enabled: true

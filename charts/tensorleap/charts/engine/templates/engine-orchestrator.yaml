@@ -25,7 +25,7 @@ spec:
     spec:
       serviceAccountName: deployment-manager
       containers:
-        - image: {{ .Values.image }}:{{ .Values.image_tag }}
+        - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
             requests:
               memory: 500Mi
