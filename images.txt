@@ -9,7 +9,7 @@ gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine:master-eecfa81d
 public.ecr.aws/tensorleap/node-server:master-4e922115
-public.ecr.aws/tensorleap/web-ui:master-b2171d63
+public.ecr.aws/tensorleap/web-ui:master-9731f98b
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
