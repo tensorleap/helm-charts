@@ -31,7 +31,8 @@ data:
 
   SAMPLES_GENERATOR_IMAGE_TAG: {{ .Values.image_tag }}
   SAMPLES_GENERATOR_ENTRY_POINT: {{ .Values.samples_generator_entry_point }}
-  
+  SAMPLES_GENERATOR_NFS: "{{ .Values.samples_generator_nfs }}"
+
 
   REDIS_HOST: redis.tensorleap.svc.cluster.local
   REDIS_PORT: "6379"
