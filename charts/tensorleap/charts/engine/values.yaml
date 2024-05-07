@@ -1,4 +1,4 @@
-image_tag: master-9cbd3c57
+image_tag: add-host-path-315d96ed
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: src.engine.metrics_runner
 metrics_activate_nfs: false
