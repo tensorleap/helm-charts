@@ -18,6 +18,8 @@ spec:
       app: engine
   template:
     metadata:
+      annotations:
+        ad.datadoghq.com/streaming-handler.logs: '[{"source": "python", "service": "streaming-handler"}]'
       labels:
         app: engine
         tags.datadoghq.com/env: {{ .Values.env_name }}
@@ -31,7 +33,7 @@ spec:
             limits:
               memory: 1Gi
           command: ["python", "-m", "src.engine.streaming_handler"]
-          name: engine
+          name: streaming-handler
           env:
             - name: HMAC_ACCESS_KEY_ID
               valueFrom:
