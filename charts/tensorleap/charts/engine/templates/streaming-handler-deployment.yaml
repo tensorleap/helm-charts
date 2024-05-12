@@ -25,6 +25,7 @@ spec:
         tags.datadoghq.com/env: {{ .Values.env_name }}
         tags.datadoghq.com/service: {{ .Release.Name }}
     spec:
+      terminationGracePeriodSeconds: 600
       containers:
         - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
