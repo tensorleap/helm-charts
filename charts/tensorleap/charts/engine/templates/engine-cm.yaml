@@ -24,15 +24,11 @@ data:
   CONTENT_BASE_URL: /session/
   UI_SETTINGS_SCHEMA: '{"N_DATASET_PROCESSES":{"type":"number","title":"Number of Dataset Processes","min":1,"description":"Number of processes to use for dataset processing (if empty, calculated automatically)"},"N_METRICS_PROCESSES":{"type":"number","title":"Number of Metrics Processes","min":1,"description":"Number of processes to use for metrics processing (if empty, calculated automatically)"},"N_VISUALIZERS_PROCESSES":{"type":"number","title":"Number of Visualizers Processes","min":1,"description":"Number of processes to use for visualizers processing (if empty, calculated automatically)"}}'
 
-  METRIC_CALCULATOR_IMAGE: {{ .Values.image_name }}
-  METRIC_CALCULATOR_IMAGE_TAG: {{ .Values.image_tag }}
-  METRIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
-  METRIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
-
-  SAMPLES_GENERATOR_IMAGE_TAG: {{ .Values.image_tag }}
-  SAMPLES_GENERATOR_ENTRY_POINT: {{ .Values.samples_generator_entry_point }}
-  SAMPLES_GENERATOR_NFS: "{{ .Values.samples_generator_nfs }}"
-  SAMPLES_HOST_PATH: {{ .Values.localDataDirectory }}
+  GENERIC_CALCULATOR_IMAGE: {{ .Values.image_name }}
+  GENERIC_CALCULATOR_IMAGE_TAG: {{ .Values.image_tag }}
+  GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
+  GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
+  GENERIC_HOST_PATH: {{ .Values.localDataDirectory }}
 
 
   REDIS_HOST: redis.tensorleap.svc.cluster.local

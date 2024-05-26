@@ -1,6 +1,6 @@
 image_tag: master-450fce0d
 image_name: public.ecr.aws/tensorleap/engine
-entry_point: src.engine.metrics_runner
+entry_point: src.engine.generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
 
