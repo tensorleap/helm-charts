@@ -27,3 +27,4 @@ data:
                 priorityClassName: "warmup-priority"
                 nodeSelector: warmup-nodeSelector
                 tolerations: warmup-tolerations
+                priorityClassName: medium-priority

@@ -13,10 +13,11 @@ spec:
         app: redis
     spec:
       containers:
-      - name: redis
-        resources:
-          requests:
-            memory: 1Gi
-        image: docker.io/library/redis:latest
-        ports:
-        - containerPort: 6379
+        - name: redis
+          resources:
+            requests:
+              memory: 1Gi
+          image: docker.io/library/redis:latest
+          ports:
+          - containerPort: 6379
+      priorityClassName: high-priority

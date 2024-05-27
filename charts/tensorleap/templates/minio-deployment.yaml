@@ -56,6 +56,7 @@ spec:
           resources:
             requests:
               memory: 500Mi
+      priorityClassName: high-priority
       volumes:
         - name: export
           persistentVolumeClaim:

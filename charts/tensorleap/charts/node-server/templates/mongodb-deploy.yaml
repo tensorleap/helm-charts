@@ -54,6 +54,7 @@ spec:
               mountPath: /scripts
             - name: datadir
               mountPath: /tl
+      priorityClassName: high-priority
       volumes:
         - name: common-scripts
           configMap:
