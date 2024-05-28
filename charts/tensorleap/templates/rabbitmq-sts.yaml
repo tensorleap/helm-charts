@@ -69,7 +69,6 @@ spec:
               mountPath: /etc/rabbitmq
             - name: rabbitmq-data
               mountPath: /var/lib/rabbitmq
-      priorityClassName: high-priority
       volumes:
         - name: rabbitmq-config
           configMap:

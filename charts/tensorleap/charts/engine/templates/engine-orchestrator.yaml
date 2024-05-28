@@ -49,4 +49,3 @@ spec:
           envFrom:
             - configMapRef:
                 name: engine-cm
-      priorityClassName: high-priority

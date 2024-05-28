@@ -20,4 +20,3 @@ spec:
           image: docker.io/library/redis:latest
           ports:
           - containerPort: 6379
-      priorityClassName: high-priority

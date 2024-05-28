@@ -158,7 +158,6 @@ spec:
                 secretKeyRef:
                   name: minio-secret
                   key: rootPassword
-      priorityClassName: high-priority
       volumes:
         - name: minio
           persistentVolumeClaim:
