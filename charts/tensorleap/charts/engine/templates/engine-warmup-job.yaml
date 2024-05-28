@@ -24,6 +24,6 @@ data:
                     limits:
                       nvidia.com/gpu: "1"
                 restartPolicy: Never
-                priorityClassName: "warmup-priority"
+                priorityClassName: warmup-priority
                 nodeSelector: warmup-nodeSelector
                 tolerations: warmup-tolerations
