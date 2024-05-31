@@ -2,6 +2,26 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2024-05-31T07:16:29.285777969Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.10.0
+    - name: keycloak
+      repository: https://codecentric.github.io/helm-charts
+      version: 18.4.4
+    - condition: datadog.enabled
+      name: datadog
+      repository: https://helm.datadoghq.com
+      version: 3.59.2
+    digest: fcffc55b5c5460714c235d51e4f8b74e87ea7b5f79c7289d751cd952df4cae21
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.1.201/tensorleap-1.1.201.tgz
+    version: 1.1.201
+  - apiVersion: v2
     created: "2024-05-29T17:31:05.738163726Z"
     dependencies:
     - condition: ingress-nginx.enabled
