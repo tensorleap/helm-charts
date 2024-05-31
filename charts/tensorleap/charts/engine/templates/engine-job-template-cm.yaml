@@ -17,6 +17,7 @@ data:
             ad.datadoghq.com/engine.logs: '[{"source": "python", "service": "engine"}]'
         spec:
           serviceAccountName: deployment-manager
+          priorityClassName: medium-priority
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine

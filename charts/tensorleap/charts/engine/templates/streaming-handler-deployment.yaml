@@ -26,6 +26,7 @@ spec:
         tags.datadoghq.com/service: {{ .Release.Name }}
     spec:
       terminationGracePeriodSeconds: 600
+      priorityClassName: low-priority
       containers:
         - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
