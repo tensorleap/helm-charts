@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
@@ -71,7 +70,7 @@ func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *In
 	return installationParams.Save()
 }
 
-func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string, backgroundImage string) {
+func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string) {
 
 	allImages := []string{}
 
@@ -82,14 +81,12 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isA
 		allImages = append(allImages, manifest.Images.K3sImages...)
 	}
 	if isAirgap {
-		return allImages, ""
+		return allImages
 	}
 
 	necessaryImages = []string{}
 	for _, img := range allImages {
-		if strings.Contains(img, "engine") {
-			backgroundImage = img
-		} else if len(img) > 0 {
+		if len(img) > 0 {
 			necessaryImages = append(necessaryImages, img)
 		}
 	}

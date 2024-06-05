@@ -41,7 +41,7 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return err
 	}
 
-	imagesToCache, imageToCacheInTheBackground := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), isAirgap)
+	imagesToCache := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), isAirgap)
 
 	err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
 	if err != nil {
@@ -63,11 +63,6 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return err
 	}
 
-	if len(imageToCacheInTheBackground) > 0 {
-		if err := k3d.CacheImageInTheBackground(ctx, imageToCacheInTheBackground); err != nil {
-			return err
-		}
-	}
 	_ = SaveInstallation(mnf, installationParams)
 	return nil
 }
