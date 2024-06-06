@@ -66,15 +66,20 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 	defer cancel()
 
 	errChan := make(chan error)
+	breakLoop := false
 
 	for _, imageName := range imageNames {
+		if breakLoop {
+			break
+		}
 		wg.Add(1)
 		go func(imageName string) {
 			defer wg.Done()
 
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				if ctx.Err() != nil {
-					return // Exit if context is canceled
+					breakLoop = true
+					break
 				}
 
 				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
@@ -85,7 +90,7 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 					_, err = io.Copy(io.Discard, out)
 					if err == nil {
 						log.Println("Pulled", imageName)
-						return
+						break
 					}
 				}
 
@@ -95,7 +100,8 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 				} else {
 					errChan <- fmt.Errorf("failed to pull image %s after %d attempts: %w", imageName, maxRetries, err)
 					cancel() // Cancel the context to stop ongoing pull operations
-					return
+					breakLoop = true
+					break
 				}
 			}
 		}(imageName)
