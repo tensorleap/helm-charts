@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
@@ -56,31 +57,53 @@ func LoadingImages(dockerClient Client, reader io.Reader) error {
 	return nil
 }
 
+const maxRetries = 3
+const retryDelay = 2 * time.Second
+
 func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.Writer) error {
 	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	errChan := make(chan error)
+	breakLoop := false
 
 	for _, imageName := range imageNames {
+		if breakLoop {
+			break
+		}
 		wg.Add(1)
 		go func(imageName string) {
 			defer wg.Done()
-			log.Println("Pulling image:", imageName)
-			out, err := dockerCli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 
-			if err != nil {
-				errChan <- err
-				cancel() // Cancel the context to stop ongoing push operations
-			}
-			_, err = io.Copy(io.Discard, out)
-			if err != nil {
-				errChan <- err
-				cancel() // Cancel the context to stop ongoing push operations
-			}
-			log.Println("Pulled", imageName)
+			for attempt := 1; attempt <= maxRetries; attempt++ {
+				if ctx.Err() != nil {
+					breakLoop = true
+					break
+				}
 
+				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
+				out, err := dockerCli.ImagePull(ctx, imageName, types.ImagePullOptions{})
+				if err == nil {
+					defer out.Close() // Ensure the output stream is closed
+
+					_, err = io.Copy(io.Discard, out)
+					if err == nil {
+						log.Println("Pulled", imageName)
+						break
+					}
+				}
+
+				log.Printf("Failed to pull image: %s (attempt %d/%d), error: %v\n", imageName, attempt, maxRetries, err)
+				if attempt < maxRetries {
+					time.Sleep(retryDelay)
+				} else {
+					errChan <- fmt.Errorf("failed to pull image %s after %d attempts: %w", imageName, maxRetries, err)
+					cancel() // Cancel the context to stop ongoing pull operations
+					breakLoop = true
+					break
+				}
+			}
 		}(imageName)
 	}
 
@@ -88,11 +111,9 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 
 	select {
 	case err := <-errChan:
-		return fmt.Errorf("push operations were stopped due to an error: %v", err)
-	case <-ctx.Done():
-		return fmt.Errorf("push operations were stopped due to an error: %v", ctx.Err())
+		return fmt.Errorf("pull operations were stopped due to an error: %v", err)
 	default:
-		log.Printf("All images pulled successfully.\n")
+		log.Println("All images pulled successfully.")
 	}
 
 	log.Info("Saving images...")
@@ -102,16 +123,13 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 	}
 	defer out.Close()
 
-	if err != nil {
-		return err
-	}
-
 	gzipWriter := gzip.NewWriter(outputFile)
 	defer gzipWriter.Close()
 	_, err = io.Copy(gzipWriter, out)
 	if err != nil {
 		return err
 	}
+
 	log.Info("Saved images")
 	return nil
 }

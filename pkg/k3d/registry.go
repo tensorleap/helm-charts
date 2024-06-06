@@ -199,22 +199,41 @@ func isImageInRegistry(ctx context.Context, image string, regPort string) (bool,
 	return false, nil
 }
 
+const maxRetries = 3
+const retryDelay = 2 * time.Second
+
 func PullingImage(ctx context.Context, dockerClient docker.Client, image string) error {
+	var lastErr error
 
-	resp, err := dockerClient.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
-	if err != nil {
-		return fmt.Errorf("docker failed to pull the image '%s': %w", image, err)
-	}
-	defer resp.Close()
-	log.Infof("Pulling image '%s'\n", image)
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		log.Printf("Pulling image '%s' (attempt %d/%d)\n", image, attempt, maxRetries)
+		resp, err := dockerClient.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
+		if err == nil {
+			defer resp.Close() // Ensure the response is closed to avoid resource leaks
 
-	// this prints out status of the pull, consider having that under some flags or doing fancy stuff to display it
-	// _, err = io.Copy(os.Stdout, resp)
-	_, err = io.Copy(io.Discard, resp)
-	if err != nil {
-		log.Warnf("Couldn't get docker output: %v", err)
+			// Discard the output or handle it as needed
+			_, err = io.Copy(io.Discard, resp)
+			if err == nil {
+				log.Printf("Successfully pulled image '%s'\n", image)
+				return nil
+			}
+
+			// If we encounter an error after successfully pulling, handle it here
+			log.Printf("Failed to read response for image '%s': %v\n", image, err)
+			lastErr = err
+		} else {
+			log.Printf("Failed to pull image '%s': %v\n", image, err)
+			lastErr = err
+		}
+
+		if attempt < maxRetries {
+			log.Printf("Retrying in %s...\n", retryDelay)
+			time.Sleep(retryDelay)
+		}
 	}
-	return nil
+
+	// If all attempts fail, return the last encountered error
+	return fmt.Errorf("failed to pull image '%s' after %d attempts: %w", image, maxRetries, lastErr)
 }
 
 func CacheImage(ctx context.Context, dockerClient docker.Client, image string, regPort string) error {
