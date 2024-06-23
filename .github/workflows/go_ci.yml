@@ -8,6 +8,7 @@ on:
       - "main.go"
       - "cmd/**"
       - "pkg/**"
+      - "charts/**"
 
 jobs:
   build:
@@ -31,6 +32,12 @@ jobs:
         with:
           version: latest
           only-new-issues: true
+
+      - name: Helm Chart Validate (tensorlap)
+        run: helm template charts/tensorleap
+      
+      - name: Helm Chart Validate (tensorleap-infra)
+        run: helm template charts/tensorleap-infra
 
       - name: Test
         run: make test
