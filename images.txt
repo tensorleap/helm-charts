@@ -7,9 +7,9 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine:master-ec7a0410
-public.ecr.aws/tensorleap/node-server:master-1366a346
-public.ecr.aws/tensorleap/web-ui:master-9ea21d03
+public.ecr.aws/tensorleap/engine:master-2c7812bc
+public.ecr.aws/tensorleap/node-server:master-02ce9602
+public.ecr.aws/tensorleap/web-ui:master-6f8b3867
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
