@@ -1,0 +1,41 @@
+name: Release Airgap Pack
+
+on:
+  workflow_run:
+    workflows: ["Release Installation Manifest"]
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./go.mod
+
+      - name: Check format
+        run: make check-fmt
+
+      - name: Get tensorleap chart version
+        id: get_tensorleap_chart_version
+        # Create output that contains the version from charts/tensorleap/Chart.yaml
+        run: |
+          echo "version=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Save manifest version
+        id: save_manifest_version
+        run: echo "manifest=manifest-${{ steps.get_tensorleap_chart_version.outputs.version }} >> $GITHUB_OUTPUT
+
+      - name: Build Airgap Pack
+        run: go run . pack -o airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+
+      - name: Upload Airgap Pack
+        uses: actions/upload-artifact@v2
+        with:
+          name: airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+          path: airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+          if-no-files-found: error
