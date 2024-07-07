@@ -28,14 +28,14 @@ jobs:
 
       - name: Save manifest version
         id: save_manifest_version
-        run: echo "manifest=manifest-${{ steps.get_tensorleap_chart_version.outputs.version }} >> $GITHUB_OUTPUT
+        run: echo "manifest=manifest-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Build Airgap Pack
-        run: go run . pack -o airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+        run: go run . pack -o tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
 
       - name: Upload Airgap Pack
         uses: actions/upload-artifact@v2
         with:
-          name: airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
-          path: airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+          name: tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+          path: tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
           if-no-files-found: error
