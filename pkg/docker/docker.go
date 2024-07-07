@@ -116,6 +116,28 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 		log.Println("All images pulled successfully.")
 	}
 
+	// List Docker images
+	allLocalImages, err := dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+	if err != nil {
+		log.Fatalf("Error listing Docker images: %v", err)
+	}
+
+	log.Info("Images pulled:")
+	for _, imageName := range imageNames {
+		log.Info(imageName)
+	}
+
+	log.Info("All local images:")
+
+	// Print the images
+	for _, image := range allLocalImages {
+		fmt.Println("ID: ", image.ID)
+		fmt.Println("RepoTags: ", image.RepoTags)
+		fmt.Println("Created: ", image.Created)
+		fmt.Println("Size: ", image.Size)
+		fmt.Println()
+	}
+
 	log.Info("Saving images...")
 	out, err := dockerCli.ImageSave(context.Background(), imageNames)
 	if err != nil {
