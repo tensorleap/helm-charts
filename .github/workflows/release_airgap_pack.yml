@@ -1,11 +1,7 @@
 name: Release Airgap Pack
-
 on:
-  workflow_run:
-    workflows: ["Release Installation Manifest"]
-    branches:
-      - master
-
+  workflow_dispatch:
+    
 jobs:
   build:
     runs-on: ubuntu-latest
