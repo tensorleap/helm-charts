@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/spf13/pflag"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"k8s.io/utils/strings/slices"
 )
 
 type Client = client.APIClient
@@ -73,6 +75,11 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 			break
 		}
 		wg.Add(1)
+		cancelWithError := func(err error) {
+			errChan <- err
+			cancel()
+			breakLoop = true
+		}
 		go func(imageName string) {
 			defer wg.Done()
 
@@ -98,9 +105,7 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 				if attempt < maxRetries {
 					time.Sleep(retryDelay)
 				} else {
-					errChan <- fmt.Errorf("failed to pull image %s after %d attempts: %w", imageName, maxRetries, err)
-					cancel() // Cancel the context to stop ongoing pull operations
-					breakLoop = true
+					cancelWithError(fmt.Errorf("failed to pull image %s after %d attempts: %w", imageName, maxRetries, err))
 					break
 				}
 			}
@@ -116,32 +121,15 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 		log.Println("All images pulled successfully.")
 	}
 
-	// List Docker images
-	allLocalImages, err := dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+	err := EnsureImagesExists(dockerCli, imageNames)
 	if err != nil {
-		log.Fatalf("Error listing Docker images: %v", err)
-	}
-
-	log.Info("Images pulled:")
-	for _, imageName := range imageNames {
-		log.Info(imageName)
-	}
-
-	log.Info("All local images:")
-
-	// Print the images
-	for _, image := range allLocalImages {
-		fmt.Println("ID: ", image.ID)
-		fmt.Println("RepoTags: ", image.RepoTags)
-		fmt.Println("Created: ", image.Created)
-		fmt.Println("Size: ", image.Size)
-		fmt.Println()
+		return err
 	}
 
 	log.Info("Saving images...")
 	out, err := dockerCli.ImageSave(context.Background(), imageNames)
 	if err != nil {
-		return err
+		return fmt.Errorf("it appears that some images failed to pull: %v", err)
 	}
 	defer out.Close()
 
@@ -153,5 +141,37 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 	}
 
 	log.Info("Saved images")
+	return nil
+}
+
+func trimDefaultRegistry(imageName string) string {
+	if strings.HasPrefix(imageName, "docker.io/library/") {
+		return strings.TrimPrefix(imageName, "docker.io/library/")
+	}
+	if strings.HasPrefix(imageName, "docker.io/") {
+		return strings.TrimPrefix(imageName, "docker.io/")
+	}
+	return imageName
+}
+
+func EnsureImagesExists(dockerCli client.APIClient, imageNames []string) error {
+	allLocalImages, err := dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+	if err != nil {
+		return fmt.Errorf("error listing Docker images: %v", err)
+	}
+	notFoundImages := make([]string, 0)
+outer:
+	for _, imageName := range imageNames {
+		trimImageName := trimDefaultRegistry(imageName)
+		for _, image := range allLocalImages {
+			if slices.Contains(image.RepoTags, trimImageName) {
+				continue outer
+			}
+		}
+		notFoundImages = append(notFoundImages, imageName)
+	}
+	if len(notFoundImages) > 0 {
+		return fmt.Errorf("images not found: %v", notFoundImages)
+	}
 	return nil
 }
