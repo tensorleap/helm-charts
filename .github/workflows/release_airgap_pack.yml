@@ -1,15 +1,23 @@
 name: Release Airgap Pack
 on:
   workflow_dispatch:
-    
+    inputs:
+      manifest_name:
+        description: "Name of the manifest (use curent branch name if not provided)"
+        required: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -25,16 +33,15 @@ jobs:
         run: |
           echo "version=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Save manifest version
+      - name: Save mainifest version
         id: save_manifest_version
-        run: echo "manifest=manifest-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
+        env:
+          MANIFEST_NAME: ${{ inputs.manifest_name || format('manifest-{0}', steps.get_tensorleap_chart_version.outputs.version) }}
+        run: echo "manifest=${{ env.MANIFEST_NAME }}" >> $GITHUB_OUTPUT
 
       - name: Build Airgap Pack
-        run: go run . pack -o tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
+        run: go run . pack -o pack.tar.gz --tag ${{ steps.save_manifest_version.outputs.manifest }}
 
-      - name: Upload Airgap Pack
-        uses: actions/upload-artifact@v2
-        with:
-          name: tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
-          path: tl-airgap-linux-${{ steps.save_manifest_version.outputs.manifest }}.tar.gz
-          if-no-files-found: error
+      - name: Upload Airgap Pack to S3
+        run: |
+          aws s3 cp pack.tar.gz s3://tensorleap-assets/airgap-versions/tl-${{ steps.save_manifest_version.outputs.manifest }}-linux-amd64.tar.gz
