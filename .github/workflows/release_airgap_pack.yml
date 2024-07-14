@@ -44,4 +44,4 @@ jobs:
 
       - name: Upload Airgap Pack to S3
         run: |
-          aws s3 cp pack.tar.gz s3://tensorleap-assets/airgap-versions/tl-${{ steps.save_manifest_version.outputs.manifest }}-linux-amd64-.tar.gz
+          aws s3 cp pack.tar.gz s3://tensorleap-assets/airgap-versions/tl-${{ steps.save_manifest_version.outputs.manifest }}-linux-amd64.tar.gz
