@@ -469,8 +469,9 @@ func (params *InstallationParams) CalcUrl() string {
 	}
 
 	isDefaultPort := params.TLSParams.Enabled && port == 443 || (!params.TLSParams.Enabled && port == 80)
+	isDomainContainsPort := strings.Contains(params.Domain, ":")
 
-	if isDefaultPort {
+	if isDefaultPort || isDomainContainsPort {
 		url = fmt.Sprintf("%s://%s", scheme, params.Domain)
 	} else {
 		url = fmt.Sprintf("%s://%s:%d", scheme, params.Domain, port)
