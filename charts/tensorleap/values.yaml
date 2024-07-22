@@ -19,6 +19,7 @@ global:
   storageClassName: ''
   create_local_volumes: true
   domain: 'localhost'
+  basePath: ''
   url: 'http://localhost'
   tls:
     enabled: false

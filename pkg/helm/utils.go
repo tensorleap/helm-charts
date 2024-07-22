@@ -30,6 +30,7 @@ type ServerHelmValuesParams struct {
 	LocalDataDirectory    string    `json:"localDataDirectory"`
 	DisableDatadogMetrics bool      `json:"disableDatadogMetrics"`
 	Domain                string    `json:"domain"`
+	BasePath              string    `json:"basePath"`
 	Url                   string    `json:"url"`
 	Tls                   TLSParams `json:"tls"`
 	HostName              string    `json:"hostname"`
@@ -196,6 +197,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"global": Record{
 			"domain": params.Domain,
 			"url":    params.Url,
+			"basePath": params.BasePath,
 			"tls": Record{
 				"enabled": params.Tls.Enabled,
 				"cert":    params.Tls.Cert,
