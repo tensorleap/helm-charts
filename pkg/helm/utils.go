@@ -195,8 +195,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
 		},
 		"global": Record{
-			"domain": params.Domain,
-			"url":    params.Url,
+			"domain":   params.Domain,
+			"url":      params.Url,
 			"basePath": params.BasePath,
 			"tls": Record{
 				"enabled": params.Tls.Enabled,

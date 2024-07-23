@@ -45,7 +45,7 @@ type InstallFlags struct {
 	FixK3dDns        bool   `json:"fixK3dDns"`
 	Domain           string `json:"domain"`
 	DataDir          string `json:"dataDir"`
-	BasePath		 string `json:"basePath"`
+	BasePath         string `json:"basePath"`
 	TLSFlags
 }
 
