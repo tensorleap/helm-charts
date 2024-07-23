@@ -43,7 +43,7 @@ keycloak:
     - name: PROXY_ADDRESS_FORWARDING
       value: "true"
     - name: KEYCLOAK_FRONTEND_URL
-      value: "http://localhost:8090/moshe/123/auth"
+      value: "http://localhost:8090/proxy/4589/auth"
 
   fullnameOverride: keycloak
   ingress:
