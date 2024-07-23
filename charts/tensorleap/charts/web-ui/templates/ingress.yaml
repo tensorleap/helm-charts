@@ -17,9 +17,6 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       sub_filter '<head>' '<head><base href="{{ .Values.global.url }}/">';
       sub_filter_once on;
-      sub_filter ' href="/static/' ' href="{{ .Values.global.url }}/static/';
-      sub_filter ' src="/static/' ' src="{{ .Values.global.url }}/static/';
-      sub_filter '="/static/' '="{{ .Values.global.url }}/static/';
     {{- end }}
 spec:
   defaultBackend:
