@@ -8,6 +8,16 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: 1900m
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    {{- if .Values.global.basePath }}
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      sub_filter '<head>' '<head><base href="{{ .Values.global.url }}/">';
+      sub_filter_once on;
+    {{- end }}
 spec:
   defaultBackend:
     service:
