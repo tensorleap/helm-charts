@@ -27,6 +27,7 @@ type InstallationParams struct {
 	Gpus             uint   `json:"gpus,omitempty"`
 	Port             uint   `json:"clusterPort"`
 	Domain           string `json:"domain"`
+	BasePath         string `json:"basePath"`
 	RegistryPort     uint   `json:"registryPort"`
 	DisableMetrics   bool   `json:"disableMetrics"`
 	DatasetDirectory string `json:"datasetDirectory"`
@@ -121,9 +122,39 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 			if usePreviousTlsConfig {
 				tlsParams = &previousParams.TLSParams
 				flags.Domain = previousParams.Domain
+			} else if previousParams.Domain != "" && flags.Domain == "" {
+				prompt := survey.Confirm{
+					Message: fmt.Sprintf("Do you want to use the previous domain? (%s)", previousParams.Domain),
+					Default: true,
+				}
+				usePreviousDomain := true
+				err := survey.AskOne(&prompt, &usePreviousDomain)
+				if err != nil {
+					return nil, err
+				}
+				if usePreviousDomain {
+					flags.Domain = previousParams.Domain
+				}
+			}
+
+		}
+		isAskUserToUsePreviouseBestPath := previousParams.BasePath != "" && flags.BasePath == ""
+		if isAskUserToUsePreviouseBestPath {
+			prompt := survey.Confirm{
+				Message: fmt.Sprintf("Do you want to use the previous base path? (%s)", previousParams.BasePath),
+				Default: true,
+			}
+			usePreviousBasePath := true
+			err := survey.AskOne(&prompt, &usePreviousBasePath)
+			if err != nil {
+				return nil, err
+			}
+			if usePreviousBasePath {
+				flags.BasePath = previousParams.BasePath
 			}
 		}
 	}
+	bestPath := strings.Trim(flags.BasePath, "/")
 
 	return &InstallationParams{
 		Version:          currentInstallationVersion,
@@ -135,6 +166,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		DatasetDirectory: flags.DatasetDirectory,
 		FixK3dDns:        flags.FixK3dDns,
 		Domain:           flags.Domain,
+		BasePath:         bestPath,
 		TLSParams:        *tlsParams,
 	}, nil
 }
@@ -451,11 +483,16 @@ func (params *InstallationParams) CalcUrl() string {
 	}
 
 	isDefaultPort := params.TLSParams.Enabled && port == 443 || (!params.TLSParams.Enabled && port == 80)
+	isDomainContainsPort := strings.Contains(params.Domain, ":")
 
-	if isDefaultPort {
+	if isDefaultPort || isDomainContainsPort {
 		url = fmt.Sprintf("%s://%s", scheme, params.Domain)
 	} else {
 		url = fmt.Sprintf("%s://%s:%d", scheme, params.Domain, port)
+	}
+
+	if params.BasePath != "" && params.BasePath != "/" {
+		url = fmt.Sprintf("%s/%s", url, strings.Trim(params.BasePath, "/"))
 	}
 
 	return url
@@ -472,6 +509,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		LocalDataDirectory:    dataContainerPath,
 		DisableDatadogMetrics: params.DisableMetrics,
 		Domain:                params.Domain,
+		BasePath:              params.BasePath,
 		Url:                   url,
 		Tls:                   *tlsParams,
 	}

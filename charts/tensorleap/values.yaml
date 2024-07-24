@@ -9,6 +9,9 @@ ingress-nginx:
       default-ssl-certificate: tensorleap/tls-secret
     image:
       digest: ''
+    config:
+      enable-snippets: "true"
+      allow-snippet-annotations: "true"
     admissionWebhooks:
       patch:
         image:
@@ -19,6 +22,7 @@ global:
   storageClassName: ''
   create_local_volumes: true
   domain: 'localhost'
+  basePath: ''
   url: 'http://localhost'
   tls:
     enabled: false

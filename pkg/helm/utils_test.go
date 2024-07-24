@@ -31,8 +31,9 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"disableDatadogMetrics": params.DisableDatadogMetrics,
 			},
 			"global": Record{
-				"domain": "",
-				"url":    "",
+				"domain":   "",
+				"url":      "",
+				"basePath": "",
 				"tls": Record{
 					"enabled": false,
 					"cert":    "",
@@ -49,6 +50,10 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 						},
 					},
 				},
+			},
+			"keycloak": map[string]interface{}{
+				"replicas": 1,
+				"extraEnv": "\n- name: KEYCLOAK_USER\n  value: admin\n- name: KEYCLOAK_PASSWORD\n  value: admin\n- name: PROXY_ADDRESS_FORWARDING\n  value: \"true\"\n",
 			},
 		}
 

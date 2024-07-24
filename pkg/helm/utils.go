@@ -12,6 +12,7 @@ import (
 
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/storage/driver"
@@ -30,6 +31,7 @@ type ServerHelmValuesParams struct {
 	LocalDataDirectory    string    `json:"localDataDirectory"`
 	DisableDatadogMetrics bool      `json:"disableDatadogMetrics"`
 	Domain                string    `json:"domain"`
+	BasePath              string    `json:"basePath"`
 	Url                   string    `json:"url"`
 	Tls                   TLSParams `json:"tls"`
 	HostName              string    `json:"hostname"`
@@ -185,6 +187,27 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			return nil, err
 		}
 	}
+
+	type ExtraEnv struct {
+		Name  string `yaml:"name"`
+		Value string `yaml:"value"`
+	}
+
+	extraEnvSlice := []ExtraEnv{
+		{Name: "KEYCLOAK_USER", Value: "admin"},
+		{Name: "KEYCLOAK_PASSWORD", Value: "admin"},
+		{Name: "PROXY_ADDRESS_FORWARDING", Value: "true"},
+	}
+	if params.BasePath != "" {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KEYCLOAK_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
+	}
+	formatExtraEnv := func(extraEnv []ExtraEnv) string {
+		result, _ := yaml.Marshal(extraEnv)
+		resultString := "\n" + string(result)
+		return resultString
+	}
+	extraEnvStringYaml := formatExtraEnv(extraEnvSlice)
+
 	return Record{
 		"tensorleap-engine": Record{
 			"gpu":                params.Gpu,
@@ -194,13 +217,18 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
 		},
 		"global": Record{
-			"domain": params.Domain,
-			"url":    params.Url,
+			"domain":   params.Domain,
+			"url":      params.Url,
+			"basePath": params.BasePath,
 			"tls": Record{
 				"enabled": params.Tls.Enabled,
 				"cert":    params.Tls.Cert,
 				"key":     params.Tls.Key,
 			},
+		},
+		"keycloak": map[string]interface{}{
+			"replicas": 1,
+			"extraEnv": extraEnvStringYaml,
 		},
 		"datadog": map[string]interface{}{
 			"enabled": !params.DisableDatadogMetrics,
