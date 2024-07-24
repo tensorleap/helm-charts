@@ -122,21 +122,20 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 			if usePreviousTlsConfig {
 				tlsParams = &previousParams.TLSParams
 				flags.Domain = previousParams.Domain
-			} else if previousParams.Domain != "" && flags.Domain == "" {
-				prompt := survey.Confirm{
-					Message: fmt.Sprintf("Do you want to use the previous domain? (%s)", previousParams.Domain),
-					Default: true,
-				}
-				usePreviousDomain := true
-				err := survey.AskOne(&prompt, &usePreviousDomain)
-				if err != nil {
-					return nil, err
-				}
-				if usePreviousDomain {
-					flags.Domain = previousParams.Domain
-				}
 			}
-
+		} else if previousParams.Domain != "" && flags.Domain == "" {
+			prompt := survey.Confirm{
+				Message: fmt.Sprintf("Do you want to use the previous domain? (%s)", previousParams.Domain),
+				Default: true,
+			}
+			usePreviousDomain := true
+			err := survey.AskOne(&prompt, &usePreviousDomain)
+			if err != nil {
+				return nil, err
+			}
+			if usePreviousDomain {
+				flags.Domain = previousParams.Domain
+			}
 		}
 		isAskUserToUsePreviouseBestPath := previousParams.BasePath != "" && flags.BasePath == ""
 		if isAskUserToUsePreviouseBestPath {
