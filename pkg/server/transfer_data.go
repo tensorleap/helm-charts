@@ -40,20 +40,7 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 	}
 
 	if currentStatus.Exists {
-		msg := fmt.Sprintf("The storage directory has changed from '%s' to '%s'. but the current storage directory already exists, do you want to overwrite it with previous storage directory?", previousDataPath, currentDataPath)
-		isOverride, confirmErr := confirm(msg, false)
-		if confirmErr != nil {
-			return false, confirmErr
-		}
-		if !isOverride {
-			return false, nil
-		}
-
-		log.Printf("Removing current storage directory: %s", currentDataPath)
-		err := local.RemoveDirectory(currentStatus)
-		if err != nil {
-			return false, fmt.Errorf("failed to remove current storage directory: %v", err)
-		}
+		return false, fmt.Errorf("we can't allow to move tensorleap data to an existing directory consider to use path '%s/tensorleap_data' or delete the directory manually", currentDataPath)
 	} else {
 		msg := fmt.Sprintf("The storage directory has changed from '%s' to '%s'. The storage will be transferred and server reinstall. Do you want to continue?", previousDataPath, currentDataPath)
 		isContinue, confirmErr := confirm(msg, true)
