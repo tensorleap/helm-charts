@@ -1,4 +1,4 @@
-image_tag: master-ba88120d
+image_tag: insights-new-contracts-6f0e5548
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 

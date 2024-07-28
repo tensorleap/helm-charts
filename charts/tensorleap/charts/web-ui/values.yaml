@@ -1,4 +1,4 @@
-image_tag: master-3861ad27
+image_tag: insights-ds-performance-716a9269
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
