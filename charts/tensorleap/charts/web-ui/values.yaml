@@ -1,4 +1,4 @@
-image_tag: add-basename-to-url-283547d5
+image_tag: add-basename-to-url-1a1f12a3
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
