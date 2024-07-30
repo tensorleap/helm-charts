@@ -15,12 +15,14 @@ data:
         backoffLimit: 0
         activeDeadlineSeconds: 28800 # 8 hours
         template:
-            labels:
-                app: tensorleap-node-job
-            annotations:
-                ad.datadoghq.com/tensorleap-node-job.logs: '[{"source": "nodejs", "service": "node-job"}]'
+            metadata:
+                labels:
+                    app: tensorleap-node-job
+                annotations:
+                    ad.datadoghq.com/tensorleap-node-job.logs: '[{"source": "nodejs", "service": "node-job"}]'
             spec:
                 serviceAccountName: node-server-sa
+                priorityClassName: medium-priority
                 containers:
                   - name: tensorleap-node-job
                     image: {{ .Values.image }}:{{ .Values.image_tag }}
@@ -33,5 +35,3 @@ data:
                   - name: minio
                     persistentVolumeClaim:
                         claimName: tensorleap-minio
-
-                   
