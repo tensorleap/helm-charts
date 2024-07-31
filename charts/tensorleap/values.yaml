@@ -1,6 +1,8 @@
 ingress:
   enabled: true
 
+
+# allow cors and set the allowed methods and allow set proxy headers so keycloak could be looged in from different domain
 ingress-nginx:
   enabled: true
   fullnameOverride: ingress-nginx
@@ -12,6 +14,11 @@ ingress-nginx:
     config:
       enable-snippets: "true"
       allow-snippet-annotations: "true"
+      enable-cors: "true"
+      cors-allow-origin: "*"
+      cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range"
+      cors-expose-headers: "Content-Length,Content-Range"
     admissionWebhooks:
       patch:
         image:
