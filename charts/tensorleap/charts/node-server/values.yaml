@@ -1,4 +1,4 @@
-image_tag: local-auth-51461955
+image_tag: local-auth-enabled-6fba5f04
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 
