@@ -5,6 +5,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"github.com/tensorleap/helm-charts/pkg/server"
 )
 
 func NewRunCmd() *cobra.Command {
@@ -15,6 +16,11 @@ func NewRunCmd() *cobra.Command {
 		Long:    `Run Tensorleap server`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.SetCommandName("run")
+
+			_, err := server.InitDataDirFunc(cmd.Context(), "")
+			if err != nil {
+				return err
+			}
 
 			close, err := local.SetupInfra("run")
 			if err != nil {
