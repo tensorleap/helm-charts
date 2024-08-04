@@ -19,12 +19,7 @@ func NewReinstallCmd() *cobra.Command {
 		Short: "Reinstall tensorleap",
 		Long:  "Reinstall tensorleap",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			previousDataDir := local.DEFAULT_DATA_DIR // we are not saving the previous data dir
-			err := local.SetDataDir(previousDataDir, flags.DataDir)
-			if err != nil {
-				return err
-			}
-			isReinstalled, err := server.TransferData(cmd.Context())
+			isReinstalled, err := server.InitDataDirFunc(cmd.Context(), flags.DataDir)
 			if err != nil {
 				return err
 			}

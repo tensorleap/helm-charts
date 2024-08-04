@@ -23,12 +23,8 @@ func NewInstallCmd() *cobra.Command {
 		Short: InstallCmdDescription,
 		Long:  InstallCmdDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			previousDataDir := local.DEFAULT_DATA_DIR // we are not saving the previous data dir
-			err := local.SetDataDir(previousDataDir, flags.DataDir)
-			if err != nil {
-				return err
-			}
-			_, err = server.TransferData(cmd.Context())
+
+			_, err := server.InitDataDirFunc(cmd.Context(), flags.DataDir)
 			if err != nil {
 				return err
 			}
