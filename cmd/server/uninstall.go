@@ -14,8 +14,7 @@ func NewUninstallCmd() *cobra.Command {
 		Short: "Remove local Tensorleap installation",
 		Long:  `Remove local Tensorleap installation`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			previousDataDir := local.DEFAULT_DATA_DIR // we are not saving the previous data dir
-			err := local.SetDataDir(previousDataDir, "")
+			_, err := server.InitDataDirFunc(cmd.Context(), "")
 			if err != nil {
 				return err
 			}
