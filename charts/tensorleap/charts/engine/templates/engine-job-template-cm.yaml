@@ -27,6 +27,8 @@ data:
                 - configMapRef:
                     name: engine-cm
               volumeMounts:
+                - name: minio
+                  mountPath: /nfs
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
@@ -40,6 +42,9 @@ data:
           schedulerName: {{ .Values.schedulerName }}
 {{ end }}
           volumes:
+            - name: minio
+              persistentVolumeClaim:
+                claimName: tensorleap-minio
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
