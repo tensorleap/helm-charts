@@ -28,7 +28,7 @@ data:
                     name: engine-cm
               volumeMounts:
                 - name: minio
-                  mountPath: /nfs
+                  mountPath: /usr/minio
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}

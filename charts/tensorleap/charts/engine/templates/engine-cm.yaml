@@ -22,7 +22,7 @@ data:
   STORAGE_ENDPOINT: tensorleap-minio.{{ .Release.Namespace }}.svc
   STORAGE_PORT: "9000"
   CONTENT_BASE_URL: /session/
-  MOUNTHPATH: /nfs/session/
+  MOUNTHPATH: /usr/minio/session/
   UI_SETTINGS_SCHEMA: '{"N_DATASET_PROCESSES":{"type":"number","title":"Number of Dataset Processes","min":1,"description":"Number of processes to use for dataset processing (if empty, calculated automatically)"},"N_METRICS_PROCESSES":{"type":"number","title":"Number of Metrics Processes","min":1,"description":"Number of processes to use for metrics processing (if empty, calculated automatically)"},"N_VISUALIZERS_PROCESSES":{"type":"number","title":"Number of Visualizers Processes","min":1,"description":"Number of processes to use for visualizers processing (if empty, calculated automatically)"}}'
 
   GENERIC_CALCULATOR_IMAGE: {{ .Values.image_name }}
