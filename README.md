@@ -1,7 +1,8 @@
 # Helm-charts
 This repo hold the charts and installer for standalone installation
 
-
+# Airgap installation
+Show [here](https://helm.tensorleap.ai/latest_airgap_versions.html) the latest Airgap versions
 
 ## Creating a Custom Release in Helm-Charts
 
