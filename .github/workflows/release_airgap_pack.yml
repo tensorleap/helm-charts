@@ -45,3 +45,17 @@ jobs:
       - name: Upload Airgap Pack to S3
         run: |
           aws s3 cp pack.tar.gz s3://tensorleap-assets/airgap-versions/tl-${{ steps.save_manifest_version.outputs.manifest }}-linux-amd64.tar.gz
+  
+      - name: Checkout to index branch
+        uses: actions/checkout@v3
+        with:
+          ref: index
+
+      - name: Update index
+        run: |
+          node generate-airgap-versions.js
+
+      - name: Commit
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Update airgap versions"
