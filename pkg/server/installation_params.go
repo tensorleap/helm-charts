@@ -33,6 +33,7 @@ type InstallationParams struct {
 	DisableMetrics   bool   `json:"disableMetrics"`
 	DatasetDirectory string `json:"datasetDirectory"`
 	FixK3dDns        bool   `json:"fixK3dDns"`
+	CpuLimit         string `json:"cpuLimit,omitempty"`
 	TLSParams
 }
 
@@ -153,6 +154,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		FixK3dDns:        flags.FixK3dDns,
 		Domain:           flags.Domain,
 		ProxyUrl:         flags.ProxyUrl,
+		CpuLimit:         flags.CpuLimit,
 		TLSParams:        *tlsParams,
 	}, nil
 }
