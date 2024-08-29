@@ -556,10 +556,11 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu: useGpu,
-		Port:    params.Port,
-		Volumes: volumes,
-		TLSPort: tlsPort,
+		WithGpu:  useGpu,
+		Port:     params.Port,
+		Volumes:  volumes,
+		CpuLimit: params.CpuLimit,
+		TLSPort:  tlsPort,
 	}
 }
 
