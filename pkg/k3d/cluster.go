@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
+	"strings"
 
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
 	k3dCluster "github.com/k3d-io/k3d/v5/pkg/client"
@@ -37,10 +40,11 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 }
 
 type CreateK3sClusterParams struct {
-	WithGpu bool     `json:"gpu"`
-	Port    uint     `json:"port"`
-	Volumes []string `json:"volumes"`
-	TLSPort *uint    `json:"tlsPort,omitempty"`
+	WithGpu  bool     `json:"gpu"`
+	Port     uint     `json:"port"`
+	Volumes  []string `json:"volumes"`
+	CpuLimit string   `json:"cpuLimit,omitempty"`
+	TLSPort  *uint    `json:"tlsPort,omitempty"`
 }
 
 func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
@@ -82,7 +86,57 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		log.Println(err)
 	}
 
+	if params.CpuLimit != "" {
+		cpuLimit := getCPUsLimit(params.CpuLimit)
+		if err := applyCpuLimit(strconv.Itoa(cpuLimit)); err != nil {
+			log.Fatalf("Failed to apply CPU limit: %v", err)
+		}
+
+		log.Infof("CPU limit applied to all k3d containers: %d\n", cpuLimit)
+	}
+
 	return
+}
+
+func applyCpuLimit(cpuLimit string) error {
+	containers, err := getK3dContainers()
+	if err != nil {
+		return fmt.Errorf("failed to get k3d containers: %w", err)
+	}
+
+	log.Infof("K3DContainers to update cpu limit: %v\n", containers)
+	for _, container := range containers {
+		if err := updateContainerCPU(container, cpuLimit); err != nil {
+			log.Printf("Failed to update CPU limit for container %s: %v", container, err)
+		} else {
+			fmt.Printf("CPU limit applied to container %s\n", container)
+		}
+	}
+
+	return nil
+}
+
+func getK3dContainers() ([]string, error) {
+	cmd := exec.Command("docker", "ps", "--filter", "name=k3d-tensorleap", "--format", "{{.ID}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list k3d containers: %w", err)
+	}
+
+	containers := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(containers) == 1 && containers[0] == "" {
+		return nil, nil
+	}
+
+	return containers, nil
+}
+
+func updateContainerCPU(containerID, cpuLimit string) error {
+	cmd := exec.Command("docker", "update", "--cpus", cpuLimit, containerID)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to update container %s: %w", containerID, err)
+	}
+	return nil
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {
@@ -297,6 +351,25 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 
 	return k3dClusterConfig
+}
+
+func getCPUsLimit(paramsCpuLimit string) int {
+	maxCPUs := runtime.NumCPU()
+	log.Infof("Maximum CPUs available: %d\n", maxCPUs)
+
+	if paramsCpuLimit == "" {
+		return maxCPUs
+	}
+
+	cpuLimit, err := strconv.Atoi(paramsCpuLimit)
+	if err != nil {
+		log.Fatalf("Invalid CPU limit: %s. Must be a valid integer.", paramsCpuLimit)
+	}
+
+	if cpuLimit < maxCPUs {
+		return cpuLimit
+	}
+	return maxCPUs
 }
 
 func UninstallCluster(ctx context.Context) error {

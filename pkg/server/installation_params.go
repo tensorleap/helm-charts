@@ -33,6 +33,7 @@ type InstallationParams struct {
 	DisableMetrics   bool   `json:"disableMetrics"`
 	DatasetDirectory string `json:"datasetDirectory"`
 	FixK3dDns        bool   `json:"fixK3dDns"`
+	CpuLimit         string `json:"cpuLimit,omitempty"`
 	TLSParams
 }
 
@@ -153,6 +154,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		FixK3dDns:        flags.FixK3dDns,
 		Domain:           flags.Domain,
 		ProxyUrl:         flags.ProxyUrl,
+		CpuLimit:         flags.CpuLimit,
 		TLSParams:        *tlsParams,
 	}, nil
 }
@@ -554,10 +556,11 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu: useGpu,
-		Port:    params.Port,
-		Volumes: volumes,
-		TLSPort: tlsPort,
+		WithGpu:  useGpu,
+		Port:     params.Port,
+		Volumes:  volumes,
+		CpuLimit: params.CpuLimit,
+		TLSPort:  tlsPort,
 	}
 }
 

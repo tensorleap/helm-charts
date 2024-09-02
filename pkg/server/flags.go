@@ -46,6 +46,7 @@ type InstallFlags struct {
 	Domain           string `json:"domain"`
 	DataDir          string `json:"dataDir"`
 	ProxyUrl         string `json:"ProxyUrl"`
+	CpuLimit         string `json:"cpuLimit,omitempty"`
 	TLSFlags
 }
 
@@ -61,5 +62,6 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
+	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
 	flags.TLSFlags.SetFlags(cmd)
 }
