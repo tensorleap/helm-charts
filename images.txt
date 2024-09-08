@@ -8,7 +8,7 @@ docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine:master-0eb6032e
-public.ecr.aws/tensorleap/node-server:master-731ab408
+public.ecr.aws/tensorleap/node-server:master-f1577552
 public.ecr.aws/tensorleap/web-ui:master-e210565c
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
