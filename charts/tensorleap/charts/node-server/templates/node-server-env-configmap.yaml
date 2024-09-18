@@ -5,7 +5,6 @@ metadata:
 data:
   NODE_ENV: production
   MONGO_URI: {{ .Values.mongodb.connectionString }}
-  ENABLE_KEYCLOAK_AUTH: "false"
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
   BUCKET_NAME: session
   STORAGE_MOUNT_PATH: /usr/minio/session
