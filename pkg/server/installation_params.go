@@ -16,10 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const currentInstallationVersion = "v0.0.1"
-const defaultRegistryPort = 5699
-const defaultHttpPort = 4589
-const defaultHttpsPort = 443
+const CurrentInstallationVersion = "v0.0.1"
+const DefaultRegistryPort = 5699
+const DefaultHttpPort = 4589
+const DefaultHttpsPort = 443
 const allGpuDevices = "all"
 
 type InstallationParams struct {
@@ -144,7 +144,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 	}
 
 	return &InstallationParams{
-		Version:          currentInstallationVersion,
+		Version:          CurrentInstallationVersion,
 		Gpus:             flags.Gpus,
 		GpuDevices:       flags.GpuDevices,
 		Port:             flags.Port,
@@ -408,14 +408,14 @@ func GetDefaultDataVolume() string {
 }
 
 func InitClusterPort(clusterPort *uint) error {
-	*clusterPort = defaultHttpPort
+	*clusterPort = DefaultHttpPort
 	return nil
 	// will add this later
 	// return InitPort(clusterPort, DefaultClusterPort, "Enter cluster port:")
 }
 
 func InitRegistryPort(registryPort *uint) error {
-	*registryPort = defaultRegistryPort
+	*registryPort = DefaultRegistryPort
 	return nil
 	// will add this later
 	// return InitPort(registryPort, DefaultRegistryPort, "Enter registry port:")
