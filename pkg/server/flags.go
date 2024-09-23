@@ -27,7 +27,7 @@ func (flags *TLSFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.CertPath, "cert", "c", "", "Path to the TLS certificate file")
 	cmd.Flags().StringVarP(&flags.KeyPath, "key", "k", "", "Path to the TLS key file")
 	cmd.Flags().StringVar(&flags.ChainPath, "chain", "", "Path to the TLS chain file (optional)")
-	cmd.Flags().UintVar(&flags.Port, "tls-port", defaultHttpsPort, "Port to be used for TLS")
+	cmd.Flags().UintVar(&flags.Port, "tls-port", DefaultHttpsPort, "Port to be used for TLS")
 }
 
 func (flags *TLSFlags) IsEnabled() bool {
@@ -51,8 +51,8 @@ type InstallFlags struct {
 }
 
 func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
-	cmd.Flags().UintVarP(&flags.Port, "port", "p", defaultHttpPort, "Port to be used for http server")
-	cmd.Flags().UintVar(&flags.RegistryPort, "registry-port", defaultRegistryPort, "Port to be used for docker registry")
+	cmd.Flags().UintVarP(&flags.Port, "port", "p", DefaultHttpPort, "Port to be used for http server")
+	cmd.Flags().UintVar(&flags.RegistryPort, "registry-port", DefaultRegistryPort, "Port to be used for docker registry")
 	cmd.Flags().StringVar(&flags.GpuDevices, "gpu-devices", "", "GPU devices to be used (e.g. 1 or 0,1,2 or all)")
 	cmd.Flags().UintVar(&flags.Gpus, "gpus", 0, "Number of GPUs to be used")
 	cmd.Flags().BoolVar(&flags.UseCpu, "cpu", false, "Use CPU for training and evaluating")
