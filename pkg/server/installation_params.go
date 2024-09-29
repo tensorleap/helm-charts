@@ -467,9 +467,6 @@ func (params *InstallationParams) CalcBestPath() string {
 }
 
 func (params *InstallationParams) CalcUrl() string {
-	if params.ProxyUrl != "" {
-		return params.ProxyUrl
-	}
 
 	var scheme, url string
 
@@ -511,6 +508,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		Domain:                params.Domain,
 		BasePath:              params.CalcBestPath(),
 		Url:                   params.CalcUrl(),
+		ProxyUrl:              params.ProxyUrl,
 		Tls:                   *tlsParams,
 	}
 }

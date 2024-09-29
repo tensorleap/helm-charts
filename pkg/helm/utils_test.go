@@ -33,6 +33,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 			"global": Record{
 				"domain":   "",
 				"url":      "",
+				"proxyUrl": "",
 				"basePath": "",
 				"tls": Record{
 					"enabled": false,
