@@ -24,6 +24,7 @@ global:
   domain: 'localhost'
   basePath: ''
   url: 'http://localhost'
+  proxyUrl: ''
   tls:
     enabled: false
     cert: ''

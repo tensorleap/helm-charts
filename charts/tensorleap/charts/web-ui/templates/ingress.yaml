@@ -15,7 +15,7 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     {{- if .Values.global.basePath }}
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      sub_filter '<head>' '<head><base href="{{ .Values.global.url }}/">';
+      sub_filter '<head>' '<head><base href="{{ .Values.global.proxyUrl }}/">';
       sub_filter_once on;
     {{- end }}
 spec:

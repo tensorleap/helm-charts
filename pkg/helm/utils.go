@@ -33,6 +33,7 @@ type ServerHelmValuesParams struct {
 	Domain                string    `json:"domain"`
 	BasePath              string    `json:"basePath"`
 	Url                   string    `json:"url"`
+	ProxyUrl              string    `json:"proxyUrl"`
 	Tls                   TLSParams `json:"tls"`
 	HostName              string    `json:"hostname"`
 }
@@ -198,8 +199,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		{Name: "KEYCLOAK_PASSWORD", Value: "admin"},
 		{Name: "PROXY_ADDRESS_FORWARDING", Value: "true"},
 	}
-	if params.BasePath != "" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KEYCLOAK_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
+	if params.ProxyUrl != "" {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KEYCLOAK_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 	}
 	formatExtraEnv := func(extraEnv []ExtraEnv) string {
 		result, _ := yaml.Marshal(extraEnv)
@@ -219,6 +220,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"global": Record{
 			"domain":   params.Domain,
 			"url":      params.Url,
+			"proxyUrl": params.ProxyUrl,
 			"basePath": params.BasePath,
 			"tls": Record{
 				"enabled": params.Tls.Enabled,
