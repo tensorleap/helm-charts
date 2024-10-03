@@ -35,18 +35,18 @@ func (flags *TLSFlags) IsEnabled() bool {
 }
 
 type InstallFlags struct {
-	Port             uint   `json:"port"`
-	RegistryPort     uint   `json:"registryPort"`
-	GpuDevices       string `json:"gpuDevices,omitempty"`
-	Gpus             uint   `json:"gpus,omitempty"`
-	UseCpu           bool   `json:",omitempty"`
-	DatasetDirectory string `json:"datasetDirectory"`
-	DisableMetrics   bool   `json:"disableMetrics"`
-	FixK3dDns        bool   `json:"fixK3dDns"`
-	Domain           string `json:"domain"`
-	DataDir          string `json:"dataDir"`
-	ProxyUrl         string `json:"ProxyUrl"`
-	CpuLimit         string `json:"cpuLimit,omitempty"`
+	Port           uint     `json:"port"`
+	RegistryPort   uint     `json:"registryPort"`
+	GpuDevices     string   `json:"gpuDevices,omitempty"`
+	Gpus           uint     `json:"gpus,omitempty"`
+	UseCpu         bool     `json:",omitempty"`
+	DatasetVolumes []string `json:"datasetVolumes"`
+	DisableMetrics bool     `json:"disableMetrics"`
+	FixK3dDns      bool     `json:"fixK3dDns"`
+	Domain         string   `json:"domain"`
+	DataDir        string   `json:"dataDir"`
+	ProxyUrl       string   `json:"ProxyUrl"`
+	CpuLimit       string   `json:"cpuLimit,omitempty"`
 	TLSFlags
 }
 
@@ -56,7 +56,7 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.GpuDevices, "gpu-devices", "", "GPU devices to be used (e.g. 1 or 0,1,2 or all)")
 	cmd.Flags().UintVar(&flags.Gpus, "gpus", 0, "Number of GPUs to be used")
 	cmd.Flags().BoolVar(&flags.UseCpu, "cpu", false, "Use CPU for training and evaluating")
-	cmd.Flags().StringVar(&flags.DatasetDirectory, "dataset-dir", "", "Dataset directory maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
+	cmd.Flags().StringArrayVarP(&flags.DatasetVolumes, "dataset-volume", "v", []string{}, "Dataset volume maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
 	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")

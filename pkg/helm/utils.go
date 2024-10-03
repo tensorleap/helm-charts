@@ -28,7 +28,7 @@ type TLSParams struct {
 
 type ServerHelmValuesParams struct {
 	Gpu                   bool      `json:"gpu"`
-	LocalDataDirectory    string    `json:"localDataDirectory"`
+	LocalDataDirectories  []string  `json:"localDataDirectories"`
 	DisableDatadogMetrics bool      `json:"disableDatadogMetrics"`
 	Domain                string    `json:"domain"`
 	BasePath              string    `json:"basePath"`
@@ -211,8 +211,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 
 	return Record{
 		"tensorleap-engine": Record{
-			"gpu":                params.Gpu,
-			"localDataDirectory": params.LocalDataDirectory,
+			"gpu":                  params.Gpu,
+			"localDataDirectories": params.LocalDataDirectories,
 		},
 		"tensorleap-node-server": Record{
 			"disableDatadogMetrics": params.DisableDatadogMetrics,

@@ -33,9 +33,9 @@ data:
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
 {{- end }}
-{{ if .Values.localDataDirectory }}
-                - name: local-user-data
-                  mountPath: {{ .Values.localDataDirectory }}
+{{ range $index, $dir := .Values.localDataDirectories }}
+                - name: local-user-data-{{ $index }}
+                  mountPath: {{ $dir }}
 {{ end }}
           restartPolicy: Never
 {{ if .Values.schedulerName }}
@@ -50,9 +50,9 @@ data:
               persistentVolumeClaim:
                 claimName: {{ .name }}
 {{- end }}
-{{ if .Values.localDataDirectory }}
-            - name: local-user-data
+{{ range $index, $dir := .Values.localDataDirectories }}
+            - name: local-user-data-{{ $index }}
               hostPath:
-                path: {{ .Values.localDataDirectory }}
+                path: {{ $dir }}
                 type: DirectoryOrCreate
 {{ end }}

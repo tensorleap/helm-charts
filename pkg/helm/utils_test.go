@@ -10,7 +10,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 	t.Run("CreateTensorleapChartValues", func(t *testing.T) {
 		params := &ServerHelmValuesParams{
 			Gpu:                   true,
-			LocalDataDirectory:    "some/dir/path",
+			LocalDataDirectories:  []string{"some/dir/path"},
 			DisableDatadogMetrics: false,
 			Domain:                "",
 			Url:                   "",
@@ -24,8 +24,8 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 
 		expected := Record{
 			"tensorleap-engine": Record{
-				"gpu":                params.Gpu,
-				"localDataDirectory": params.LocalDataDirectory,
+				"gpu":                  params.Gpu,
+				"localDataDirectories": params.LocalDataDirectories,
 			},
 			"tensorleap-node-server": Record{
 				"disableDatadogMetrics": params.DisableDatadogMetrics,
