@@ -23,17 +23,18 @@ const DefaultHttpsPort = 443
 const allGpuDevices = "all"
 
 type InstallationParams struct {
-	Version        string   `json:"version"`
-	GpuDevices     string   `json:"gpuDevices,omitempty"`
-	Gpus           uint     `json:"gpus,omitempty"`
-	Port           uint     `json:"clusterPort"`
-	Domain         string   `json:"domain"`
-	ProxyUrl       string   `json:"proxyUrl"`
-	RegistryPort   uint     `json:"registryPort"`
-	DisableMetrics bool     `json:"disableMetrics"`
-	DatasetVolumes []string `json:"datasetVolumes"`
-	FixK3dDns      bool     `json:"fixK3dDns"`
-	CpuLimit       string   `json:"cpuLimit,omitempty"`
+	Version                     string   `json:"version"`
+	GpuDevices                  string   `json:"gpuDevices,omitempty"`
+	Gpus                        uint     `json:"gpus,omitempty"`
+	Port                        uint     `json:"clusterPort"`
+	Domain                      string   `json:"domain"`
+	ProxyUrl                    string   `json:"proxyUrl"`
+	RegistryPort                uint     `json:"registryPort"`
+	DisableMetrics              bool     `json:"disableMetrics"`
+	DatasetDirectory_DEPRECATED string   `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
+	DatasetVolumes              []string `json:"datasetVolumes"`
+	FixK3dDns                   bool     `json:"fixK3dDns"`
+	CpuLimit                    string   `json:"cpuLimit,omitempty"`
 	TLSParams
 }
 
@@ -618,7 +619,16 @@ func LoadInstallationParamsFromPrevious() (*InstallationParams, error) {
 	if err != nil {
 		return nil, err
 	}
+	backwardCompatibility_datasetDirectory(params)
+
 	return params, nil
+}
+
+func backwardCompatibility_datasetDirectory(params *InstallationParams) {
+	if params.DatasetDirectory_DEPRECATED != "" && len(params.DatasetVolumes) == 0 {
+		params.DatasetVolumes = []string{params.DatasetDirectory_DEPRECATED}
+	}
+	params.DatasetDirectory_DEPRECATED = ""
 }
 
 func LoadInstallationParams(paramsBytes []byte) (*InstallationParams, error) {

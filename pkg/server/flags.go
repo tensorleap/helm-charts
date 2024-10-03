@@ -1,7 +1,11 @@
 package server
 
 import (
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
+	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
 type InstallationSourceFlags struct {
@@ -63,5 +67,20 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
+
+	deprecatedFlag_datasetDir(cmd)
+
 	flags.TLSFlags.SetFlags(cmd)
+}
+
+func deprecatedFlag_datasetDir(cmd *cobra.Command) {
+	cmd.Flags().String("dataset-dir", "", "DEPRECATED: Use --dataset-volume or -v instead.")
+	_ = cmd.Flags().MarkHidden("dataset-dir")
+
+	args := os.Args[1:]
+	isDatasetDirChanged := strings.Contains(strings.Join(args, " "), "--dataset-dir")
+
+	if isDatasetDirChanged {
+		log.Fatalf("Error: --dataset-dir is deprecated. Please use --dataset-volume or -v instead.")
+	}
 }
