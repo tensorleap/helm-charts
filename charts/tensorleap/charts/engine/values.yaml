@@ -5,7 +5,7 @@ metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
 
-localDataDirectory: ""
+localDataDirectories: []
 gpu: false
 gpuTolerations: []
 

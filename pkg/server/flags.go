@@ -1,7 +1,11 @@
 package server
 
 import (
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
+	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
 type InstallationSourceFlags struct {
@@ -35,18 +39,18 @@ func (flags *TLSFlags) IsEnabled() bool {
 }
 
 type InstallFlags struct {
-	Port             uint   `json:"port"`
-	RegistryPort     uint   `json:"registryPort"`
-	GpuDevices       string `json:"gpuDevices,omitempty"`
-	Gpus             uint   `json:"gpus,omitempty"`
-	UseCpu           bool   `json:",omitempty"`
-	DatasetDirectory string `json:"datasetDirectory"`
-	DisableMetrics   bool   `json:"disableMetrics"`
-	FixK3dDns        bool   `json:"fixK3dDns"`
-	Domain           string `json:"domain"`
-	DataDir          string `json:"dataDir"`
-	ProxyUrl         string `json:"ProxyUrl"`
-	CpuLimit         string `json:"cpuLimit,omitempty"`
+	Port           uint     `json:"port"`
+	RegistryPort   uint     `json:"registryPort"`
+	GpuDevices     string   `json:"gpuDevices,omitempty"`
+	Gpus           uint     `json:"gpus,omitempty"`
+	UseCpu         bool     `json:",omitempty"`
+	DatasetVolumes []string `json:"datasetVolumes"`
+	DisableMetrics bool     `json:"disableMetrics"`
+	FixK3dDns      bool     `json:"fixK3dDns"`
+	Domain         string   `json:"domain"`
+	DataDir        string   `json:"dataDir"`
+	ProxyUrl       string   `json:"ProxyUrl"`
+	CpuLimit       string   `json:"cpuLimit,omitempty"`
 	TLSFlags
 }
 
@@ -56,12 +60,27 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.GpuDevices, "gpu-devices", "", "GPU devices to be used (e.g. 1 or 0,1,2 or all)")
 	cmd.Flags().UintVar(&flags.Gpus, "gpus", 0, "Number of GPUs to be used")
 	cmd.Flags().BoolVar(&flags.UseCpu, "cpu", false, "Use CPU for training and evaluating")
-	cmd.Flags().StringVar(&flags.DatasetDirectory, "dataset-dir", "", "Dataset directory maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
+	cmd.Flags().StringArrayVarP(&flags.DatasetVolumes, "dataset-volume", "v", []string{}, "Dataset volume maps the user's local directory to the container's directory, enabling access to code integration for training and evaluation")
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
 	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
+
+	deprecatedFlag_datasetDir(cmd)
+
 	flags.TLSFlags.SetFlags(cmd)
+}
+
+func deprecatedFlag_datasetDir(cmd *cobra.Command) {
+	cmd.Flags().String("dataset-dir", "", "DEPRECATED: Use --dataset-volume or -v instead.")
+	_ = cmd.Flags().MarkHidden("dataset-dir")
+
+	args := os.Args[1:]
+	isDatasetDirChanged := strings.Contains(strings.Join(args, " "), "--dataset-dir")
+
+	if isDatasetDirChanged {
+		log.Fatalf("Error: --dataset-dir is deprecated. Please use --dataset-volume or -v instead.")
+	}
 }

@@ -23,17 +23,18 @@ const DefaultHttpsPort = 443
 const allGpuDevices = "all"
 
 type InstallationParams struct {
-	Version          string `json:"version"`
-	GpuDevices       string `json:"gpuDevices,omitempty"`
-	Gpus             uint   `json:"gpus,omitempty"`
-	Port             uint   `json:"clusterPort"`
-	Domain           string `json:"domain"`
-	ProxyUrl         string `json:"proxyUrl"`
-	RegistryPort     uint   `json:"registryPort"`
-	DisableMetrics   bool   `json:"disableMetrics"`
-	DatasetDirectory string `json:"datasetDirectory"`
-	FixK3dDns        bool   `json:"fixK3dDns"`
-	CpuLimit         string `json:"cpuLimit,omitempty"`
+	Version                     string   `json:"version"`
+	GpuDevices                  string   `json:"gpuDevices,omitempty"`
+	Gpus                        uint     `json:"gpus,omitempty"`
+	Port                        uint     `json:"clusterPort"`
+	Domain                      string   `json:"domain"`
+	ProxyUrl                    string   `json:"proxyUrl"`
+	RegistryPort                uint     `json:"registryPort"`
+	DisableMetrics              bool     `json:"disableMetrics"`
+	DatasetDirectory_DEPRECATED string   `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
+	DatasetVolumes              []string `json:"datasetVolumes"`
+	FixK3dDns                   bool     `json:"fixK3dDns"`
+	CpuLimit                    string   `json:"cpuLimit,omitempty"`
 	TLSParams
 }
 
@@ -97,9 +98,9 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		return nil, err
 	}
 
-	if err := InitDatasetDirectory(&flags.DatasetDirectory); err != nil {
+	if err := InitDatasetVolumes(&flags.DatasetVolumes); err != nil {
 		log.SendCloudReport("error", "Failed initializing data volume directory", "Failed",
-			&map[string]interface{}{"datasetDirectory": flags.DatasetDirectory, "error": err.Error()})
+			&map[string]interface{}{"datasetVolumes": flags.DatasetVolumes, "error": err.Error()})
 		return nil, err
 	}
 
@@ -144,18 +145,18 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 	}
 
 	return &InstallationParams{
-		Version:          CurrentInstallationVersion,
-		Gpus:             flags.Gpus,
-		GpuDevices:       flags.GpuDevices,
-		Port:             flags.Port,
-		RegistryPort:     flags.RegistryPort,
-		DisableMetrics:   flags.DisableMetrics,
-		DatasetDirectory: flags.DatasetDirectory,
-		FixK3dDns:        flags.FixK3dDns,
-		Domain:           flags.Domain,
-		ProxyUrl:         flags.ProxyUrl,
-		CpuLimit:         flags.CpuLimit,
-		TLSParams:        *tlsParams,
+		Version:        CurrentInstallationVersion,
+		Gpus:           flags.Gpus,
+		GpuDevices:     flags.GpuDevices,
+		Port:           flags.Port,
+		RegistryPort:   flags.RegistryPort,
+		DisableMetrics: flags.DisableMetrics,
+		DatasetVolumes: flags.DatasetVolumes,
+		FixK3dDns:      flags.FixK3dDns,
+		Domain:         flags.Domain,
+		ProxyUrl:       flags.ProxyUrl,
+		CpuLimit:       flags.CpuLimit,
+		TLSParams:      *tlsParams,
 	}, nil
 }
 
@@ -184,9 +185,9 @@ func AskInstallationParams() (*InstallationParams, error) {
 		return nil, err
 	}
 
-	if err := InitDatasetDirectory(&installationParams.DatasetDirectory); err != nil {
+	if err := InitDatasetVolumes(&installationParams.DatasetVolumes); err != nil {
 		log.SendCloudReport("error", "Failed initializing data volume directory", "Failed",
-			&map[string]interface{}{"datasetDirectory": installationParams.DatasetDirectory, "error": err.Error()})
+			&map[string]interface{}{"datasetVolumes": installationParams.DatasetVolumes, "error": err.Error()})
 		return nil, err
 	}
 
@@ -367,39 +368,60 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 	return nil
 }
 
-func InitDatasetDirectory(datasetDirectory *string) error {
-	defaultDatasetDirectory := GetDefaultDataVolume()
+func InitDatasetVolumes(datasetVolumes *[]string) error {
+	defaultDatasetVolume := GetDefaultDataVolume()
 
-	if *datasetDirectory == "" {
-		fromPath := ""
-		prompt := survey.Input{
-			Message: "Enter dataset directory:",
-			Default: defaultDatasetDirectory,
+	if len(*datasetVolumes) == 0 {
+		addAnother := true
+		for addAnother {
+			path := ""
+			if len(*datasetVolumes) > 0 {
+				defaultDatasetVolume = ""
+			}
+			prompt := survey.Input{
+				Message: "Enter dataset volume:",
+				Default: defaultDatasetVolume,
+			}
+			err := survey.AskOne(&prompt, &path)
+			if err != nil {
+				return err
+			}
+			path = strings.TrimSpace(path)
+			if path == "" {
+				break
+			}
+			if !strings.Contains(path, ":") {
+				path = fmt.Sprintf("%s:%s", path, path)
+			}
+			*datasetVolumes = append(*datasetVolumes, path)
+
+			confirmPrompt := survey.Confirm{
+				Message: "Add another dataset volume?",
+				Default: false,
+			}
+			err = survey.AskOne(&confirmPrompt, &addAnother)
+			if err != nil {
+				return err
+			}
 		}
-		err := survey.AskOne(&prompt, &fromPath)
-		if err != nil {
-			return err
-		}
-		*datasetDirectory = fromPath
 	}
-	if !strings.Contains(*datasetDirectory, ":") {
-		toPath := ""
-		prompt := survey.Input{
-			Message: "Enter container dataset directory:",
-			Default: *datasetDirectory,
+
+	for i, path := range *datasetVolumes {
+		if !strings.Contains(path, ":") {
+			(*datasetVolumes)[i] = fmt.Sprintf("%s:%s", path, path)
 		}
-		err := survey.AskOne(&prompt, &toPath)
+
+		dataPath := strings.Split(path, ":")[0]
+		err := os.MkdirAll(dataPath, 0777)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create dataset volume directory: %v", err)
 		}
-		*datasetDirectory = fmt.Sprintf("%s:%s", *datasetDirectory, toPath)
 	}
+
 	log.SendCloudReport("info", "Init data volume", "Starting",
-		&map[string]interface{}{"params": map[string]interface{}{"datasetDirectory": datasetDirectory}},
+		&map[string]interface{}{"params": map[string]interface{}{"datasetVolumes": datasetVolumes}},
 	)
-
-	dataPath := strings.Split(*datasetDirectory, ":")[0]
-	return os.MkdirAll(dataPath, 0777)
+	return nil
 }
 
 func GetDefaultDataVolume() string {
@@ -497,13 +519,16 @@ func (params *InstallationParams) CalcUrl() string {
 }
 
 func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmValuesParams {
-	dataContainerPath := strings.Split(params.DatasetDirectory, ":")[1]
+	dataContainerPaths := []string{}
+	for _, path := range params.DatasetVolumes {
+		dataContainerPaths = append(dataContainerPaths, strings.Split(path, ":")[1])
+	}
 
 	tlsParams := params.TLSParams.GetTLSHelmParams()
 
 	return &helm.ServerHelmValuesParams{
 		Gpu:                   params.IsUseGpu(),
-		LocalDataDirectory:    dataContainerPath,
+		LocalDataDirectories:  dataContainerPaths,
 		DisableDatadogMetrics: params.DisableMetrics,
 		Domain:                params.Domain,
 		BasePath:              params.CalcBestPath(),
@@ -544,8 +569,8 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	standaloneDir := local.GetServerDataDir()
 	volumes := []string{
 		fmt.Sprintf("%v:%v", standaloneDir, local.DEFAULT_DATA_DIR),
-		params.DatasetDirectory,
 	}
+	volumes = append(volumes, params.DatasetVolumes...)
 
 	useGpu := params.IsUseGpu()
 	var tlsPort *uint
@@ -594,7 +619,16 @@ func LoadInstallationParamsFromPrevious() (*InstallationParams, error) {
 	if err != nil {
 		return nil, err
 	}
+	backwardCompatibility_datasetDirectory(params)
+
 	return params, nil
+}
+
+func backwardCompatibility_datasetDirectory(params *InstallationParams) {
+	if params.DatasetDirectory_DEPRECATED != "" && len(params.DatasetVolumes) == 0 {
+		params.DatasetVolumes = []string{params.DatasetDirectory_DEPRECATED}
+	}
+	params.DatasetDirectory_DEPRECATED = ""
 }
 
 func LoadInstallationParams(paramsBytes []byte) (*InstallationParams, error) {
