@@ -4,6 +4,9 @@ entry_point: src_tensorleap.engine.generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
+dependencies_image_name: public.ecr.aws/tensorleap/pippin
+dependencies_image_tag: latest
+target_repo: k3d-tensorleap-registry:5000
 
 localDataDirectories: []
 gpu: false
