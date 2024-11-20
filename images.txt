@@ -10,6 +10,7 @@ nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine:master-96700a4a
 public.ecr.aws/tensorleap/node-server:master-5113dc65
 public.ecr.aws/tensorleap/web-ui:master-50e505d8
+public.ecr.aws/tensorleap/pippin:latest
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
