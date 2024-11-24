@@ -1,4 +1,4 @@
-image_tag: master-f23739f7
+image_tag: master-5fe38730
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 
