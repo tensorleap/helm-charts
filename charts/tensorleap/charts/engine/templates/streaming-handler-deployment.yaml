@@ -34,7 +34,7 @@ spec:
               memory: 500Mi
             limits:
               memory: 1Gi
-          command: ["python", "-m", "src.engine.streaming_handler"]
+          command: ["python", "-m", "src_tensorleap.engine.streaming_handler"]
           name: streaming-handler
           env:
             - name: HMAC_ACCESS_KEY_ID

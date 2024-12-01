@@ -33,7 +33,7 @@ spec:
               memory: 500Mi
             limits:
               memory: 500Mi
-          command: ["python", "-m", "src.engine.engine_scheduler"]
+          command: ["python", "-m", "src_tensorleap.engine.engine_scheduler"]
           name: orchestrator
           env:
             - name: HMAC_ACCESS_KEY_ID
