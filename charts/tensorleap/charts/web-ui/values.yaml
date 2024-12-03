@@ -1,4 +1,4 @@
-image_tag: master-50e505d8
+image_tag: master-69bafffc
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
