@@ -18,6 +18,28 @@ data:
         spec:
           serviceAccountName: deployment-manager
           priorityClassName: medium-priority
+          initContainers:
+            - name: image-dependencies-builder
+              image: {{ .Values.dependencies_image_name }}:{{ .Values.dependencies_image_tag }}
+              securityContext:
+                runAsUser: 0  # Optional: Run as root
+                privileged: true
+              env:
+                - name: IMAGE_TAG
+                - name: DEPENDENCY_URL
+                - name: BASE_IMAGE
+                  value: {{ .Values.image_name }}:{{ .Values.image_tag }}
+                - name: TARGET_REPO
+                  value: {{ .Values.target_repo }}
+                - name: LOG_DIR
+                  value: /shared/logs
+                - name: IS_K3D
+                  value: "true"
+              volumeMounts:
+                - name: shared-logs
+                  mountPath: /shared/logs
+                - name: docker-storage
+                  mountPath: /var/lib/docker  # Mount temporary Docker storage to container
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine
@@ -29,6 +51,10 @@ data:
               volumeMounts:
                 - name: minio
                   mountPath: /usr/minio
+                - name: shared-logs
+                  mountPath: /shared/logs
+                - name: docker-storage
+                  mountPath: /var/lib/docker
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
@@ -45,6 +71,12 @@ data:
             - name: minio
               persistentVolumeClaim:
                 claimName: tensorleap-minio
+            - name: shared-logs
+              emptyDir: {}  # Define shared-logs volume
+            - name: docker-storage
+              hostPath:
+                path: /var/lib/docker  # Use the host Docker storage path
+                type: Directory
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
