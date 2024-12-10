@@ -39,18 +39,19 @@ func (flags *TLSFlags) IsEnabled() bool {
 }
 
 type InstallFlags struct {
-	Port           uint     `json:"port"`
-	RegistryPort   uint     `json:"registryPort"`
-	GpuDevices     string   `json:"gpuDevices,omitempty"`
-	Gpus           uint     `json:"gpus,omitempty"`
-	UseCpu         bool     `json:",omitempty"`
-	DatasetVolumes []string `json:"datasetVolumes"`
-	DisableMetrics bool     `json:"disableMetrics"`
-	FixK3dDns      bool     `json:"fixK3dDns"`
-	Domain         string   `json:"domain"`
-	DataDir        string   `json:"dataDir"`
-	ProxyUrl       string   `json:"ProxyUrl"`
-	CpuLimit       string   `json:"cpuLimit,omitempty"`
+	Port                    uint     `json:"port"`
+	RegistryPort            uint     `json:"registryPort"`
+	GpuDevices              string   `json:"gpuDevices,omitempty"`
+	Gpus                    uint     `json:"gpus,omitempty"`
+	UseCpu                  bool     `json:",omitempty"`
+	DatasetVolumes          []string `json:"datasetVolumes"`
+	DisableMetrics          bool     `json:"disableMetrics"`
+	FixK3dDns               bool     `json:"fixK3dDns"`
+	Domain                  string   `json:"domain"`
+	DataDir                 string   `json:"dataDir"`
+	ProxyUrl                string   `json:"ProxyUrl"`
+	CpuLimit                string   `json:"cpuLimit,omitempty"`
+	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
 	TLSFlags
 }
 
@@ -67,10 +68,22 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
+	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
 
 	deprecatedFlag_datasetDir(cmd)
 
 	flags.TLSFlags.SetFlags(cmd)
+}
+
+func (flags *InstallFlags) BeforeRun(cmd *cobra.Command) {
+	if !cmd.Flags().Changed("clear-images") {
+		flags.ClearInstallationImages = nil
+	}
+}
+
+func setNilBoolFlag(cmd *cobra.Command, ref **bool, flagName string, message string) {
+	*ref = new(bool)
+	cmd.Flags().BoolVar(*ref, flagName, false, message)
 }
 
 func deprecatedFlag_datasetDir(cmd *cobra.Command) {
