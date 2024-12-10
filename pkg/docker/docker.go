@@ -154,24 +154,56 @@ func trimDefaultRegistry(imageName string) string {
 	return imageName
 }
 
-func EnsureImagesExists(dockerCli client.APIClient, imageNames []string) error {
-	allLocalImages, err := dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+func GetExistedAndNotExistedImages(dockerCli client.APIClient, imageNames []string) (foundImages []string, notFoundImages []string, err error) {
+	var allLocalImages []types.ImageSummary
+	allLocalImages, err = dockerCli.ImageList(context.Background(), types.ImageListOptions{})
 	if err != nil {
-		return fmt.Errorf("error listing Docker images: %v", err)
+		err = fmt.Errorf("error listing Docker images: %v", err)
+		return
 	}
-	notFoundImages := make([]string, 0)
+
 outer:
 	for _, imageName := range imageNames {
 		trimImageName := trimDefaultRegistry(imageName)
 		for _, image := range allLocalImages {
 			if slices.Contains(image.RepoTags, trimImageName) {
+				foundImages = append(foundImages, imageName)
 				continue outer
 			}
 		}
 		notFoundImages = append(notFoundImages, imageName)
 	}
+
+	return
+}
+
+func EnsureImagesExists(dockerCli client.APIClient, imageNames []string) error {
+
+	_, notFoundImages, err := GetExistedAndNotExistedImages(dockerCli, imageNames)
+
+	if err != nil {
+		return err
+	}
 	if len(notFoundImages) > 0 {
 		return fmt.Errorf("images not found: %v", notFoundImages)
+	}
+	return nil
+}
+
+func RemoveImages(dockerCli client.APIClient, imageNames []string) error {
+	existedImages, _, err := GetExistedAndNotExistedImages(dockerCli, imageNames)
+	if err != nil {
+		return err
+	}
+
+	for _, imageName := range existedImages {
+
+		log.Printf("Removing image: %s\n", imageName)
+
+		_, err := dockerCli.ImageRemove(context.Background(), imageName, types.ImageRemoveOptions{})
+		if err != nil {
+			log.Warnf("failed to remove image %s: %v", imageName, err)
+		}
 	}
 	return nil
 }
