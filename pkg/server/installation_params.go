@@ -35,6 +35,7 @@ type InstallationParams struct {
 	DatasetVolumes              []string `json:"datasetVolumes"`
 	FixK3dDns                   bool     `json:"fixK3dDns"`
 	CpuLimit                    string   `json:"cpuLimit,omitempty"`
+	ClearInstallationImages     bool     `json:"removeInstallationImages,omitempty"`
 	TLSParams
 }
 
@@ -142,21 +143,29 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 				flags.ProxyUrl = previousParams.ProxyUrl
 			}
 		}
+		isRemoveInstallationNotSet := flags.ClearInstallationImages == nil
+		if isRemoveInstallationNotSet {
+			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
+		}
+	}
+	if flags.ClearInstallationImages == nil {
+		flags.ClearInstallationImages = new(bool)
 	}
 
 	return &InstallationParams{
-		Version:        CurrentInstallationVersion,
-		Gpus:           flags.Gpus,
-		GpuDevices:     flags.GpuDevices,
-		Port:           flags.Port,
-		RegistryPort:   flags.RegistryPort,
-		DisableMetrics: flags.DisableMetrics,
-		DatasetVolumes: flags.DatasetVolumes,
-		FixK3dDns:      flags.FixK3dDns,
-		Domain:         flags.Domain,
-		ProxyUrl:       flags.ProxyUrl,
-		CpuLimit:       flags.CpuLimit,
-		TLSParams:      *tlsParams,
+		Version:                 CurrentInstallationVersion,
+		Gpus:                    flags.Gpus,
+		GpuDevices:              flags.GpuDevices,
+		Port:                    flags.Port,
+		RegistryPort:            flags.RegistryPort,
+		DisableMetrics:          flags.DisableMetrics,
+		DatasetVolumes:          flags.DatasetVolumes,
+		FixK3dDns:               flags.FixK3dDns,
+		Domain:                  flags.Domain,
+		ProxyUrl:                flags.ProxyUrl,
+		CpuLimit:                flags.CpuLimit,
+		TLSParams:               *tlsParams,
+		ClearInstallationImages: *flags.ClearInstallationImages,
 	}, nil
 }
 
