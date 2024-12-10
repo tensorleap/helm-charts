@@ -32,6 +32,7 @@ func NewReinstallCmd() *cobra.Command {
 }
 
 func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinstalled bool) error {
+	flags.BeforeRun(cmd)
 	log.SetCommandName("reinstall")
 
 	close, err := local.SetupInfra("reinstall")
