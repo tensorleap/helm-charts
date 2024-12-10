@@ -38,6 +38,7 @@ func NewInstallCmd() *cobra.Command {
 }
 
 func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
+	flags.BeforeRun(cmd)
 	ctx := cmd.Context()
 	log.SetCommandName("install")
 	close, err := local.SetupInfra("install")

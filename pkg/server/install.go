@@ -64,6 +64,13 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 	}
 
 	_ = SaveInstallation(mnf, installationParams)
+
+	err = cleanImages(mnf, prvMnf, installationParams.ClearInstallationImages)
+	if err != nil {
+		log.SendCloudReport("error", "Failed cleaning images", "Failed", &map[string]interface{}{"error": err.Error()})
+		log.Warnf("Failed cleaning images: %v", err)
+	}
+
 	return nil
 }
 

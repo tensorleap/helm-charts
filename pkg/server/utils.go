@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/airgap"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
+	"k8s.io/kubectl/pkg/util/slice"
 )
 
 const (
@@ -132,4 +134,49 @@ func getHomePath() string {
 	}
 
 	return homeDir
+}
+
+func cleanImages(currentMnf *manifest.InstallationManifest, previousMnf *manifest.InstallationManifest, isCleanCurrentImages bool) error {
+	imagesToClean := []string{}
+	currentImages := currentMnf.GetAllImages()
+	if isCleanCurrentImages {
+		imagesToClean = append(imagesToClean, currentMnf.Images.ServerImages...)
+		imagesToClean = append(imagesToClean, currentMnf.Images.K3sImages...)
+	}
+	if previousMnf != nil {
+		previousImages := previousMnf.GetAllImages()
+		for _, img := range previousImages {
+			if !slice.ContainsString(currentImages, img, nil) {
+				imagesToClean = append(imagesToClean, img)
+			}
+		}
+	}
+	imagesToClean = uniqueStrings(imagesToClean)
+	if len(imagesToClean) == 0 {
+		return nil
+	}
+	if isCleanCurrentImages {
+		log.Info("Cleaning images")
+	} else {
+		log.Info("Cleaning old images")
+	}
+	dockerClient, err := docker.NewClient()
+	if err != nil {
+		return err
+	}
+	err = docker.RemoveImages(dockerClient, imagesToClean)
+	return err
+}
+
+func uniqueStrings(arr []string) []string {
+	seen := make(map[string]struct{})
+	result := arr[:0] // Reuse the input slice for efficiency
+
+	for _, v := range arr {
+		if _, exists := seen[v]; !exists {
+			seen[v] = struct{}{}
+			result = append(result, v)
+		}
+	}
+	return result
 }
