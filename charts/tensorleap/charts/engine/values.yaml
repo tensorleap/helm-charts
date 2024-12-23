@@ -1,4 +1,4 @@
-image_tag: support-metric-vis-list-4f7ab859
+image_tag: support-metric-vis-list-0d12dbfa
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: src_tensorleap.engine.generic_processor
 metrics_activate_nfs: false
