@@ -16,7 +16,6 @@ data:
   STORAGE_PORT: "9000"
   STORAGE_ENDPOINT: "tensorleap-minio"
   SIGNED_URL_HOST_REPLACEMENT: "true"
-  DISABLE_ENGINE_WARMUP: "true"
   SINGLE_USER_MODE: "true"
   GATEWAY_URL: {{ .Values.global.url | quote }}
   PROXY_URL: {{ .Values.global.proxyUrl | quote }}
