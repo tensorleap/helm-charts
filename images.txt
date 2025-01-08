@@ -7,7 +7,7 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine:master-486dae98
+public.ecr.aws/tensorleap/engine:master-ef1cc39d
 public.ecr.aws/tensorleap/node-server:master-d8f9dd01
 public.ecr.aws/tensorleap/pippin:latest
 public.ecr.aws/tensorleap/web-ui:master-28b306b6
