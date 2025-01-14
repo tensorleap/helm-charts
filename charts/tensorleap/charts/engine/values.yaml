@@ -1,12 +1,14 @@
-image_tag: add-generic-poetry-b982f2e9
+image_tag: pippin-changes-da229197
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: latest
+dependencies_image_tag: add-err-ef2e7692
 target_repo: k3d-tensorleap-registry:5000
+generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
+generic_py_ver: py39 #select from: py38, py39, py310
 
 localDataDirectories: []
 gpu: false

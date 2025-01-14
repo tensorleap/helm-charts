@@ -26,7 +26,7 @@ data:
   UI_SETTINGS_SCHEMA: '{"N_DATASET_PROCESSES":{"type":"number","title":"Number of Dataset Processes","min":1,"description":"Number of processes to use for dataset processing (if empty, calculated automatically)"},"N_METRICS_PROCESSES":{"type":"number","title":"Number of Metrics Processes","min":1,"description":"Number of processes to use for metrics processing (if empty, calculated automatically)"},"N_VISUALIZERS_PROCESSES":{"type":"number","title":"Number of Visualizers Processes","min":1,"description":"Number of processes to use for visualizers processing (if empty, calculated automatically)"}}'
 
   GENERIC_CALCULATOR_IMAGE: "public.ecr.aws/tensorleap/engine-generic"
-  GENERIC_CALCULATOR_IMAGE_TAG: "test"
+  GENERIC_CALCULATOR_IMAGE_TAG: {{ .Values.image_tag }}-{{ .Values.generic_py_ver }}
   GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
   GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
