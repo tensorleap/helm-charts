@@ -1,4 +1,4 @@
-image_tag: master-911953d8
+image_tag: generic-process-adjustments-27aa965e
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 
