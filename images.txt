@@ -7,9 +7,9 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine:add-generic-poetry-b982f2e9
-public.ecr.aws/tensorleap/node-server:master-04424a0d
-public.ecr.aws/tensorleap/pippin:latest
+public.ecr.aws/tensorleap/engine:generic-poetry-cae5cacb
+public.ecr.aws/tensorleap/node-server:generic-process-adjustments-27aa965e
+public.ecr.aws/tensorleap/pippin:test-latest1
 public.ecr.aws/tensorleap/web-ui:master-10e8cbb5
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
