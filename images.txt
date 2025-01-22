@@ -9,10 +9,9 @@ gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine:generic-poetry-cae5cacb
 public.ecr.aws/tensorleap/node-server:generic-process-adjustments-27aa965e
-public.ecr.aws/tensorleap/pippin:test-yotam
+public.ecr.aws/tensorleap/pippin:test
 public.ecr.aws/tensorleap/web-ui:master-10e8cbb5
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
-public.ecr.aws/tensorleap/engine-generic:test-python-10
