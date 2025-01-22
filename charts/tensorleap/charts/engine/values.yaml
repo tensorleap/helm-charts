@@ -8,7 +8,7 @@ dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: test-yotam
 target_repo: k3d-tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
-generic_calculator_image_tag: "test"
+generic_calculator_image_tag: "test-python-10"
 
 localDataDirectories: []
 gpu: false
