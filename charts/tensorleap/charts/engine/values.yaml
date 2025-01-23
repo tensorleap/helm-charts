@@ -5,10 +5,10 @@ metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: test
+dependencies_image_tag: 2merge-06d981d5-latest
 target_repo: k3d-tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
-generic_calculator_image_tag: "generic-poetry-661f846e-py310"
+generic_calculator_image_tag: generic-poetry-4845a6c6-py310
 
 localDataDirectories: []
 gpu: false
