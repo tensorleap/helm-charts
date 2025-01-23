@@ -9,7 +9,7 @@ gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine:generic-poetry-cae5cacb
 public.ecr.aws/tensorleap/node-server:generic-process-adjustments-27aa965e
-public.ecr.aws/tensorleap/pippin:test
+public.ecr.aws/tensorleap/pippin:2merge-06d981d5-latest
 public.ecr.aws/tensorleap/web-ui:master-10e8cbb5
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
