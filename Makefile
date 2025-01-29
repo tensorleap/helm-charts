@@ -60,6 +60,12 @@ update-images:
 		| sort \
 		| uniq > images.txt
 
+	@grep 'public.ecr.aws/tensorleap/engine' images.txt | grep -o ':[^ ]*' | cut -d':' -f2 | while read tag; do \
+		for pyver in py38 py39 py310; do \
+			echo "public.ecr.aws/tensorleap/engine-generic:$$tag-latest-$$pyver"; \
+		done; \
+	done >> images.txt
+
 .PHONY: build-helm
 build-helm:
 	helm repo add nginx https://kubernetes.github.io/ingress-nginx
