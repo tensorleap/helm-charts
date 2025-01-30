@@ -47,7 +47,7 @@ check-fmt:
 	fi
 
 .PHONY: test
-test: 
+test:
 	@go test ./...
 
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
@@ -62,7 +62,7 @@ update-images:
 
 	@grep 'public.ecr.aws/tensorleap/engine' images.txt | grep -o ':[^ ]*' | cut -d':' -f2 | while read tag; do \
 		for pyver in py38 py39 py310; do \
-			echo "public.ecr.aws/tensorleap/engine-generic:$$tag-latest-$$pyver"; \
+			echo "public.ecr.aws/tensorleap/engine-generic:$$tag-$$pyver"; \
 		done; \
 	done >> images.txt
 
