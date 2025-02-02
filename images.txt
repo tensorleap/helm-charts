@@ -11,8 +11,8 @@ public.ecr.aws/tensorleap/engine-generic:pippin-changes-9d01c3d7-py310
 public.ecr.aws/tensorleap/engine-generic:pippin-changes-9d01c3d7-py38
 public.ecr.aws/tensorleap/engine-generic:pippin-changes-9d01c3d7-py39
 public.ecr.aws/tensorleap/engine:pippin-changes-9d01c3d7
-public.ecr.aws/tensorleap/node-server:generic-process-adjustments-6d27f99a
-public.ecr.aws/tensorleap/pippin:add-err-94d6812c
+public.ecr.aws/tensorleap/node-server:generic-process-adjustments-7e4b33ad
+public.ecr.aws/tensorleap/pippin:add-err-b908c545
 public.ecr.aws/tensorleap/web-ui:master-10e8cbb5
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
