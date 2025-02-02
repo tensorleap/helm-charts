@@ -28,7 +28,7 @@ data:
                 - name: IMAGE_TAG
                 - name: DEPENDENCY_URL
                 - name: BASE_IMAGE
-                  value: {{ .Values.generic_calculator_image }}:{{ .Values.generic_calculator_image_tag }}
+                  value: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-{{ .Values.generic_py_ver }}
                 - name: TARGET_REPO
                   value: {{ .Values.target_repo }}
                 - name: LOG_DIR
