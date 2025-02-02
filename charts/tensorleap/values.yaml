@@ -29,7 +29,7 @@ global:
     enabled: false
     cert: ''
     key: ''
-    
+
   elasticsearch:
     enabled: true
     url: ''

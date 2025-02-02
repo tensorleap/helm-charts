@@ -28,7 +28,7 @@ data:
                 - name: IMAGE_TAG
                 - name: DEPENDENCY_URL
                 - name: BASE_IMAGE
-                  value: {{ .Values.image_name }}:{{ .Values.image_tag }}
+                  value: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-{{ .Values.generic_py_ver }}
                 - name: TARGET_REPO
                   value: {{ .Values.target_repo }}
                 - name: LOG_DIR
@@ -38,8 +38,8 @@ data:
               volumeMounts:
                 - name: shared-logs
                   mountPath: /shared/logs
-                - name: temp-docker-storage
-                  mountPath: /var/lib/docker  # Mount temporary Docker storage to container
+                - name: docker-storage
+                  mountPath: /var/lib/docker
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine
@@ -71,8 +71,9 @@ data:
                 claimName: tensorleap-minio
             - name: shared-logs
               emptyDir: {}  # Define shared-logs volume
-            - name: temp-docker-storage
-              emptyDir: {}
+            - name: docker-storage
+              persistentVolumeClaim:
+                claimName: tensorleap-docker-storage
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
