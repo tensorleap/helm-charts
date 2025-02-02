@@ -40,6 +40,11 @@ data:
                   mountPath: /shared/logs
                 - name: docker-storage
                   mountPath: /var/lib/docker
+                - name: lib-modules
+                  mountPath: /lib/modules
+                  readOnly: true
+                - name: sys-fs
+                  mountPath: /sys
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine
@@ -74,6 +79,12 @@ data:
             - name: docker-storage
               persistentVolumeClaim:
                 claimName: tensorleap-docker-storage
+            - name: lib-modules
+              hostPath:
+                path: /lib/modules
+            - name: sys-fs
+              hostPath:
+                path: /sys
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:

@@ -340,6 +340,18 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		}
 	}
 
+	simpleK3dConfig.Volumes = append(simpleK3dConfig.Volumes, conf.VolumeWithNodeFilters{
+		Volume:      "/lib/modules:/lib/modules:ro",
+		NodeFilters: []string{"server:*"},
+	},
+	)
+
+	simpleK3dConfig.Volumes = append(simpleK3dConfig.Volumes, conf.VolumeWithNodeFilters{
+		Volume:      "/sys:/sys:ro",
+		NodeFilters: []string{"server:*"},
+	},
+	)
+
 	k3dClusterConfig, err := config.TransformSimpleToClusterConfig(ctx, runtimes.SelectedRuntime, simpleK3dConfig)
 	if err != nil {
 		log.Fatalln(err)

@@ -7,10 +7,10 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:pippin-changes-83850d3a-py310
-public.ecr.aws/tensorleap/engine-generic:pippin-changes-83850d3a-py38
-public.ecr.aws/tensorleap/engine-generic:pippin-changes-83850d3a-py39
-public.ecr.aws/tensorleap/engine:pippin-changes-83850d3a
+public.ecr.aws/tensorleap/engine-generic:pippin-changes-24e77164-py310
+public.ecr.aws/tensorleap/engine-generic:pippin-changes-24e77164-py38
+public.ecr.aws/tensorleap/engine-generic:pippin-changes-24e77164-py39
+public.ecr.aws/tensorleap/engine:pippin-changes-24e77164
 public.ecr.aws/tensorleap/node-server:generic-process-adjustments-7e4b33ad
 public.ecr.aws/tensorleap/pippin:add-err-022cfab5
 public.ecr.aws/tensorleap/web-ui:master-1e3f07a2-stable

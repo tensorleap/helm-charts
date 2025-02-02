@@ -1,0 +1,125 @@
+- InitNode: null
+  agentsCount: 0
+  agentsRunning: 0
+  imageVolume: k3d-tensorleap-images
+  name: tensorleap
+  network:
+    Members: null
+    id: ""
+    ipam:
+      Managed: false
+      ipPrefix: ""
+    name: k3d-tensorleap
+  nodes:
+  - Cmd:
+    - noop
+    ExtraHosts: null
+    GPURequest: ""
+    IP:
+      IP: ""
+      Static: false
+    Memory: ""
+    Networks:
+    - k3d-tensorleap
+    State:
+      Running: true
+      Started: ""
+      Status: running
+    agentOpts: {}
+    created: "2025-02-02T16:14:29.381867214Z"
+    env:
+    - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
+    - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: sha256:e10140850351576d26ef820b3dc335ce6c2fec55f227efebc9ee0a779ef1f171
+    name: k3d-tensorleap-tools
+    runtimeLabels:
+      k3d.cluster: tensorleap
+      k3d.role: noRole
+      k3d.version: v5-dev
+    serverOpts:
+      kubeAPI:
+        Binding:
+          HostIp: ""
+          HostPort: ""
+        Port: ""
+    volumes:
+    - k3d-tensorleap-images:/k3d/images
+    - /run/host-services/docker.proxy.sock:/var/run/docker.sock
+    - /lib/modules:/lib/modules
+    - /sys:/sys
+  - Cmd:
+    - server
+    - --disable=traefik
+    - --tls-san
+    - 0.0.0.0
+    ExtraHosts: null
+    GPURequest: ""
+    IP:
+      IP: 172.27.0.4
+      Static: false
+    Memory: ""
+    Networks:
+    - k3d-tensorleap
+    State:
+      Running: true
+      Started: ""
+      Status: running
+    agentOpts: {}
+    created: "2025-02-02T15:18:37.328089801Z"
+    env:
+    - all_proxy=
+    - ALL_PROXY=
+    - http_proxy=
+    - HTTP_PROXY=
+    - https_proxy=
+    - HTTPS_PROXY=
+    - no_proxy=
+    - NO_PROXY=
+    - K3S_TOKEN=JMKBXwlMYVImigNFLrJT
+    - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
+    - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/bin/aux
+    - CRI_CONFIG_FILE=/var/lib/rancher/k3s/agent/etc/crictl.yaml
+    image: sha256:d98e08375058dcf4d580d64c921ebc52d5b7da7908a756467ec849b7512e149a
+    name: k3d-tensorleap-server-0
+    portMappings:
+      80/tcp:
+      - HostIp: ""
+        HostPort: "4589"
+      "6443":
+      - HostIp: 0.0.0.0
+        HostPort: "64757"
+    restart: true
+    role: server
+    runtimeLabels:
+      k3d.cluster: tensorleap
+      k3d.cluster.imageVolume: k3d-tensorleap-images
+      k3d.cluster.network: k3d-tensorleap
+      k3d.cluster.network.external: "false"
+      k3d.cluster.network.id: 0a81d304830c726763d6ebcae852705a18deff21f879e4d55fb35c303e3af057
+      k3d.cluster.network.iprange: 172.27.0.0/16
+      k3d.cluster.token: JMKBXwlMYVImigNFLrJT
+      k3d.cluster.url: https://k3d-tensorleap-server-0:6443
+      k3d.role: server
+      k3d.server.api.host: 0.0.0.0
+      k3d.server.api.hostIP: 0.0.0.0
+      k3d.server.api.port: "64757"
+      k3d.server.loadbalancer: ""
+      k3d.version: v5-dev
+    serverOpts:
+      kubeAPI:
+        Binding:
+          HostIp: 0.0.0.0
+          HostPort: "64757"
+        Port: ""
+        host: 0.0.0.0
+    volumes:
+    - /var/lib/tensorleap/standalone:/var/lib/tensorleap/standalone
+    - /Users/yotamazriel/tensorleap/data:/Users/yotamazriel/tensorleap/data
+    - k3d-tensorleap-images:/k3d/images
+    - /lib/modules:/lib/modules
+    - /sys:/sys
+  serversCount: 1
+  serversRunning: 1
+  volumes:
+  - k3d-tensorleap-images
+

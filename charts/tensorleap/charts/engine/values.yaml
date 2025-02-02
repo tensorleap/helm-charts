@@ -1,4 +1,4 @@
-image_tag: pippin-changes-83850d3a
+image_tag: pippin-changes-24e77164
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
@@ -8,7 +8,7 @@ dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: add-err-022cfab5
 target_repo: k3d-tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
-generic_py_ver: py38 #select from: py38, py39, py310
+generic_py_ver: py310 # select from: py38, py39, py310
 
 localDataDirectories: []
 gpu: false
