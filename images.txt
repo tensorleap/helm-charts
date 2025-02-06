@@ -1,6 +1,6 @@
 docker.elastic.co/eck/eck-operator:2.8.0
-docker.io/bitnami/postgresql:11.14.0-debian-10-r28
-docker.io/library/busybox:1.32
+docker.io/bitnami/keycloak:18.0.2-debian-11-r14
+docker.io/bitnami/postgresql:14.4.0-debian-11-r18
 docker.io/library/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
@@ -11,10 +11,9 @@ public.ecr.aws/tensorleap/engine-generic:pippin-changes-da229197-py310
 public.ecr.aws/tensorleap/engine-generic:pippin-changes-da229197-py38
 public.ecr.aws/tensorleap/engine-generic:pippin-changes-da229197-py39
 public.ecr.aws/tensorleap/engine:pippin-changes-da229197
-public.ecr.aws/tensorleap/node-server:generic-process-adjustments-7e4b33ad
-public.ecr.aws/tensorleap/pippin:add-err-ef2e7692
-public.ecr.aws/tensorleap/web-ui:master-10e8cbb5
-quay.io/keycloak/keycloak:17.0.1-legacy
+public.ecr.aws/tensorleap/node-server:generic-process-adjustments-f04c313e-stable
+public.ecr.aws/tensorleap/pippin:asaf-0.2
+public.ecr.aws/tensorleap/web-ui:master-e3303a4a-stable
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0

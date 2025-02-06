@@ -1,7 +1,7 @@
 apiVersion: v2
 name: tensorleap
 type: application
-version: 1.1.507-pippin.2
+version: 1.1.507-pippin.asaf-0.5
 dependencies:
   - name: ingress-nginx
     version: 4.10.0

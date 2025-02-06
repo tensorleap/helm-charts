@@ -22,8 +22,12 @@ data:
             - name: image-dependencies-builder
               image: {{ .Values.dependencies_image_name }}:{{ .Values.dependencies_image_tag }}
               securityContext:
-                runAsUser: 0  # Optional: Run as root
                 privileged: true
+                runAsUser: 0
+                allowPrivilegeEscalation: true
+                capabilities:
+                  add:
+                    - SYS_ADMIN
               env:
                 - name: IMAGE_TAG
                 - name: DEPENDENCY_URL
@@ -40,6 +44,7 @@ data:
                   mountPath: /shared/logs
                 - name: docker-storage
                   mountPath: /var/lib/docker
+                  readOnly: false  # Ensure it's NOT read-only
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine
