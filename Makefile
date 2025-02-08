@@ -47,7 +47,7 @@ check-fmt:
 	fi
 
 .PHONY: test
-test: 
+test:
 	@go test ./...
 
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]

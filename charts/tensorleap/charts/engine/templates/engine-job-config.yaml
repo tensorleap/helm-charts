@@ -3,6 +3,17 @@ kind: ConfigMap
 metadata:
   name: engine-job-config
 data:
+  defaultGenericBaseImage: {{ .Values.generic_py_ver }}
+  genericBaseImages: |
+    - id: py38
+      displayName: Python 3.8
+      image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py38
+    - id: py39
+      displayName: Python 3.9
+      image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py39
+    - id: py310
+      displayName: Python 3.10
+      image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py310
   defaultGpuType: {{ .Values.gpu | ternary "gpu" "cpu" }}
   defaultCpuType: cpu
   machineTypes: |
