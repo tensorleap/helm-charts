@@ -38,8 +38,6 @@ data:
               volumeMounts:
                 - name: shared-logs
                   mountPath: /shared/logs
-                - name: temp-docker-storage
-                  mountPath: /var/lib/docker  # Mount temporary Docker storage to container
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               name: engine
@@ -71,8 +69,6 @@ data:
                 claimName: tensorleap-minio
             - name: shared-logs
               emptyDir: {}  # Define shared-logs volume
-            - name: temp-docker-storage
-              emptyDir: {}
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
