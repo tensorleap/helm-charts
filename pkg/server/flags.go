@@ -74,7 +74,6 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringArrayVar(&flags.K3sEnvs, "k3s-env", []string{}, "Environment variables to be passed to k3s")
 	cmd.Flags().StringVar(&flags.K3sEnvFile, "k3s-env-file", "", "File containing environment variables to be passed to k3s")
 
-
 	deprecatedFlag_datasetDir(cmd)
 
 	flags.TLSFlags.SetFlags(cmd)
