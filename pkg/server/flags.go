@@ -52,6 +52,8 @@ type InstallFlags struct {
 	ProxyUrl                string   `json:"ProxyUrl"`
 	CpuLimit                string   `json:"cpuLimit,omitempty"`
 	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
+	K3sEnvs                 []string `json:"k3sEnvs,omitempty"`
+	K3sEnvFile              string   `json:"k3sEnvFile,omitempty"`
 	TLSFlags
 }
 
@@ -69,6 +71,9 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
 	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
+	cmd.Flags().StringArrayVar(&flags.K3sEnvs, "k3s-env", []string{}, "Environment variables to be passed to k3s")
+	cmd.Flags().StringVar(&flags.K3sEnvFile, "k3s-env-file", "", "File containing environment variables to be passed to k3s")
+
 
 	deprecatedFlag_datasetDir(cmd)
 

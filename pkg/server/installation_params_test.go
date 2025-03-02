@@ -32,3 +32,17 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 	})
 
 }
+
+func TestInitK3sParams(t *testing.T) {
+	t.Run("Parse multi envs", func(t *testing.T) {
+		flags := InstallFlags{
+			K3sEnvs: []string{"K3S_TOKEN=x"},
+		}
+		valueParams, err := InitK3sCustomEnvs(&flags)
+		assert.Nil(t, err)
+		assert.Equal(t, valueParams, map[string]string{
+			"K3S_TOKEN": "x",
+		})
+	})
+
+}

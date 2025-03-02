@@ -40,11 +40,12 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 }
 
 type CreateK3sClusterParams struct {
-	WithGpu  bool     `json:"gpu"`
-	Port     uint     `json:"port"`
-	Volumes  []string `json:"volumes"`
-	CpuLimit string   `json:"cpuLimit,omitempty"`
-	TLSPort  *uint    `json:"tlsPort,omitempty"`
+	WithGpu  bool              `json:"gpu"`
+	Port     uint              `json:"port"`
+	Volumes  []string          `json:"volumes"`
+	CpuLimit string            `json:"cpuLimit,omitempty"`
+	TLSPort  *uint             `json:"tlsPort,omitempty"`
+	Envs     map[string]string `json:"envs,omitempty"`
 }
 
 func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
@@ -217,11 +218,6 @@ func RunCluster(ctx context.Context) error {
 	// override only a few clusterStartOpts from fetched opts
 	startClusterOpts.HostAliases = fetchedClusterStartOpts.HostAliases
 
-	if err != nil {
-		log.SendCloudReport("error", "Failed getting cluster start options", "Failed",
-			&map[string]interface{}{"error": err.Error()})
-		return err
-	}
 	err = k3dCluster.ClusterStart(ctx, runtimes.SelectedRuntime, cluster, startClusterOpts)
 	if err != nil {
 		log.SendCloudReport("error", "Failed running cluster", "Failed",
@@ -324,6 +320,15 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 	if params.WithGpu {
 		simpleK3dConfig.Options.Runtime.GPURequest = "all"
+	}
+
+	if len(params.Envs) > 0 {
+		for k, v := range params.Envs {
+			simpleK3dConfig.Env = append(simpleK3dConfig.Env, conf.EnvVarWithNodeFilters{
+				EnvVar:      fmt.Sprintf("%s=%s", k, v),
+				NodeFilters: []string{"server:*"},
+			})
+		}
 	}
 
 	if params.TLSPort != nil {
