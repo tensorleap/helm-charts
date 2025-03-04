@@ -1,4 +1,4 @@
-image_tag: master-897862ba
+image_tag: master-64ec4ffa
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
