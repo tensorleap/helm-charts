@@ -23,19 +23,20 @@ const DefaultHttpsPort = 443
 const allGpuDevices = "all"
 
 type InstallationParams struct {
-	Version                     string   `json:"version"`
-	GpuDevices                  string   `json:"gpuDevices,omitempty"`
-	Gpus                        uint     `json:"gpus,omitempty"`
-	Port                        uint     `json:"clusterPort"`
-	Domain                      string   `json:"domain"`
-	ProxyUrl                    string   `json:"proxyUrl"`
-	RegistryPort                uint     `json:"registryPort"`
-	DisableMetrics              bool     `json:"disableMetrics"`
-	DatasetDirectory_DEPRECATED string   `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
-	DatasetVolumes              []string `json:"datasetVolumes"`
-	FixK3dDns                   bool     `json:"fixK3dDns"`
-	CpuLimit                    string   `json:"cpuLimit,omitempty"`
-	ClearInstallationImages     bool     `json:"removeInstallationImages,omitempty"`
+	Version                     string            `json:"version"`
+	GpuDevices                  string            `json:"gpuDevices,omitempty"`
+	Gpus                        uint              `json:"gpus,omitempty"`
+	Port                        uint              `json:"clusterPort"`
+	Domain                      string            `json:"domain"`
+	ProxyUrl                    string            `json:"proxyUrl"`
+	RegistryPort                uint              `json:"registryPort"`
+	DisableMetrics              bool              `json:"disableMetrics"`
+	DatasetDirectory_DEPRECATED string            `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
+	DatasetVolumes              []string          `json:"datasetVolumes"`
+	FixK3dDns                   bool              `json:"fixK3dDns"`
+	CpuLimit                    string            `json:"cpuLimit,omitempty"`
+	ClearInstallationImages     bool              `json:"removeInstallationImages,omitempty"`
+	K3sEnvs                     map[string]string `json:"k3sEnvs,omitempty"`
 	TLSParams
 }
 
@@ -110,6 +111,11 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		return nil, fmt.Errorf("failed to get TLS params: %v", err)
 	}
 
+	k3sEnvs, err := InitK3sCustomEnvs(flags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get K3s params: %v", err)
+	}
+
 	previousParams, err := LoadInstallationParamsFromPrevious()
 	if err == nil {
 		isAskUserToUsePreviousTlsConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
@@ -147,6 +153,27 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		if isRemoveInstallationNotSet {
 			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
 		}
+		isAskUserToUsePreviousEnv := len(k3sEnvs) == 0 && len(previousParams.K3sEnvs) > 0
+		if isAskUserToUsePreviousEnv {
+			log.Info("Previous K3s environment variables found:")
+
+			for key, value := range previousParams.K3sEnvs {
+				fmt.Printf("%s=%s\n", key, value)
+			}
+
+			prompt := survey.Confirm{
+				Message: "Do you want to use the previous K3s environment variables?",
+				Default: true,
+			}
+			usePreviousK3sEnvs := true
+			err := survey.AskOne(&prompt, &usePreviousK3sEnvs)
+			if err != nil {
+				return nil, err
+			}
+			if usePreviousK3sEnvs {
+				k3sEnvs = previousParams.K3sEnvs
+			}
+		}
 	}
 	if flags.ClearInstallationImages == nil {
 		flags.ClearInstallationImages = new(bool)
@@ -166,6 +193,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		CpuLimit:                flags.CpuLimit,
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
+		K3sEnvs:                 k3sEnvs,
 	}, nil
 }
 
@@ -377,6 +405,42 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 	return nil
 }
 
+func InitK3sCustomEnvs(flags *InstallFlags) (map[string]string, error) {
+	k3sParams := map[string]string{}
+	addEnvsFromLines := func(lines []string) error {
+		for _, line := range lines {
+			parts := strings.Split(line, "=")
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid k3s environment variable: %s", line)
+			}
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			k3sParams[key] = value
+		}
+		return nil
+	}
+
+	err := addEnvsFromLines(flags.K3sEnvs)
+	if err != nil {
+		return nil, err
+	}
+
+	if flags.K3sEnvFile != "" {
+		envFile, err := os.ReadFile(flags.K3sEnvFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read k3s env file: %v", err)
+		}
+		envLines := strings.Split(string(envFile), "\n")
+		err = addEnvsFromLines(envLines)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return k3sParams, nil
+
+}
+
 func InitDatasetVolumes(datasetVolumes *[]string) error {
 	defaultDatasetVolume := GetDefaultDataVolume()
 
@@ -586,6 +650,10 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	if params.TLSParams.Enabled {
 		tlsPort = &params.TLSParams.Port
 	}
+	envs := params.K3sEnvs
+	if envs == nil {
+		envs = map[string]string{}
+	}
 
 	return &k3d.CreateK3sClusterParams{
 		WithGpu:  useGpu,
@@ -593,6 +661,7 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		Volumes:  volumes,
 		CpuLimit: params.CpuLimit,
 		TLSPort:  tlsPort,
+		Envs:     envs,
 	}
 }
 
