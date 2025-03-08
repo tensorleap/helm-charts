@@ -7,10 +7,10 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:master-038de9e1-py310
-public.ecr.aws/tensorleap/engine-generic:master-038de9e1-py38
-public.ecr.aws/tensorleap/engine-generic:master-038de9e1-py39
-public.ecr.aws/tensorleap/engine:master-038de9e1
+public.ecr.aws/tensorleap/engine-generic:master-0e80bdfe-py310
+public.ecr.aws/tensorleap/engine-generic:master-0e80bdfe-py38
+public.ecr.aws/tensorleap/engine-generic:master-0e80bdfe-py39
+public.ecr.aws/tensorleap/engine:master-0e80bdfe
 public.ecr.aws/tensorleap/node-server:master-a815972c
 public.ecr.aws/tensorleap/pippin:master-b2790676
 public.ecr.aws/tensorleap/web-ui:master-f765b23c
