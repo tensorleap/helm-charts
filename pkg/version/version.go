@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const Version = "v0.3.2"
+const Version = "v0.3.3"
 
 func IsMinorVersionSmaller(currentVersion, comperedVersion string) bool {
 
