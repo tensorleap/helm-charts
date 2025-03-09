@@ -27,15 +27,16 @@ type TLSParams struct {
 }
 
 type ServerHelmValuesParams struct {
-	Gpu                   bool      `json:"gpu"`
-	LocalDataDirectories  []string  `json:"localDataDirectories"`
-	DisableDatadogMetrics bool      `json:"disableDatadogMetrics"`
-	Domain                string    `json:"domain"`
-	BasePath              string    `json:"basePath"`
-	Url                   string    `json:"url"`
-	ProxyUrl              string    `json:"proxyUrl"`
-	Tls                   TLSParams `json:"tls"`
-	HostName              string    `json:"hostname"`
+	Gpu                   bool              `json:"gpu"`
+	LocalDataDirectories  []string          `json:"localDataDirectories"`
+	DisableDatadogMetrics bool              `json:"disableDatadogMetrics"`
+	Domain                string            `json:"domain"`
+	BasePath              string            `json:"basePath"`
+	Url                   string            `json:"url"`
+	ProxyUrl              string            `json:"proxyUrl"`
+	Tls                   TLSParams         `json:"tls"`
+	HostName              string            `json:"hostname"`
+	DatadogEnv            map[string]string `json:"datadogEnv"`
 }
 
 type InfraHelmValuesParams struct {
@@ -209,6 +210,13 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 	}
 	extraEnvStringYaml := formatExtraEnv(extraEnvSlice)
 
+	datadogEnvs := []map[string]string{}
+	datadogEnvs = append(datadogEnvs, map[string]string{"name": "DD_HOSTNAME", "value": hostname})
+
+	for key, value := range params.DatadogEnv {
+		datadogEnvs = append(datadogEnvs, map[string]string{"name": key, "value": value})
+	}
+
 	return Record{
 		"tensorleap-engine": Record{
 			"gpu":                  params.Gpu,
@@ -235,12 +243,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"datadog": map[string]interface{}{
 			"enabled": !params.DisableDatadogMetrics,
 			"datadog": map[string]interface{}{
-				"env": []map[string]string{
-					{
-						"name":  "DD_HOSTNAME",
-						"value": hostname,
-					},
-				},
+				"env": datadogEnvs,
 			},
 		},
 	}, nil

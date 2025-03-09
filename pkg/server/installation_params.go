@@ -535,6 +535,8 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 
 	tlsParams := params.TLSParams.GetTLSHelmParams()
 
+	datadogEnvs := params.GetDatadogEnvs()
+
 	return &helm.ServerHelmValuesParams{
 		Gpu:                   params.IsUseGpu(),
 		LocalDataDirectories:  dataContainerPaths,
@@ -544,7 +546,27 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		Url:                   params.CalcUrl(),
 		ProxyUrl:              params.ProxyUrl,
 		Tls:                   *tlsParams,
+		DatadogEnv:            datadogEnvs,
 	}
+}
+
+func (params *InstallationParams) GetDatadogEnvs() map[string]string {
+	data := map[string]string{}
+	proxyHTTP, httpExists := os.LookupEnv("HTTP_PROXY")
+	proxyHTTPS, httpsExists := os.LookupEnv("HTTPS_PROXY")
+	proxyNoProxy, noProxyExists := os.LookupEnv("NO_PROXY")
+
+	if httpExists {
+		data["DD_PROXY_HTTP"] = proxyHTTP
+	}
+	if httpsExists {
+		data["DD_PROXY_HTTPS"] = proxyHTTPS
+	}
+	if noProxyExists {
+		data["DD_PROXY_NO_PROXY"] = proxyNoProxy
+	}
+
+	return data
 }
 
 func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
