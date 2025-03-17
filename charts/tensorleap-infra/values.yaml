@@ -1,6 +1,15 @@
 eck-operator:
-  managedNamespaces: 
+  managedNamespaces:
     - tensorleap
+  env:
+    - name: ES_JAVA_OPTS
+      value: "-Xms4g -Xmx4g"
+
+    - name: discovery.type
+      value: "single-node"
+
+    - name: _JAVA_OPTIONS
+      value: "-XX:UseSVE=0"
 
 nvidiaGpu:
   enabled: false
