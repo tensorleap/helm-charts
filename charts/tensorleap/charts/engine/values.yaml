@@ -6,7 +6,7 @@ samples_generator_nfs: false
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: master-dbaedbe3
-target_repo: k3d-tensorleap-registry:5000
+target_repo: 172.18.0.1:5000 # IP of docker gateway
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310
 
