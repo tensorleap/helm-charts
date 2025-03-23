@@ -1,4 +1,4 @@
-image_tag: fix-redis-6be39372
+image_tag: limit-redis-mem-6b2c2775
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false

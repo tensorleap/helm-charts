@@ -14,7 +14,7 @@ rules:
     resources: ["deployments", "pods"]
     verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
   - apiGroups: ["metrics.k8s.io"]
-    resources: ["pods", "nodes"]
+    resources: ["pods"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
@@ -33,65 +33,3 @@ roleRef:
   kind: Role
   name: deployment-manager-role
   apiGroup: rbac.authorization.k8s.io
----
-# ClusterRole for core nodes (cluster-scoped)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: deployment-manager-core-nodes
-rules:
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
----
-# ClusterRole for metrics nodes (cluster-scoped)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: deployment-manager-metrics-nodes
-rules:
-  - apiGroups: ["metrics.k8s.io"]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
----
-# Bind the core nodes role to the service account
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: deployment-manager-core-nodes-binding
-subjects:
-  - kind: ServiceAccount
-    name: deployment-manager
-    namespace: tensorleap
-roleRef:
-  kind: ClusterRole
-  name: deployment-manager-core-nodes
-  apiGroup: rbac.authorization.k8s.io
----
-# Bind the metrics nodes role to the service account
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: deployment-manager-metrics-nodes-binding
-subjects:
-  - kind: ServiceAccount
-    name: deployment-manager
-    namespace: tensorleap
-roleRef:
-  kind: ClusterRole
-  name: deployment-manager-metrics-nodes
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: deployment-manager-aggregated-metrics-binding
-subjects:
-  - kind: ServiceAccount
-    name: deployment-manager
-    namespace: tensorleap
-roleRef:
-  kind: ClusterRole
-  name: system:aggregated-metrics-reader
-  apiGroup: rbac.authorization.k8s.io
-

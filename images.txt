@@ -7,10 +7,10 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:fix-redis-6be39372-py310
-public.ecr.aws/tensorleap/engine-generic:fix-redis-6be39372-py38
-public.ecr.aws/tensorleap/engine-generic:fix-redis-6be39372-py39
-public.ecr.aws/tensorleap/engine:fix-redis-6be39372
+public.ecr.aws/tensorleap/engine-generic:limit-redis-mem-6b2c2775-py310
+public.ecr.aws/tensorleap/engine-generic:limit-redis-mem-6b2c2775-py38
+public.ecr.aws/tensorleap/engine-generic:limit-redis-mem-6b2c2775-py39
+public.ecr.aws/tensorleap/engine:limit-redis-mem-6b2c2775
 public.ecr.aws/tensorleap/node-server:master-255be8fd
 public.ecr.aws/tensorleap/pippin:master-5d8ba588
 public.ecr.aws/tensorleap/web-ui:master-951d6ec6
