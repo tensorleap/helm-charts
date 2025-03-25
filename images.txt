@@ -11,7 +11,7 @@ public.ecr.aws/tensorleap/engine-generic:master-42373735-py310
 public.ecr.aws/tensorleap/engine-generic:master-42373735-py38
 public.ecr.aws/tensorleap/engine-generic:master-42373735-py39
 public.ecr.aws/tensorleap/engine:master-42373735
-public.ecr.aws/tensorleap/node-server:master-255be8fd
+public.ecr.aws/tensorleap/node-server:master-4213e467
 public.ecr.aws/tensorleap/pippin:master-dbaedbe3
 public.ecr.aws/tensorleap/web-ui:master-951d6ec6
 quay.io/keycloak/keycloak:17.0.1-legacy
