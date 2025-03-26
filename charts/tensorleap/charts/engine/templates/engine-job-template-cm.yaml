@@ -18,6 +18,8 @@ data:
         spec:
           serviceAccountName: deployment-manager
           priorityClassName: medium-priority
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
           initContainers:
             - name: image-dependencies-builder
               image: {{ .Values.dependencies_image_name }}:{{ .Values.dependencies_image_tag }}
