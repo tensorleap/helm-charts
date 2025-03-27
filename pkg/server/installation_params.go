@@ -33,7 +33,6 @@ type InstallationParams struct {
 	DisableMetrics              bool     `json:"disableMetrics"`
 	DatasetDirectory_DEPRECATED string   `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
 	DatasetVolumes              []string `json:"datasetVolumes"`
-	FixK3dDns                   bool     `json:"fixK3dDns"`
 	CpuLimit                    string   `json:"cpuLimit,omitempty"`
 	ClearInstallationImages     bool     `json:"removeInstallationImages,omitempty"`
 	TLSParams
@@ -160,7 +159,6 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		RegistryPort:            flags.RegistryPort,
 		DisableMetrics:          flags.DisableMetrics,
 		DatasetVolumes:          flags.DatasetVolumes,
-		FixK3dDns:               flags.FixK3dDns,
 		Domain:                  flags.Domain,
 		ProxyUrl:                flags.ProxyUrl,
 		CpuLimit:                flags.CpuLimit,
