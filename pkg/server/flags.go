@@ -46,7 +46,6 @@ type InstallFlags struct {
 	UseCpu                  bool     `json:",omitempty"`
 	DatasetVolumes          []string `json:"datasetVolumes"`
 	DisableMetrics          bool     `json:"disableMetrics"`
-	FixK3dDns               bool     `json:"fixK3dDns"`
 	Domain                  string   `json:"domain"`
 	DataDir                 string   `json:"dataDir"`
 	ProxyUrl                string   `json:"ProxyUrl"`
@@ -65,7 +64,6 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
 	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
-	cmd.Flags().BoolVar(&flags.FixK3dDns, "fix-dns", false, "Fix DNS issue with docker, in case you are having issue with internet connection in the container")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
 	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
