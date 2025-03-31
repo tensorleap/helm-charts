@@ -32,3 +32,44 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 	})
 
 }
+
+func TestCalcGpusUsed(t *testing.T) {
+	tests := []struct {
+		name       string
+		gpus       uint
+		gpuDevices string
+		expected   string
+	}{
+		{
+			name:       "No GPUs",
+			gpus:       0,
+			gpuDevices: "",
+			expected:   "0 GPUs",
+		},
+		{
+			name:       "All GPUs",
+			gpus:       0,
+			gpuDevices: allGpuDevices,
+			expected:   "all GPUs",
+		},
+		{
+			name:       "Specific GPU devices",
+			gpus:       0,
+			gpuDevices: "0,1,2",
+			expected:   "GPU devices index(s): 0,1,2",
+		},
+		{
+			name:       "Number of GPUs",
+			gpus:       3,
+			gpuDevices: "",
+			expected:   "3 GPUs",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := calcGpusUsed(tt.gpus, tt.gpuDevices)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

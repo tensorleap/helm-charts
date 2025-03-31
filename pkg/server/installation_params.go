@@ -92,13 +92,19 @@ func (params *InstallationParams) IsUseGpu() bool {
 
 func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, error) {
 
-	if err := InitUseGPU(&flags.Gpus, &flags.GpuDevices, flags.UseCpu); err != nil {
+	previousParams, err := LoadInstallationParamsFromPrevious()
+	hasInstallationParams := err == nil && previousParams != nil
+	if err != nil && err != ErrNoInstallationParams {
+		log.Warnf("Failed to load previous installation params: %s", err)
+	}
+
+	if err := InitUseGPU(&flags.Gpus, &flags.GpuDevices, flags.UseCpu, previousParams); err != nil {
 		log.SendCloudReport("error", "Failed initializing with GPU", "Failed",
 			&map[string]interface{}{"Gpus": flags.Gpus, "GpusDevices": flags.GpuDevices, "error": err.Error()})
 		return nil, err
 	}
 
-	if err := InitDatasetVolumes(&flags.DatasetVolumes); err != nil {
+	if err := InitDatasetVolumes(&flags.DatasetVolumes, previousParams); err != nil {
 		log.SendCloudReport("error", "Failed initializing data volume directory", "Failed",
 			&map[string]interface{}{"datasetVolumes": flags.DatasetVolumes, "error": err.Error()})
 		return nil, err
@@ -109,10 +115,9 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		return nil, fmt.Errorf("failed to get TLS params: %v", err)
 	}
 
-	previousParams, err := LoadInstallationParamsFromPrevious()
-	if err == nil {
-		isAskUserToUsePreviousTlsConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
-		if isAskUserToUsePreviousTlsConfig {
+	if hasInstallationParams {
+		shouldAskForPreviousTLSConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
+		if shouldAskForPreviousTLSConfig {
 			prompt := survey.Confirm{
 				Message: "Do you want to use the previous TLS configuration?",
 				Default: true,
@@ -127,8 +132,9 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 				flags.Domain = previousParams.Domain
 			}
 		}
-		isAskUserToUsePreviousProxyUrl := previousParams.ProxyUrl != "" && flags.ProxyUrl == ""
-		if isAskUserToUsePreviousProxyUrl {
+
+		shouldAskForPreviousProxyUrl := previousParams.ProxyUrl != "" && flags.ProxyUrl == ""
+		if shouldAskForPreviousProxyUrl {
 			prompt := survey.Confirm{
 				Message: fmt.Sprintf("Do you want to use the previous proxy url? (%s)", previousParams.ProxyUrl),
 				Default: true,
@@ -142,6 +148,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 				flags.ProxyUrl = previousParams.ProxyUrl
 			}
 		}
+
 		isRemoveInstallationNotSet := flags.ClearInstallationImages == nil
 		if isRemoveInstallationNotSet {
 			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
@@ -186,13 +193,13 @@ func InitInstallationParamsFromPreviousOrAsk() (params *InstallationParams, foun
 func AskInstallationParams() (*InstallationParams, error) {
 	installationParams := &InstallationParams{}
 
-	if err := InitUseGPU(&installationParams.Gpus, &installationParams.GpuDevices, false); err != nil {
+	if err := InitUseGPU(&installationParams.Gpus, &installationParams.GpuDevices, false, nil); err != nil {
 		log.SendCloudReport("error", "Failed initializing with GPU", "Failed",
 			&map[string]interface{}{"Gpus": installationParams.Gpus, "GpuDevices": installationParams.GpuDevices, "error": err.Error()})
 		return nil, err
 	}
 
-	if err := InitDatasetVolumes(&installationParams.DatasetVolumes); err != nil {
+	if err := InitDatasetVolumes(&installationParams.DatasetVolumes, nil); err != nil {
 		log.SendCloudReport("error", "Failed initializing data volume directory", "Failed",
 			&map[string]interface{}{"datasetVolumes": installationParams.DatasetVolumes, "error": err.Error()})
 		return nil, err
@@ -214,72 +221,103 @@ func AskInstallationParams() (*InstallationParams, error) {
 	return installationParams, nil
 }
 
-func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool) error {
+func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *InstallationParams) error {
 	if useCpu {
 		return nil
 	}
 
-	availableDevices, checkNvidiaErr := local.CheckNvidiaGPU()
+	hasPreviousGpuSettings := previousParams != nil && (previousParams.Gpus > 0 || previousParams.GpuDevices != "")
+	isCurrentGpuSettingsUnset := *gpus == 0 && *gpuDevices == ""
+	shouldAskForPreviousGpuSettings := hasPreviousGpuSettings && isCurrentGpuSettingsUnset
 
-	if checkNvidiaErr != nil {
-		log.Warnf("Failed to check NVIDIA GPU: %s", checkNvidiaErr)
+	if shouldAskForPreviousGpuSettings {
+		gpusUsed := calcGpusUsed(previousParams.Gpus, previousParams.GpuDevices)
 		prompt := survey.Confirm{
-			Message: "Do you want to continue without GPU?",
-			Default: false,
+			Message: fmt.Sprintf("Do you want to use the previous GPU settings? (%s)", gpusUsed),
+			Default: true,
 		}
-		continueWithoutGpu := false
-		err := survey.AskOne(&prompt, &continueWithoutGpu)
-		if err != nil {
+		usePreviousGpuSettings := true
+		if err := survey.AskOne(&prompt, &usePreviousGpuSettings); err != nil {
 			return err
 		}
-		if continueWithoutGpu {
-			*gpus = 0
-			return nil
-		} else {
-			return fmt.Errorf("failed to check NVIDIA GPU: %s", checkNvidiaErr)
-		}
+		*gpus = previousParams.Gpus
+		*gpuDevices = previousParams.GpuDevices
 
-	} else if availableDevices == nil {
+		if usePreviousGpuSettings {
+			return nil
+		}
+	}
+
+	availableDevices, err := local.CheckNvidiaGPU()
+	if err != nil {
+		log.Warnf("Failed to check NVIDIA GPU: %s", err)
+		return askToContinueWithoutGPU(gpus)
+	}
+
+	noAvailableDevices := availableDevices == nil
+	if noAvailableDevices {
 		*gpus = 0
+		*gpuDevices = ""
 		return nil
 	}
 
-	gpuOptions := []string{
-		"Use all",
-		"Not use GPU",
-		"Select how many",
-		"Select specific",
-	}
+	return askForGpuSelection(availableDevices, gpus, gpuDevices)
+}
 
+func calcGpusUsed(gpus uint, gpuDevices string) string {
+	if gpus > 0 {
+		return fmt.Sprintf("%d GPUs", gpus)
+	} else if gpuDevices == allGpuDevices {
+		return "all GPUs"
+	} else if gpuDevices != "" {
+		return fmt.Sprintf("GPU devices index(s): %s", gpuDevices)
+	} else {
+		return "0 GPUs"
+	}
+}
+
+func askToContinueWithoutGPU(gpus *uint) error {
+	prompt := survey.Confirm{
+		Message: "Do you want to continue without GPU?",
+		Default: false,
+	}
+	continueWithoutGpu := false
+	if err := survey.AskOne(&prompt, &continueWithoutGpu); err != nil {
+		return err
+	}
+	if continueWithoutGpu {
+		*gpus = 0
+		return nil
+	}
+	return fmt.Errorf("GPU setup aborted")
+}
+
+func askForGpuSelection(availableDevices []local.GPU, gpus *uint, gpuDevices *string) error {
+	options := []string{"Use all", "Not use GPU", "Select how many", "Select specific"}
 	prompt := survey.Select{
 		Message: "Select GPU option:",
 		Default: 0,
-		Options: gpuOptions,
+		Options: options,
 	}
-	gpuOptionIndex := 0
-	err := survey.AskOne(&prompt, &gpuOptionIndex)
-	if err != nil {
+	var choice int
+	if err := survey.AskOne(&prompt, &choice); err != nil {
 		return err
 	}
 
-	switch gpuOptionIndex {
+	switch choice {
 	case 0:
 		*gpuDevices = allGpuDevices
+		*gpus = 0
 	case 1:
 		*gpus = 0
 		*gpuDevices = ""
 	case 2:
-		err := selectHowManyGPUs(availableDevices, gpus)
-		if err != nil {
-			return err
-		}
+		*gpuDevices = ""
+		return selectHowManyGPUs(availableDevices, gpus)
 	case 3:
-		err := selectGpuDevices(availableDevices, gpuDevices)
-		if err != nil {
-			return err
-		}
+		*gpus = 0
+		return selectGpuDevices(availableDevices, gpuDevices)
 	}
-
 	return nil
 }
 
@@ -375,41 +413,36 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 	return nil
 }
 
-func InitDatasetVolumes(datasetVolumes *[]string) error {
-	defaultDatasetVolume := GetDefaultDataVolume()
+func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationParams) error {
+	hasPreviousDatasetVolumes := previousParams != nil && len(previousParams.DatasetVolumes) > 0
+	isCurrentDatasetVolumesUnset := len(*datasetVolumes) == 0
+	shouldAskForPreviousDatasetVolumes := hasPreviousDatasetVolumes && isCurrentDatasetVolumesUnset
+	shouldAskForVolume := isCurrentDatasetVolumesUnset
 
-	if len(*datasetVolumes) == 0 {
-		addAnother := true
-		for addAnother {
-			path := ""
-			if len(*datasetVolumes) > 0 {
-				defaultDatasetVolume = ""
-			}
-			prompt := survey.Input{
-				Message: "Enter dataset volume:",
-				Default: defaultDatasetVolume,
-			}
-			err := survey.AskOne(&prompt, &path)
-			if err != nil {
-				return err
-			}
-			path = strings.TrimSpace(path)
-			if path == "" {
-				break
-			}
-			if !strings.Contains(path, ":") {
-				path = fmt.Sprintf("%s:%s", path, path)
-			}
-			*datasetVolumes = append(*datasetVolumes, path)
-
+	if shouldAskForPreviousDatasetVolumes {
+		prompt := survey.Confirm{
+			Message: fmt.Sprintf("Do you want to use the previous dataset volumes? (%v)", previousParams.DatasetVolumes),
+			Default: true,
+		}
+		usePrevious := true
+		if err := survey.AskOne(&prompt, &usePrevious); err != nil {
+			return err
+		}
+		if usePrevious {
+			*datasetVolumes = previousParams.DatasetVolumes
 			confirmPrompt := survey.Confirm{
-				Message: "Add another dataset volume?",
+				Message: "Do you want to add another dataset volume?",
 				Default: false,
 			}
-			err = survey.AskOne(&confirmPrompt, &addAnother)
-			if err != nil {
+			if err := survey.AskOne(&confirmPrompt, &shouldAskForVolume); err != nil {
 				return err
 			}
+		}
+	}
+
+	if shouldAskForVolume {
+		if err := addDatasetVolumes(datasetVolumes); err != nil {
+			return err
 		}
 	}
 
@@ -417,17 +450,48 @@ func InitDatasetVolumes(datasetVolumes *[]string) error {
 		if !strings.Contains(path, ":") {
 			(*datasetVolumes)[i] = fmt.Sprintf("%s:%s", path, path)
 		}
-
 		dataPath := strings.Split(path, ":")[0]
-		err := os.MkdirAll(dataPath, 0777)
-		if err != nil {
+		if err := os.MkdirAll(dataPath, 0777); err != nil {
 			return fmt.Errorf("failed to create dataset volume directory: %v", err)
 		}
 	}
 
-	log.SendCloudReport("info", "Init data volume", "Starting",
-		&map[string]interface{}{"params": map[string]interface{}{"datasetVolumes": datasetVolumes}},
-	)
+	log.SendCloudReport("info", "Initialized dataset volumes", "Success",
+		&map[string]interface{}{"datasetVolumes": *datasetVolumes})
+	return nil
+}
+
+func addDatasetVolumes(datasetVolumes *[]string) error {
+	for {
+		var path string
+		prompt := survey.Input{
+			Message: "Enter dataset volume:",
+			Default: GetDefaultDataVolume(),
+		}
+		if err := survey.AskOne(&prompt, &path); err != nil {
+			return err
+		}
+		path = strings.TrimSpace(path)
+		if path == "" {
+			break
+		}
+		if !strings.Contains(path, ":") {
+			path = fmt.Sprintf("%s:%s", path, path)
+		}
+		*datasetVolumes = append(*datasetVolumes, path)
+
+		addAnother := false
+		confirmPrompt := survey.Confirm{
+			Message: "Add another dataset volume?",
+			Default: false,
+		}
+		if err := survey.AskOne(&confirmPrompt, &addAnother); err != nil {
+			return err
+		}
+		if !addAnother {
+			break
+		}
+	}
 	return nil
 }
 
