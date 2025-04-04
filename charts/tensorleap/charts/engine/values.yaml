@@ -1,4 +1,4 @@
-image_tag: lsports-2756125f
+image_tag: lsports2-ba305565
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
