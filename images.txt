@@ -7,10 +7,10 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:master-ccb40dc8-py310
-public.ecr.aws/tensorleap/engine-generic:master-ccb40dc8-py38
-public.ecr.aws/tensorleap/engine-generic:master-ccb40dc8-py39
-public.ecr.aws/tensorleap/engine:master-ccb40dc8
+public.ecr.aws/tensorleap/engine-generic:limit-processes-fb28eeb8-py310
+public.ecr.aws/tensorleap/engine-generic:limit-processes-fb28eeb8-py38
+public.ecr.aws/tensorleap/engine-generic:limit-processes-fb28eeb8-py39
+public.ecr.aws/tensorleap/engine:limit-processes-fb28eeb8
 public.ecr.aws/tensorleap/node-server:master-6692932b
 public.ecr.aws/tensorleap/pippin:master-96eb5a7f
 public.ecr.aws/tensorleap/web-ui:master-1832f9e4
