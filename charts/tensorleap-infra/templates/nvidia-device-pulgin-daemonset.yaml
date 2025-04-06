@@ -16,31 +16,54 @@ spec:
         name: nvidia-device-plugin-ds
     spec:
       tolerations:
-      - key: nvidia.com/gpu
-        operator: Exists
-        effect: NoSchedule
-      # Mark this pod as a critical add-on; when enabled, the critical add-on
-      # scheduler reserves resources for critical add-on pods so that they can
-      # be rescheduled after a failure.
-      # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
       priorityClassName: "system-node-critical"
       containers:
-      - image: nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-        name: nvidia-device-plugin-ctr
-        env:
-          - name: FAIL_ON_INIT_ERROR
-            value: "false"
-          - name: NVIDIA_VISIBLE_DEVICES
-            value: "{{ .Values.nvidiaGpu.visibleDevices }}"
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop: ["ALL"]
-        volumeMounts:
-        - name: device-plugin
-          mountPath: /var/lib/kubelet/device-plugins
+        - image: nvcr.io/nvidia/k8s-device-plugin:v0.14.0
+          name: nvidia-device-plugin-ctr
+          env:
+            - name: FAIL_ON_INIT_ERROR
+              value: "false"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "{{ .Values.nvidiaGpu.visibleDevices }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+
+        # Sidecar Container for Registry Health Check
+        - name: registry-health-check
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                if wget -q --spider http://k3d-tensorleap-registry:5000/v2/; then
+                  echo "Registry is up";
+                else
+                  echo "Registry is down, failing liveness probe";
+                  exit 1;
+                fi
+                sleep 60;
+              done;
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "wget -q --spider http://k3d-tensorleap-registry:5000/v2/ || exit 1"
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            failureThreshold: 3
+
       volumes:
-      - name: device-plugin
-        hostPath:
-          path: /var/lib/kubelet/device-plugins
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
 {{- end }}
