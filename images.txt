@@ -11,9 +11,9 @@ public.ecr.aws/tensorleap/engine-generic:master-298e2059-py310
 public.ecr.aws/tensorleap/engine-generic:master-298e2059-py38
 public.ecr.aws/tensorleap/engine-generic:master-298e2059-py39
 public.ecr.aws/tensorleap/engine:master-298e2059
-public.ecr.aws/tensorleap/node-server:master-6692932b
-public.ecr.aws/tensorleap/pippin:master-2533d229
-public.ecr.aws/tensorleap/web-ui:master-2ac9a05d
+public.ecr.aws/tensorleap/node-server:master-4a230bbf
+public.ecr.aws/tensorleap/pippin:master-8363ca49
+public.ecr.aws/tensorleap/web-ui:master-acd8a6eb
 quay.io/keycloak/keycloak:17.0.1-legacy
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
