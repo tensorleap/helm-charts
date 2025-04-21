@@ -8,12 +8,16 @@ data:
       labels:
         engineJob: "true"
         suffix: placeholder
+      annotations:
+        ad.datadoghq.com/image-dependencies-builder.logs: '[{"source": "python", "service": "engine"}]'
+        ad.datadoghq.com/engine.logs: '[{"source": "python", "service": "engine"}]'
     spec:
       ttlSecondsAfterFinished: 36000 # 10 hours
       backoffLimit: 0
       template:
         metadata:
           annotations:
+            ad.datadoghq.com/image-dependencies-builder.logs: '[{"source": "python", "service": "engine"}]'
             ad.datadoghq.com/engine.logs: '[{"source": "python", "service": "engine"}]'
         spec:
           serviceAccountName: deployment-manager
