@@ -31,9 +31,9 @@ spec:
         - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
             requests:
-              memory: 700Mi
+              memory: 3Gi
             limits:
-              memory: 700Mi
+              memory: 3Gi
           command: ["python", "-m", "src_tensorleap.engine.streaming_handler"]
           name: streaming-handler
           env:
