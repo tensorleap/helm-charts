@@ -16,9 +16,9 @@ spec:
         - name: redis
           resources:
             requests:
-              memory: 15Gi
+              memory: 25Gi
             limits:
-              memory: 15Gi
+              memory: 25Gi
           image: docker.io/library/redis:latest
           ports:
           - containerPort: 6379
