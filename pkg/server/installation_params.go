@@ -13,10 +13,11 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"github.com/tensorleap/helm-charts/pkg/version"
 	"gopkg.in/yaml.v3"
 )
 
-const CurrentInstallationVersion = "v0.0.1"
+const CurrentInstallationVersion = version.Version
 const DefaultRegistryPort = 5699
 const DefaultHttpPort = 4589
 const DefaultHttpsPort = 443
