@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/docker"
+	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
+	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/airgap"
@@ -62,6 +65,27 @@ func InitInstallationProcess(flags *InstallationSourceFlags) (mnf *manifest.Inst
 	}
 	airgap.SetupEnvForK3dToolsImage(mnf.Images.K3dTools)
 	return
+}
+
+func GetCurrentInsalledHelmChartVersion(ctx context.Context) (string, error) {
+	cluster, err := k3d.GetCluster(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	kubeConfigPath, clean, err := k3d.CreateTmpClusterKubeConfig(ctx, cluster)
+	if err != nil {
+		return "", err
+	}
+	defer clean()
+
+	helmConfig, err := helm.CreateHelmConfig(kubeConfigPath, KUBE_CONTEXT, KUBE_NAMESPACE)
+	if err != nil {
+		return "", err
+	}
+
+	currentInfraVersion, err := helm.GetHelmReleaseVersion(helmConfig, KUBE_NAMESPACE)
+	return currentInfraVersion, err
 }
 
 func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *InstallationParams) error {
