@@ -20,6 +20,7 @@ spec:
     - name: master
       count: 1
       config:
+        http.max_content_length: 200mb 
         node.roles: ["master", "data", "ingest"]
         xpack.security.enabled: false
         xpack.security.authc:
