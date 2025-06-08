@@ -7,11 +7,11 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:master-d6beb1d9-py310
-public.ecr.aws/tensorleap/engine-generic:master-d6beb1d9-py38
-public.ecr.aws/tensorleap/engine-generic:master-d6beb1d9-py39
-public.ecr.aws/tensorleap/engine:master-d6beb1d9
-public.ecr.aws/tensorleap/node-server:master-3ef609de
+public.ecr.aws/tensorleap/engine-generic:master-f64a4cbd-py310
+public.ecr.aws/tensorleap/engine-generic:master-f64a4cbd-py38
+public.ecr.aws/tensorleap/engine-generic:master-f64a4cbd-py39
+public.ecr.aws/tensorleap/engine:master-f64a4cbd
+public.ecr.aws/tensorleap/node-server:master-8c32ca52
 public.ecr.aws/tensorleap/pippin:master-ac1e0c79
 public.ecr.aws/tensorleap/web-ui:master-d127d11b
 quay.io/keycloak/keycloak:17.0.1-legacy
