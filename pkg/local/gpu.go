@@ -79,3 +79,21 @@ func CheckNvidiaGPU() ([]GPU, error) {
 	}
 	return gpus, nil
 }
+
+func CheckDockerNvidia2Driver() (bool, error) {
+	log.Info("Checking docker-nvidia2 driver...")
+	cmd := exec.Command("docker", "info", "--format", "{{json .Runtimes}}")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to execute docker info: %w", err)
+	}
+
+	hasNvidia := strings.Contains(strings.ToLower(string(out)), "nvidia")
+	if hasNvidia {
+		log.Info("docker-nvidia2 driver found.")
+	} else {
+		log.Warn("Missing docker-nvidia2 driver. Install nvidia-docker2 to enable GPU support.")
+	}
+
+	return hasNvidia, nil
+}
