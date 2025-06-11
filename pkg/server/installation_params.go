@@ -255,6 +255,12 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 		return askToContinueWithoutGPU(gpus)
 	}
 
+	if availableDevices != nil {
+		if _, err := local.CheckDockerNvidia2Driver(); err != nil {
+			log.Warnf("Failed to check docker-nvidia2 driver: %s", err)
+		}
+	}
+
 	noAvailableDevices := availableDevices == nil
 	if noAvailableDevices {
 		*gpus = 0
