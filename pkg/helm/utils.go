@@ -58,7 +58,7 @@ func IsHelmReleaseExists(config *HelmConfig, releaseName string) (bool, error) {
 
 func GetHelmReleaseVersion(config *HelmConfig, releaseName string) (string, error) {
 	client := action.NewHistory(config.ActionConfig)
-	client.Max = 1
+	client.Max = 0 // 0 means fetch all history
 	history, err := client.Run(releaseName)
 
 	if err == driver.ErrReleaseNotFound {
@@ -68,7 +68,15 @@ func GetHelmReleaseVersion(config *HelmConfig, releaseName string) (string, erro
 		return "", fmt.Errorf("failed getting helm release version: %s", err.Error())
 	}
 
-	return history[0].Chart.Metadata.Version, nil
+	// Find the latest deployed/successful release
+	for i := len(history) - 1; i >= 0; i-- {
+		rel := history[i]
+		if rel.Info != nil && rel.Info.Status == "deployed" {
+			return rel.Chart.Metadata.Version, nil
+		}
+	}
+	// If no deployed release found, fallback to latest entry
+	return history[len(history)-1].Chart.Metadata.Version, nil
 }
 
 //go:embed resources/*
