@@ -1,4 +1,4 @@
-image_tag: master-8c32ca52
+image_tag: insight-refactor-bfdce6c7
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 

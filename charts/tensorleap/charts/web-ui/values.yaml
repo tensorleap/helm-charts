@@ -1,4 +1,4 @@
-image_tag: master-0e24d938
+image_tag: insight-refactor-c7834f00
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
