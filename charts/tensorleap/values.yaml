@@ -8,53 +8,63 @@ ingress-nginx:
     extraArgs:
       default-ssl-certificate: tensorleap/tls-secret
     image:
-      digest: ''
+      digest: ""
     config:
       enable-snippets: "true"
       allow-snippet-annotations: "true"
     admissionWebhooks:
       patch:
         image:
-          digest: ''
+          digest: ""
 
 global:
-  target_namespace: ''
-  storageClassName: ''
+  postgresql:
+    auth:
+      existingSecret: keycloak-postgresql-secret
+      password: keycloak123 # <-- Required for upgrade
+      postgresPassword: pgrootpassword # <-- Optional, for superuser if needed
+  target_namespace: ""
+  storageClassName: ""
   create_local_volumes: true
-  domain: 'localhost'
-  basePath: ''
-  url: 'http://localhost'
-  proxyUrl: ''
+  domain: "localhost"
+  basePath: ""
+  url: "http://localhost"
+  proxyUrl: ""
   tls:
     enabled: false
-    cert: ''
-    key: ''
+    cert: ""
+    key: ""
 
   elasticsearch:
     enabled: true
-    url: ''
+    url: ""
 
 keycloak:
   replicas: 1
   extraEnv: |
+    - name: PROXY_ADDRESS_FORWARDING
+      value: "true"
     - name: KEYCLOAK_USER
       value: admin
     - name: KEYCLOAK_PASSWORD
-      value: admin
-    - name: PROXY_ADDRESS_FORWARDING
-      value: "true"
+      value: admin123
 
   fullnameOverride: keycloak
   ingress:
     enabled: false
+
   postgresql:
+    enabled: true
     fullnameOverride: "keycloak-postgresql"
-    persistence:
-      enabled: true
-      existingClaim: "keycloak-postgresql-data"
-  pgchecker:
-    image:
-      repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
+    auth:
+      existingSecret: keycloak-postgresql-secret # ✅ Reference to secret
+      username: keycloak
+      database: keycloak
+    primary:
+      persistence:
+        enabled: true
+        existingClaim: "keycloak-postgresql-data"
+
 datadog:
   enabled: true
   clusterAgent:

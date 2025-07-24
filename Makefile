@@ -65,7 +65,7 @@ build-helm:
 	helm repo add nginx https://kubernetes.github.io/ingress-nginx
 	helm repo add elastic https://helm.elastic.co
 	helm repo add minio https://charts.min.io
-	helm repo add codecentric https://codecentric.github.io/helm-charts
+	helm repo add keycloak https://charts.bitnami.com/bitnami
 	helm repo add datadog https://helm.datadoghq.com
 	helm dependency build ./charts/tensorleap
 	rm ./charts/tensorleap/Chart.lock

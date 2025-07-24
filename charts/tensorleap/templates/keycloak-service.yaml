@@ -1,0 +1,14 @@
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: keycloak
+#   namespace: tensorleap
+# spec:
+#   selector:
+#     app.kubernetes.io/name: keycloak
+#     app.kubernetes.io/instance: tensorleap
+#     app.kubernetes.io/component: keycloak
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: 8080
