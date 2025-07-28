@@ -19,6 +19,7 @@ data:
   SINGLE_USER_MODE: "true"
   GATEWAY_URL: {{ .Values.global.url | quote }}
   PROXY_URL: {{ .Values.global.proxyUrl | quote }}
+  ENABLE_KEYCLOAK_AUTH: "false"
   KEYCLOAK_CLUSTER_URL: "http://keycloak-http.tensorleap.svc.cluster.local/auth"
   KEYCLOAK_REALM: "tensorleap"
   KEYCLOAK_RESOURCE: "tensorleap-client"
