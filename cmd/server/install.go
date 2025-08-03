@@ -47,7 +47,7 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 	}
 	defer close()
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags)
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, nil)
 	if err != nil {
 		return err
 	}

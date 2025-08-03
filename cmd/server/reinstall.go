@@ -5,6 +5,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server"
+	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
 
 type ReinstallFlags struct {
@@ -41,7 +42,12 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 	}
 	defer close()
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags)
+	previousMnf, err := manifest.Load(local.GetInstallationManifestPath())
+	if err != nil && err != manifest.ErrManifestNotFound {
+		return err
+	}
+
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
 		return err
 	}

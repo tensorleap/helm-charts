@@ -52,7 +52,7 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
 		return err
 	}
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags)
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, nil)
 
 	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
 		return err

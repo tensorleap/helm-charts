@@ -22,7 +22,7 @@ const (
 	KUBE_NAMESPACE = "tensorleap"
 )
 
-func InitInstallationProcess(flags *InstallationSourceFlags) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
+func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manifest.InstallationManifest) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
 	isAirGap = flags.AirGapInstallationFilePath != ""
 	if isAirGap {
 		log.DisableReporting()
@@ -43,7 +43,25 @@ func InitInstallationProcess(flags *InstallationSourceFlags) (mnf *manifest.Inst
 			fileGetter := manifest.BuildLocalFileGetter("")
 			mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
 		} else {
-			mnf, err = manifest.GetByTag(flags.Tag)
+			tag := flags.Tag
+			if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
+				latestMnfTag, err := manifest.GetLatestManifestTag()
+				if err != nil {
+					return nil, false, nil, nil, err
+				}
+				if previousMnf.Tag != latestMnfTag {
+					usePreviousMnf, err := AskUserForVersionPreference(previousMnf.Tag, latestMnfTag)
+					if err != nil {
+						log.SendCloudReport("error", "Failed to ask for using current version", "Failed",
+							&map[string]interface{}{"error": err.Error()})
+						return nil, false, nil, nil, err
+					}
+					if usePreviousMnf {
+						tag = previousMnf.Version
+					}
+				}
+			}
+			mnf, err = manifest.GetByTag(tag)
 		}
 		if err != nil {
 			log.SendCloudReport("error", "Build manifest failed", "Failed",
@@ -118,6 +136,26 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isA
 	}
 
 	return
+}
+
+func AskUserForVersionPreference(previousVersion, latestVersion string) (bool, error) {
+	prompt := survey.Confirm{
+		Message: fmt.Sprintf("A new version of Tensorleap is available (%s), do you want to use the current version (%s)?", latestVersion, previousVersion),
+		Default: false,
+	}
+	confirm := false
+	err := survey.AskOne(&prompt, &confirm)
+	if err != nil {
+		return false, err
+	}
+	if confirm {
+		log.SendCloudReport("info", "User confirmed using current version", "Running",
+			&map[string]interface{}{"version": previousVersion})
+	} else {
+		log.SendCloudReport("info", "User chose to upgrade to latest version", "Running",
+			&map[string]interface{}{"version": latestVersion})
+	}
+	return confirm, nil
 }
 
 func AskForReinstall() (bool, error) {
