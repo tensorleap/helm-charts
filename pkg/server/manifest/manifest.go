@@ -52,6 +52,7 @@ type InstallationManifest struct {
 	InstallerVersion string         `yaml:"installerVersion"` // InstallerVersion determines the version of the installer, if the version is different from the current version we will require the user to update the installer
 	AppVersion       string         `yaml:"appVersion"`       // AppVersion determines the version of the tensorleap application, if the version is different from the current version we will require the user to reinstall the application
 	Images           ManifestImages `yaml:"images"`
+	Tag              string         `yaml:"tag,omitempty"` // Tag is used to identify the manifest version
 	ServerHelmChart  HelmChartMeta  `yaml:"serverHelmChart"`
 	InfraHelmChart   HelmChartMeta  `yaml:"infraHelmChart"`
 }

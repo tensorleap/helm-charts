@@ -10,6 +10,7 @@ func NewCreateManifestCmd() *cobra.Command {
 	var fromLocal bool
 	var infraChartVersion string
 	var serverChartVersion string
+	var tag string
 
 	var output string
 
@@ -30,6 +31,9 @@ func NewCreateManifestCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if tag != "" {
+				mnf.Tag = tag
+			}
 			return mnf.Save(output)
 		},
 	}
@@ -37,6 +41,7 @@ func NewCreateManifestCmd() *cobra.Command {
 	cmd.Flags().StringVar(&serverChartVersion, "tensorleap-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
 	cmd.Flags().StringVar(&infraChartVersion, "tensorleap-infra-chart-version", "", "Build manifest with a specific tensorleap helm chart version")
 	cmd.Flags().BoolVar(&fromLocal, "local", false, "Build manifest from local files")
+	cmd.Flags().StringVarP(&tag, "tag", "t", "", "The manifest tag")
 	cmd.Flags().StringVarP(&output, "output", "o", "manifest.yaml", "Output file path")
 
 	return cmd
