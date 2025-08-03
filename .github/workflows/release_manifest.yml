@@ -41,9 +41,15 @@ jobs:
           INFRA_CHART_VERSION=$(cat charts/tensorleap-infra/Chart.yaml | grep -E '^version:' | awk '{print $2}')
           echo "version=$INFRA_CHART_VERSION" >> $GITHUB_OUTPUT
 
+      - name: Set manifest version
+        id: set_manifest_version
+        run: |
+          # Set the manifest version to the tensorleap chart version
+          echo "tag=${{ inputs.custom_tag_prefix || 'manifest' }}${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
+
       - name: Create installation manifest
         run: |
-          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --output manifest.yaml
+          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
 
       - name: Print charts versions
         run: |
@@ -54,10 +60,9 @@ jobs:
         run: cat manifest.yaml
 
       - uses: ncipollo/release-action@v1
-        env:
-          TAG_PREFIX: ${{ inputs.custom_tag_prefix || 'manifest' }}
+
         with:
           artifacts: "manifest.yaml"
-          tag: "${{ env.TAG_PREFIX }}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+          tag: "${{ steps.set_manifest_version.outputs.tag }}"
           skipIfReleaseExists: true
           generateReleaseNotes: true
