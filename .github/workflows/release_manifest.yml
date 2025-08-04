@@ -45,7 +45,7 @@ jobs:
         id: set_manifest_version
         run: |
           # Set the manifest version to the tensorleap chart version
-          echo "tag=${{ inputs.custom_tag_prefix || 'manifest' }}${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "tag=${{ inputs.custom_tag_prefix || 'manifest' }}-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Create installation manifest
         run: |
