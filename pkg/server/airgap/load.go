@@ -10,6 +10,7 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/local"
+	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
@@ -55,6 +56,20 @@ func Load(file io.Reader) (
 			}
 		case IMAGES_FILE_NAME:
 			imageLoaded = true
+			if installationManifest != nil {
+				_, notFound, err := docker.GetExistedAndNotExistedImages(dockerClient, installationManifest.GetAllImages())
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				if len(notFound) == 0 {
+					log.Info("All images already exist, skipping loading images from tar file")
+					_, err = io.Copy(io.Discard, tarReader) // Skip the rest of the tarReader
+					if err != nil {
+						log.Warnf("Failed to skip loading images from tar file: %v", err)
+					}
+					break
+				}
+			}
 			err = docker.LoadingImages(dockerClient, tarReader)
 			if err != nil {
 				return nil, nil, nil, err
