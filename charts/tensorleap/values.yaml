@@ -37,12 +37,14 @@ global:
 keycloak:
   replicas: 1
   extraEnv: |
-    - name: KEYCLOAK_USER
+    - name: KEYCLOAK_ADMIN
       value: admin
-    - name: KEYCLOAK_PASSWORD
+    - name: KEYCLOAK_ADMIN_PASSWORD
       value: admin
-    - name: PROXY_ADDRESS_FORWARDING
-      value: "true"
+    - name: KC_PROXY
+      value: "edge"
+    - name: KC_HTTP_RELATIVE_PATH
+      value: "/auth"
 
   fullnameOverride: keycloak
   ingress:

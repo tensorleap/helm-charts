@@ -203,14 +203,15 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		Value string `yaml:"value"`
 	}
 
-	extraEnvSlice := []ExtraEnv{
-		{Name: "KEYCLOAK_USER", Value: "admin"},
-		{Name: "KEYCLOAK_PASSWORD", Value: "admin"},
-		{Name: "PROXY_ADDRESS_FORWARDING", Value: "true"},
-	}
-	if params.ProxyUrl != "" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KEYCLOAK_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
-	}
+        extraEnvSlice := []ExtraEnv{
+                {Name: "KEYCLOAK_ADMIN", Value: "admin"},
+                {Name: "KEYCLOAK_ADMIN_PASSWORD", Value: "admin"},
+                {Name: "KC_PROXY", Value: "edge"},
+                {Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
+        }
+        if params.ProxyUrl != "" {
+                extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+        }
 	formatExtraEnv := func(extraEnv []ExtraEnv) string {
 		result, _ := yaml.Marshal(extraEnv)
 		resultString := "\n" + string(result)
