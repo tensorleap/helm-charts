@@ -60,21 +60,64 @@ func LoadingImages(dockerClient Client, reader io.Reader) error {
 }
 
 const maxRetries = 3
-const retryDelay = 2 * time.Second
+const retryDelay = 10 * time.Second
+
+// isRateLimitError checks if the error is related to rate limiting
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "too many requests") ||
+		strings.Contains(errStr, "rate limit") ||
+		strings.Contains(errStr, "429") ||
+		strings.Contains(errStr, "quota exceeded")
+}
 
 func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.Writer) error {
-	wg := sync.WaitGroup{}
+	// First pull all images using the existing PullDockerImages function
+	err := PullDockerImages(dockerCli, imageNames)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Saving images...")
+	out, err := dockerCli.ImageSave(context.Background(), imageNames)
+	if err != nil {
+		return fmt.Errorf("it appears that some images failed to pull: %v", err)
+	}
+	defer out.Close()
+
+	gzipWriter := gzip.NewWriter(outputFile)
+	defer gzipWriter.Close()
+	_, err = io.Copy(gzipWriter, out)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Saved images")
+	return nil
+}
+
+// PullDockerImages pulls images with rate limiting per registry without saving
+func PullDockerImages(dockerCli Client, imageNames []string) error {
+	pullerLimiter, err := NewPullerLimiter(imageNames)
+	if err != nil {
+		return err
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	errChan := make(chan error)
 	breakLoop := false
+	wg := sync.WaitGroup{}
 
 	for _, imageName := range imageNames {
 		if breakLoop {
 			break
 		}
 		wg.Add(1)
+
 		cancelWithError := func(err error) {
 			errChan <- err
 			cancel()
@@ -82,12 +125,20 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 		}
 		go func(imageName string) {
 			defer wg.Done()
+			limiter, err := pullerLimiter.GetLimiter(imageName)
+			if err != nil {
+				cancelWithError(fmt.Errorf("failed to get limiter for image %s: %w", imageName, err))
+				return
+			}
+			limiter.Acquire()
+			defer limiter.Release()
 
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				if ctx.Err() != nil {
 					breakLoop = true
 					break
 				}
+				limiter.WaitIfOverLimit()
 
 				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
 				out, err := dockerCli.ImagePull(ctx, imageName, types.ImagePullOptions{})
@@ -98,6 +149,10 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 					if err == nil {
 						log.Println("Pulled", imageName)
 						break
+					}
+					if isRateLimitError(err) {
+						log.Printf("Rate limit detected for image '%s', limiting to 1 pull per registry", imageName)
+						limiter.SetLimit(1)
 					}
 				}
 
@@ -121,26 +176,12 @@ func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.W
 		log.Println("All images pulled successfully.")
 	}
 
-	err := EnsureImagesExists(dockerCli, imageNames)
+	// Verify all images were pulled successfully
+	err = EnsureImagesExists(dockerCli, imageNames)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Saving images...")
-	out, err := dockerCli.ImageSave(context.Background(), imageNames)
-	if err != nil {
-		return fmt.Errorf("it appears that some images failed to pull: %v", err)
-	}
-	defer out.Close()
-
-	gzipWriter := gzip.NewWriter(outputFile)
-	defer gzipWriter.Close()
-	_, err = io.Copy(gzipWriter, out)
-	if err != nil {
-		return err
-	}
-
-	log.Info("Saved images")
 	return nil
 }
 
