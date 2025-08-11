@@ -37,6 +37,7 @@ type ServerHelmValuesParams struct {
 	Tls                   TLSParams         `json:"tls"`
 	HostName              string            `json:"hostname"`
 	DatadogEnv            map[string]string `json:"datadogEnv"`
+	KeycloakEnabled       bool              `json:"keycloakEnabled"`
 }
 
 type InfraHelmValuesParams struct {
@@ -231,13 +232,19 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"localDataDirectories": params.LocalDataDirectories,
 		},
 		"tensorleap-node-server": Record{
+			"enableKeycloak":        params.KeycloakEnabled,
 			"disableDatadogMetrics": params.DisableDatadogMetrics,
 		},
 		"global": Record{
-			"domain":   params.Domain,
-			"url":      params.Url,
-			"proxyUrl": params.ProxyUrl,
-			"basePath": params.BasePath,
+			"domain":               params.Domain,
+			"url":                  params.Url,
+			"proxyUrl":             params.ProxyUrl,
+			"basePath":             params.BasePath,
+			"create_local_volumes": true,
+			"storageClassName":     "",
+			"keycloak": Record{
+				"enabled": params.KeycloakEnabled,
+			},
 			"tls": Record{
 				"enabled": params.Tls.Enabled,
 				"cert":    params.Tls.Cert,
@@ -245,6 +252,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			},
 		},
 		"keycloak": map[string]interface{}{
+			"enabled":  params.KeycloakEnabled,
 			"replicas": 1,
 			"extraEnv": extraEnvStringYaml,
 		},

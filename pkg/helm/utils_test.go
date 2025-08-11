@@ -19,7 +19,8 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				Cert:    "",
 				Key:     "",
 			},
-			HostName: "nsa.gov",
+			HostName:        "nsa.gov",
+			KeycloakEnabled: true,
 		}
 
 		expected := Record{
@@ -28,13 +29,19 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"localDataDirectories": params.LocalDataDirectories,
 			},
 			"tensorleap-node-server": Record{
+				"enableKeycloak":        params.KeycloakEnabled,
 				"disableDatadogMetrics": params.DisableDatadogMetrics,
 			},
 			"global": Record{
-				"domain":   "",
-				"url":      "",
-				"proxyUrl": "",
-				"basePath": "",
+				"domain":               "",
+				"url":                  "",
+				"proxyUrl":             "",
+				"basePath":             "",
+				"create_local_volumes": true,
+				"storageClassName":     "",
+				"keycloak": Record{
+					"enabled": true,
+				},
 				"tls": Record{
 					"enabled": false,
 					"cert":    "",
@@ -53,6 +60,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				},
 			},
 			"keycloak": map[string]interface{}{
+				"enabled":  true,
 				"replicas": 1,
 				"extraEnv": "\n- name: KEYCLOAK_USER\n  value: admin\n- name: KEYCLOAK_PASSWORD\n  value: admin\n- name: PROXY_ADDRESS_FORWARDING\n  value: \"true\"\n",
 			},
