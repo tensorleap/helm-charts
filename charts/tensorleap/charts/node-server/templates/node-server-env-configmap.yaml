@@ -21,6 +21,7 @@ data:
   PROXY_URL: {{ .Values.global.proxyUrl | quote }}
   KEYCLOAK_CLUSTER_URL: "http://keycloak-http.tensorleap.svc.cluster.local/auth"
   KEYCLOAK_REALM: "tensorleap"
+  ENABLE_KEYCLOAK_AUTH: {{ .Values.enableKeycloak | quote }}
   KEYCLOAK_RESOURCE: "tensorleap-client"
   KEYCLOAK_ADMIN_USER_NAME: "admin"
   KEYCLOAK_ADMIN_PASSWORD: "admin"
