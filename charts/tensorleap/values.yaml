@@ -8,31 +8,31 @@ ingress-nginx:
     extraArgs:
       default-ssl-certificate: tensorleap/tls-secret
     image:
-      digest: ''
+      digest: ""
     config:
       enable-snippets: "true"
       allow-snippet-annotations: "true"
     admissionWebhooks:
       patch:
         image:
-          digest: ''
+          digest: ""
 
 global:
-  target_namespace: ''
-  storageClassName: ''
+  target_namespace: ""
+  storageClassName: ""
   create_local_volumes: true
-  domain: 'localhost'
-  basePath: ''
-  url: 'http://localhost'
-  proxyUrl: ''
+  domain: "localhost"
+  basePath: ""
+  url: "http://localhost"
+  proxyUrl: ""
   tls:
     enabled: false
-    cert: ''
-    key: ''
+    cert: ""
+    key: ""
 
   elasticsearch:
     enabled: true
-    url: ''
+    url: ""
 
 keycloak:
   replicas: 1
@@ -48,10 +48,24 @@ keycloak:
   ingress:
     enabled: false
   postgresql:
-    fullnameOverride: "keycloak-postgresql"
+    fullnameOverride: keycloak-postgresql
     persistence:
       enabled: true
-      existingClaim: "keycloak-postgresql-data"
+      existingClaim: keycloak-postgresql-data
+    volumePermissions:
+      enabled: true
+      securityContext:
+        runAsUser: 0
+    primary:
+      podSecurityContext:
+        enabled: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        fsGroupChangePolicy: OnRootMismatch
+      containerSecurityContext:
+        enabled: true
+        runAsUser: 1001
   pgchecker:
     image:
       repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
