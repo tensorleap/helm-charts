@@ -1,4 +1,4 @@
-{{ if .Values.global.create_local_volumes }}
+{{ if and .Values.keycloak.enabled .Values.global.create_local_volumes  }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -17,6 +17,7 @@ spec:
     namespace: {{ .Release.Namespace }}
 {{ end }}
 ---
+{{ if .Values.keycloak.enabled }}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -31,4 +32,5 @@ spec:
   volumeName: keycloak-postgresql-data
 {{ else if .Values.global.storageClassName }}
   storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}
 {{ end }}

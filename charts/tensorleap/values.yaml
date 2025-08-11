@@ -21,6 +21,7 @@ global:
   target_namespace: ''
   storageClassName: ''
   create_local_volumes: true
+  disable_auth: false
   domain: 'localhost'
   basePath: ''
   url: 'http://localhost'
@@ -35,6 +36,7 @@ global:
     url: ''
 
 keycloak:
+  enabled: true
   replicas: 1
   extraEnv: |
     - name: KEYCLOAK_USER
