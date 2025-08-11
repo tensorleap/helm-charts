@@ -50,6 +50,7 @@ type InstallFlags struct {
 	DataDir                 string   `json:"dataDir"`
 	ProxyUrl                string   `json:"ProxyUrl"`
 	CpuLimit                string   `json:"cpuLimit,omitempty"`
+	DisableAuth             *bool    `json:"disableAuth,omitempty"`
 	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
 	TLSFlags
 }
@@ -66,6 +67,7 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
+	setNilBoolFlag(cmd, &flags.DisableAuth, "disable-auth", "Disable authentication for the tensorleap server")
 	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
 
 	deprecatedFlag_datasetDir(cmd)
@@ -76,6 +78,9 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 func (flags *InstallFlags) BeforeRun(cmd *cobra.Command) {
 	if !cmd.Flags().Changed("clear-images") {
 		flags.ClearInstallationImages = nil
+	}
+	if !cmd.Flags().Changed("disable-auth") {
+		flags.DisableAuth = nil
 	}
 }
 

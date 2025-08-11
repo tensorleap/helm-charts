@@ -36,6 +36,7 @@ type InstallationParams struct {
 	DatasetVolumes              []string `json:"datasetVolumes"`
 	CpuLimit                    string   `json:"cpuLimit,omitempty"`
 	ClearInstallationImages     bool     `json:"removeInstallationImages,omitempty"`
+	DisabledAuth                bool     `json:"disabledAuth,omitempty"`
 	TLSParams
 }
 
@@ -154,9 +155,17 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		if isRemoveInstallationNotSet {
 			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
 		}
+		isDisabledAuthNotSet := flags.DisableAuth == nil
+		if isDisabledAuthNotSet {
+			flags.DisableAuth = &previousParams.DisabledAuth
+		}
 	}
 	if flags.ClearInstallationImages == nil {
 		flags.ClearInstallationImages = new(bool)
+	}
+
+	if flags.DisableAuth == nil {
+		flags.DisableAuth = new(bool)
 	}
 
 	return &InstallationParams{
@@ -172,6 +181,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		CpuLimit:                flags.CpuLimit,
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
+		DisabledAuth:            *flags.DisableAuth,
 	}, nil
 }
 
@@ -616,6 +626,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		ProxyUrl:              params.ProxyUrl,
 		Tls:                   *tlsParams,
 		DatadogEnv:            datadogEnvs,
+		KeycloakEnabled:       !params.DisabledAuth,
 	}
 }
 

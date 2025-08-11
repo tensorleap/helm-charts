@@ -73,3 +73,21 @@ func TestCalcGpusUsed(t *testing.T) {
 		})
 	}
 }
+
+func TestGetServerHelmValuesParams(t *testing.T) {
+	t.Run("KeycloakEnabled when DisabledAuth is false", func(t *testing.T) {
+		params := InstallationParams{
+			DisabledAuth: false,
+		}
+		helmParams := params.GetServerHelmValuesParams()
+		assert.True(t, helmParams.KeycloakEnabled, "Keycloak should be enabled when DisabledAuth is false")
+	})
+
+	t.Run("KeycloakEnabled when DisabledAuth is true", func(t *testing.T) {
+		params := InstallationParams{
+			DisabledAuth: true,
+		}
+		helmParams := params.GetServerHelmValuesParams()
+		assert.False(t, helmParams.KeycloakEnabled, "Keycloak should be disabled when DisabledAuth is true")
+	})
+}
