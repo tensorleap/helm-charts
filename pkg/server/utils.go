@@ -138,10 +138,19 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isA
 	return
 }
 
+func IsUseDefaultPropOption() bool {
+	return os.Getenv("TL_USE_DEFAULT_OPTION") == "true"
+}
+
 func AskUserForVersionPreference(previousVersion, latestVersion string) (bool, error) {
+	defaultValue := false
+	if IsUseDefaultPropOption() {
+		return defaultValue, nil
+	}
+
 	prompt := survey.Confirm{
 		Message: fmt.Sprintf("A new version of Tensorleap is available (%s), do you want to use the current version (%s)?", latestVersion, previousVersion),
-		Default: false,
+		Default: defaultValue,
 	}
 	confirm := false
 	err := survey.AskOne(&prompt, &confirm)
