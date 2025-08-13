@@ -262,7 +262,7 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 		if usePreviousGpuSettings {
 			return nil
 		}
-		
+
 	}
 
 	availableDevices, err := local.CheckNvidiaGPU()

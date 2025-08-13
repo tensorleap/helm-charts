@@ -9,7 +9,6 @@ import (
 
 	"github.com/tensorleap/helm-charts/pkg/github"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
-	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/version"
 	"gopkg.in/yaml.v3"
 )
@@ -111,7 +110,6 @@ func findLatestTensorleapTag(releases []github.Release, pattern *regexp.Regexp) 
 		isCorrectTag := pattern.MatchString(tag)
 		if isCorrectTag {
 			latestTag := tag
-			log.Infof("Using tag: %s", latestTag)
 			return latestTag, nil
 		}
 	}
