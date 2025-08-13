@@ -125,9 +125,11 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 				Default: true,
 			}
 			usePreviousTlsConfig := true
-			err := survey.AskOne(&prompt, &usePreviousTlsConfig)
-			if err != nil {
-				return nil, err
+			if !IsUseDefaultPropOption() {
+				err := survey.AskOne(&prompt, &usePreviousTlsConfig)
+				if err != nil {
+					return nil, err
+				}
 			}
 			if usePreviousTlsConfig {
 				tlsParams = &previousParams.TLSParams
@@ -137,14 +139,16 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 
 		shouldAskForPreviousProxyUrl := previousParams.ProxyUrl != "" && flags.ProxyUrl == ""
 		if shouldAskForPreviousProxyUrl {
+			usePreviousProxyUrl := true
 			prompt := survey.Confirm{
 				Message: fmt.Sprintf("Do you want to use the previous proxy url? (%s)", previousParams.ProxyUrl),
-				Default: true,
+				Default: usePreviousProxyUrl,
 			}
-			usePreviousProxyUrl := true
-			err := survey.AskOne(&prompt, &usePreviousProxyUrl)
-			if err != nil {
-				return nil, err
+			if !IsUseDefaultPropOption() {
+				err := survey.AskOne(&prompt, &usePreviousProxyUrl)
+				if err != nil {
+					return nil, err
+				}
 			}
 			if usePreviousProxyUrl {
 				flags.ProxyUrl = previousParams.ProxyUrl
@@ -243,20 +247,22 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 
 	if shouldAskForPreviousGpuSettings {
 		gpusUsed := calcGpusUsed(previousParams.Gpus, previousParams.GpuDevices)
-		prompt := survey.Confirm{
-			Message: fmt.Sprintf("Do you want to use the previous GPU settings? (%s)", gpusUsed),
-			Default: true,
-		}
-		usePreviousGpuSettings := true
-		if err := survey.AskOne(&prompt, &usePreviousGpuSettings); err != nil {
-			return err
-		}
 		*gpus = previousParams.Gpus
 		*gpuDevices = previousParams.GpuDevices
-
+		usePreviousGpuSettings := true
+		if !IsUseDefaultPropOption() {
+			prompt := survey.Confirm{
+				Message: fmt.Sprintf("Do you want to use the previous GPU settings? (%s)", gpusUsed),
+				Default: true,
+			}
+			if err := survey.AskOne(&prompt, &usePreviousGpuSettings); err != nil {
+				return err
+			}
+		}
 		if usePreviousGpuSettings {
 			return nil
 		}
+		
 	}
 
 	availableDevices, err := local.CheckNvidiaGPU()
@@ -442,17 +448,24 @@ func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationPa
 			Default: true,
 		}
 		usePrevious := true
-		if err := survey.AskOne(&prompt, &usePrevious); err != nil {
-			return err
+		if !IsUseDefaultPropOption() {
+			if err := survey.AskOne(&prompt, &usePrevious); err != nil {
+				return err
+			}
 		}
 		if usePrevious {
 			*datasetVolumes = previousParams.DatasetVolumes
+			defaultValueIfAddAnother := false
 			confirmPrompt := survey.Confirm{
 				Message: "Do you want to add another dataset volume?",
-				Default: false,
+				Default: defaultValueIfAddAnother,
 			}
-			if err := survey.AskOne(&confirmPrompt, &shouldAskForVolume); err != nil {
-				return err
+			if !IsUseDefaultPropOption() {
+				if err := survey.AskOne(&confirmPrompt, &shouldAskForVolume); err != nil {
+					return err
+				}
+			} else {
+				shouldAskForVolume = defaultValueIfAddAnother
 			}
 		}
 	}
