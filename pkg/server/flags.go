@@ -12,12 +12,14 @@ type InstallationSourceFlags struct {
 	Tag                        string `json:"tag,omitempty"`
 	AirGapInstallationFilePath string `json:",omitempty"`
 	Local                      bool   `json:"local,omitempty"`
+	ManifestFilePath           string `json:"manifestFilePath,omitempty"`
 }
 
 func (flags *InstallationSourceFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.Tag, "tag", "t", "", "Tag to be used for tensorleap installation, default is latest")
 	cmd.Flags().StringVar(&flags.AirGapInstallationFilePath, "airgap", "", "Installation file path for air-gap installation")
 	cmd.Flags().BoolVar(&flags.Local, "local", false, "Install tensorleap from local helm charts")
+	cmd.Flags().StringVar(&flags.ManifestFilePath, "manifest", "", "Manifest file path for installation")
 }
 
 type TLSFlags struct {
@@ -39,19 +41,20 @@ func (flags *TLSFlags) IsEnabled() bool {
 }
 
 type InstallFlags struct {
-	Port                    uint     `json:"port"`
-	RegistryPort            uint     `json:"registryPort"`
-	GpuDevices              string   `json:"gpuDevices,omitempty"`
-	Gpus                    uint     `json:"gpus,omitempty"`
-	UseCpu                  bool     `json:",omitempty"`
-	DatasetVolumes          []string `json:"datasetVolumes"`
-	DisableMetrics          bool     `json:"disableMetrics"`
-	Domain                  string   `json:"domain"`
-	DataDir                 string   `json:"dataDir"`
-	ProxyUrl                string   `json:"ProxyUrl"`
-	CpuLimit                string   `json:"cpuLimit,omitempty"`
-	DisableAuth             *bool    `json:"disableAuth,omitempty"`
-	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
+	Port                       uint     `json:"port"`
+	RegistryPort               uint     `json:"registryPort"`
+	GpuDevices                 string   `json:"gpuDevices,omitempty"`
+	Gpus                       uint     `json:"gpus,omitempty"`
+	UseCpu                     bool     `json:",omitempty"`
+	DatasetVolumes             []string `json:"datasetVolumes"`
+	DisableMetrics             bool     `json:"disableMetrics"`
+	Domain                     string   `json:"domain"`
+	DataDir                    string   `json:"dataDir"`
+	ProxyUrl                   string   `json:"ProxyUrl"`
+	CpuLimit                   string   `json:"cpuLimit,omitempty"`
+	DisableAuth                *bool    `json:"disableAuth,omitempty"`
+	ClearInstallationImages    *bool    `json:"removeInstallationImages,omitempty"`
+	InstallationParamsFilePath string   `json:"installationParamsFilePath,omitempty"`
 	TLSFlags
 }
 
@@ -67,6 +70,7 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
+	cmd.Flags().StringVar(&flags.InstallationParamsFilePath, "installation-params", "", "Path to the installation params file")
 	setNilBoolFlag(cmd, &flags.DisableAuth, "disable-auth", "Disable authentication for the tensorleap server")
 	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
 

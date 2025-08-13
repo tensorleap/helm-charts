@@ -39,7 +39,12 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 		}
 	} else {
 		var err error
-		if flags.Local {
+		if flags.ManifestFilePath != "" {
+			mnf, err = manifest.Load(flags.ManifestFilePath)
+			if err != nil {
+				return nil, false, nil, nil, err
+			}
+		} else if flags.Local {
 			fileGetter := manifest.BuildLocalFileGetter("")
 			mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
 		} else {

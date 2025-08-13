@@ -94,6 +94,14 @@ func (params *InstallationParams) IsUseGpu() bool {
 
 func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, error) {
 
+	if flags.InstallationParamsFilePath != "" {
+		installationParams, err := LoadInstallationParamsFromPath(flags.InstallationParamsFilePath)
+		if err != nil {
+			return nil, err
+		}
+		return installationParams, nil
+	}
+
 	previousParams, err := LoadInstallationParamsFromPrevious()
 	hasInstallationParams := err == nil && previousParams != nil
 	if err != nil && err != ErrNoInstallationParams {
@@ -720,7 +728,11 @@ func (params *InstallationParams) Save() error {
 var ErrNoInstallationParams = fmt.Errorf("no installation params")
 
 func LoadInstallationParamsFromPrevious() (*InstallationParams, error) {
-	b, err := os.ReadFile(local.GetInstallationParamsPath())
+	return LoadInstallationParamsFromPath(local.GetInstallationParamsPath())
+}
+
+func LoadInstallationParamsFromPath(path string) (*InstallationParams, error) {
+	b, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, ErrNoInstallationParams
 	} else if err != nil {
