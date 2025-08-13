@@ -45,23 +45,20 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 		} else {
 			tag := flags.Tag
 			if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
-				latestMnfTag, err := manifest.GetLatestManifestTag()
+
+				usePreviousMnf, err := AskUserForVersionPreference(previousMnf.Tag)
 				if err != nil {
+					log.SendCloudReport("error", "Failed to ask for using current version", "Failed",
+						&map[string]interface{}{"error": err.Error()})
 					return nil, false, nil, nil, err
 				}
-				if previousMnf.Tag != latestMnfTag {
-					usePreviousMnf, err := AskUserForVersionPreference(previousMnf.Tag, latestMnfTag)
-					if err != nil {
-						log.SendCloudReport("error", "Failed to ask for using current version", "Failed",
-							&map[string]interface{}{"error": err.Error()})
-						return nil, false, nil, nil, err
-					}
-					if usePreviousMnf {
-						tag = previousMnf.Version
-					}
+				if usePreviousMnf {
+					tag = previousMnf.Version
 				}
+
 			}
 			mnf, err = manifest.GetByTag(tag)
+			log.Info("Using tag: " + mnf.Tag)
 		}
 		if err != nil {
 			log.SendCloudReport("error", "Build manifest failed", "Failed",
@@ -142,29 +139,37 @@ func IsUseDefaultPropOption() bool {
 	return os.Getenv("TL_USE_DEFAULT_OPTION") == "true"
 }
 
-func AskUserForVersionPreference(previousVersion, latestVersion string) (bool, error) {
-	defaultValue := false
+func AskUserForVersionPreference(previousTag string) (bool, error) {
+	confirmValue := false
+
 	if IsUseDefaultPropOption() {
-		return defaultValue, nil
+		return confirmValue, nil
 	}
 
-	prompt := survey.Confirm{
-		Message: fmt.Sprintf("A new version of Tensorleap is available (%s), do you want to use the current version (%s)?", latestVersion, previousVersion),
-		Default: defaultValue,
-	}
-	confirm := false
-	err := survey.AskOne(&prompt, &confirm)
+	latestTag, err := manifest.GetLatestManifestTag()
 	if err != nil {
 		return false, err
 	}
-	if confirm {
+	if latestTag == previousTag {
+		return confirmValue, nil
+	}
+
+	prompt := survey.Confirm{
+		Message: fmt.Sprintf("A new version of Tensorleap is available (%s), do you want to use the current version (%s)?", latestTag, previousTag),
+		Default: confirmValue,
+	}
+	err = survey.AskOne(&prompt, &confirmValue)
+	if err != nil {
+		return false, err
+	}
+	if confirmValue {
 		log.SendCloudReport("info", "User confirmed using current version", "Running",
-			&map[string]interface{}{"version": previousVersion})
+			&map[string]interface{}{"version": previousTag})
 	} else {
 		log.SendCloudReport("info", "User chose to upgrade to latest version", "Running",
-			&map[string]interface{}{"version": latestVersion})
+			&map[string]interface{}{"version": latestTag})
 	}
-	return confirm, nil
+	return confirmValue, nil
 }
 
 func AskForReinstall() (bool, error) {
