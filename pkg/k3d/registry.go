@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	dockerTypes "github.com/docker/docker/api/types"
@@ -310,18 +309,9 @@ func CacheImagesInParallel(ctx context.Context, images []string, regPort string,
 	}
 	if !isAirgap && len(imagesNotInRegistry) > 0 {
 		log.Info("Downloading docker images...")
-		wg := sync.WaitGroup{}
-		for _, img := range imagesNotInRegistry {
-			wg.Add(1)
-			go func(img string) {
-				defer wg.Done()
-				if err := PullingImage(ctx, dockerClient, img); err != nil {
-					log.SendCloudReport("error", "Failed pulling image", "Failed", &map[string]interface{}{"image": img, "error": err.Error()})
-					log.Fatalf("Failed to pull %s: %s", img, err)
-				}
-			}(img)
+		if err := docker.PullDockerImages(dockerClient, imagesNotInRegistry); err != nil {
+			return fmt.Errorf("failed to pull images: %w", err)
 		}
-		wg.Wait()
 	}
 
 	tm := utils.NewTaskManager(MAX_CONCURRENT_CACHE_IMAGE)
