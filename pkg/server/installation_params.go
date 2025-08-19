@@ -13,6 +13,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
+	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 	"github.com/tensorleap/helm-charts/pkg/version"
 	"gopkg.in/yaml.v3"
 )
@@ -711,14 +712,16 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 }
 
-func (params *InstallationParams) GetCreateRegistryParams() *k3d.CreateRegistryParams {
+func (params *InstallationParams) GetCreateRegistryParams(manifest *manifest.InstallationManifest) *k3d.CreateRegistryParams {
 	volumes := []string{
 		fmt.Sprintf("%v:%v", path.Join(local.GetServerDataDir(), "registry"), "/var/lib/registry"),
 	}
 
 	return &k3d.CreateRegistryParams{
-		Port:    params.RegistryPort,
-		Volumes: volumes,
+		Port:            params.RegistryPort,
+		Volumes:         volumes,
+		ConfigMountPath: local.GetInstallationRegistryConfigPath(),
+		UpstreamRegistries: k3d.CreateUpstreamRegistryFromManifest(manifest),
 	}
 }
 

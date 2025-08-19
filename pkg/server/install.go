@@ -29,7 +29,7 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 
 	k3d.FixDockerDns() // Always fix DNS
 
-	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams())
+	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams(mnf))
 	if err != nil {
 		return err
 	}

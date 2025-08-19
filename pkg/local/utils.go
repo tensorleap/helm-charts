@@ -26,6 +26,7 @@ const (
 	MANIFEST_DIR_NAME                  = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME      = "params.yaml"
 	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
+	REGISTRY_CONFIG_FILE_NAME          = "registry-config.yaml"
 )
 
 func GetServerDataDir() string {
@@ -176,6 +177,10 @@ func PurgeData() error {
 		}
 	}
 	return nil
+}
+
+func GetInstallationRegistryConfigPath() string {
+	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, REGISTRY_CONFIG_FILE_NAME)
 }
 
 func GetInstallationManifestPath() string {

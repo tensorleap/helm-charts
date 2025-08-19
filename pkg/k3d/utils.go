@@ -1,8 +1,10 @@
 package k3d
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 	"gopkg.in/yaml.v3"
 )
@@ -63,4 +65,20 @@ func CreateMirrorFromManifest(mfs *manifest.InstallationManifest, registryUrl st
 	}
 
 	return string(yamlBytes), nil
+}
+
+func CreateUpstreamRegistryFromManifest(mnf *manifest.InstallationManifest) map[string]UpstreamRegistry {
+	images := mnf.GetRegisterImages()
+	upstreamRegistries := make(map[string]UpstreamRegistry)
+
+	for _, image := range images {
+
+		registry := docker.GetDockerRegistry(image)
+
+		upstreamRegistries[registry] = UpstreamRegistry{
+			Endpoint: fmt.Sprintf("https://%s", registry),
+		}
+	}
+
+	return upstreamRegistries
 }

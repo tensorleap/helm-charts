@@ -23,6 +23,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/utils"
+	"gopkg.in/yaml.v3"
 )
 
 type Registry = k3d.Registry
@@ -70,8 +71,14 @@ func GetRegistryPort(ctx context.Context, reg *Registry) (string, error) {
 }
 
 type CreateRegistryParams struct {
-	Port    uint     `json:"port"`
-	Volumes []string `json:"volumes"`
+	Port               uint                        `json:"port"`
+	Volumes            []string                    `json:"volumes"`
+	UpstreamRegistries map[string]UpstreamRegistry `json:"upstreamRegistries,omitempty"`
+	ConfigMountPath    string                      `json:"configMountPath,omitempty"`
+}
+
+type UpstreamRegistry struct {
+	Endpoint string `yaml:"name"`
 }
 
 func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRegistryParams) (*Registry, error) {
@@ -112,15 +119,91 @@ func createRegistryConfig(imageName string, params *CreateRegistryParams) *Regis
 		log.Fatalln(err)
 	}
 
+	volumes := params.Volumes
+	if len(params.UpstreamRegistries) > 0 {
+		err := createRegistryConfigFile(params)
+		if err != nil {
+			log.Warnf("Failed to create registry config file: %v", err)
+		} else {
+			volumes = append(volumes, fmt.Sprintf("%s:/etc/docker/registry/config.yml", params.ConfigMountPath))
+		}
+	}
+
 	reg := &Registry{
 		Host:         REGISTRY_NAME,
 		Image:        imageName,
 		ExposureOpts: *exposePort,
 		Network:      k3d.DefaultRuntimeNetwork,
-		Volumes:      params.Volumes,
+		Volumes:      volumes,
 	}
 
 	return reg
+}
+
+func createRegistryConfigFile(params *CreateRegistryParams) error {
+	// Create the base registry configuration
+	config := map[string]interface{}{
+		"version": "0.1",
+		"log": map[string]interface{}{
+			"fields": map[string]interface{}{
+				"service": "registry",
+			},
+		},
+		"storage": map[string]interface{}{
+			"cache": map[string]interface{}{
+				"blobdescriptor": "inmemory",
+			},
+			"filesystem": map[string]interface{}{
+				"rootdirectory": "/var/lib/registry",
+			},
+		},
+		"http": map[string]interface{}{
+			"addr": ":5000",
+			"headers": map[string]interface{}{
+				"X-Content-Type-Options": []string{"nosniff"},
+			},
+		},
+		"health": map[string]interface{}{
+			"storagedriver": map[string]interface{}{
+				"enabled":   true,
+				"interval":  "10s",
+				"threshold": 3,
+			},
+		},
+	}
+
+	// Add proxy configuration for upstream registry
+	if len(params.UpstreamRegistries) > 0 {
+		// Docker registry only supports one proxy configuration
+		// We'll use the first upstream registry as the proxy
+		var firstUpstream UpstreamRegistry
+		for _, upstream := range params.UpstreamRegistries {
+			firstUpstream = upstream
+			break
+		}
+		config["proxy"] = map[string]interface{}{
+			"remoteurl": firstUpstream.Endpoint,
+		}
+
+		// Note: Multiple upstream registries are not supported by Docker registry
+		// Only one proxy can be configured per registry instance
+		if len(params.UpstreamRegistries) > 1 {
+			log.Warnf("Multiple upstream registries specified, but Docker registry only supports one proxy. Using: %s", firstUpstream.Endpoint)
+		}
+	}
+
+	// Convert config to YAML
+	configBytes, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal registry config: %w", err)
+	}
+
+	if err := os.WriteFile(params.ConfigMountPath, configBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write registry config file: %w", err)
+	}
+
+	log.Infof("Created registry config file: %s", params.ConfigMountPath)
+	return nil
 }
 
 func UninstallRegister() error {
