@@ -711,7 +711,7 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 }
 
-func (params *InstallationParams) GetCreateRegistryParams() *k3d.CreateRegistryParams {
+func (params *InstallationParams) GetCreateRegistryParams(proxyUrl string) *k3d.CreateRegistryParams {
 	volumes := []string{
 		fmt.Sprintf("%v:%v", path.Join(local.GetServerDataDir(), "registry"), "/var/lib/registry"),
 	}
@@ -719,6 +719,7 @@ func (params *InstallationParams) GetCreateRegistryParams() *k3d.CreateRegistryP
 	return &k3d.CreateRegistryParams{
 		Port:    params.RegistryPort,
 		Volumes: volumes,
+		ProxyURL: proxyUrl,
 	}
 }
 
