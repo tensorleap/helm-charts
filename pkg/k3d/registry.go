@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	dockerTypes "github.com/docker/docker/api/types"
@@ -70,8 +69,9 @@ func GetRegistryPort(ctx context.Context, reg *Registry) (string, error) {
 }
 
 type CreateRegistryParams struct {
-	Port    uint     `json:"port"`
-	Volumes []string `json:"volumes"`
+	Port     uint     `json:"port"`
+	Volumes  []string `json:"volumes"`
+	ProxyURL string   `json:"proxyURL"`
 }
 
 func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRegistryParams) (*Registry, error) {
@@ -112,12 +112,19 @@ func createRegistryConfig(imageName string, params *CreateRegistryParams) *Regis
 		log.Fatalln(err)
 	}
 
+	log.Info("Creating registry config with proxy URL: " + params.ProxyURL)
+
 	reg := &Registry{
 		Host:         REGISTRY_NAME,
 		Image:        imageName,
 		ExposureOpts: *exposePort,
 		Network:      k3d.DefaultRuntimeNetwork,
 		Volumes:      params.Volumes,
+		Options: k3d.RegistryOptions{
+			Proxy: k3d.RegistryProxy{
+				RemoteURL: params.ProxyURL,
+			},
+		},
 	}
 
 	return reg
@@ -310,18 +317,9 @@ func CacheImagesInParallel(ctx context.Context, images []string, regPort string,
 	}
 	if !isAirgap && len(imagesNotInRegistry) > 0 {
 		log.Info("Downloading docker images...")
-		wg := sync.WaitGroup{}
-		for _, img := range imagesNotInRegistry {
-			wg.Add(1)
-			go func(img string) {
-				defer wg.Done()
-				if err := PullingImage(ctx, dockerClient, img); err != nil {
-					log.SendCloudReport("error", "Failed pulling image", "Failed", &map[string]interface{}{"image": img, "error": err.Error()})
-					log.Fatalf("Failed to pull %s: %s", img, err)
-				}
-			}(img)
+		if err := docker.PullDockerImages(dockerClient, imagesNotInRegistry); err != nil {
+			return fmt.Errorf("failed to pull images: %w", err)
 		}
-		wg.Wait()
 	}
 
 	tm := utils.NewTaskManager(MAX_CONCURRENT_CACHE_IMAGE)
