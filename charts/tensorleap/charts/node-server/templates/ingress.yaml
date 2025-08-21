@@ -40,13 +40,6 @@ spec:
                 name: keycloak-http
                 port:
                   name: http
-            path: /auth/realms
-            pathType: ImplementationSpecific
-          - backend:
-              service:
-                name: keycloak-http
-                port:
-                  name: http
-            path: /auth/resources
-            pathType: ImplementationSpecific
+            path: /auth
+            pathType: Prefix
 {{ end }}

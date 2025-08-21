@@ -35,28 +35,30 @@ global:
     enabled: true
     url: ''
 
-keycloak:
+  keycloakx:
+    enabled: true
+
+keycloakx:
   enabled: true
   replicas: 1
   extraEnv: |
-    - name: KEYCLOAK_USER
+    - name: KEYCLOAK_ADMIN
       value: admin
-    - name: KEYCLOAK_PASSWORD
+    - name: KEYCLOAK_ADMIN_PASSWORD
       value: admin
-    - name: PROXY_ADDRESS_FORWARDING
-      value: "true"
+    - name: KC_DB
+      value: dev-file
+    - name: KC_PROXY
+      value: "edge"
+    - name: KC_HTTP_RELATIVE_PATH
+      value: /auth
 
   fullnameOverride: keycloak
   ingress:
     enabled: false
-  postgresql:
-    fullnameOverride: "keycloak-postgresql"
-    persistence:
-      enabled: true
-      existingClaim: "keycloak-postgresql-data"
-  pgchecker:
-    image:
-      repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
+  persistence:
+    enabled: true
+    existingClaim: "keycloak-data"
 datadog:
   enabled: true
   clusterAgent:

@@ -39,7 +39,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"basePath":             "",
 				"create_local_volumes": true,
 				"storageClassName":     "",
-				"keycloak": Record{
+				"keycloakx": Record{
 					"enabled": true,
 				},
 				"tls": Record{
@@ -59,10 +59,10 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 					},
 				},
 			},
-			"keycloak": map[string]interface{}{
+			"keycloakx": map[string]interface{}{
 				"enabled":  true,
 				"replicas": 1,
-				"extraEnv": "\n- name: KEYCLOAK_USER\n  value: admin\n- name: KEYCLOAK_PASSWORD\n  value: admin\n- name: PROXY_ADDRESS_FORWARDING\n  value: \"true\"\n",
+				"extraEnv": "\n- name: KEYCLOAK_ADMIN\n  value: admin\n- name: KEYCLOAK_ADMIN_PASSWORD\n  value: admin\n- name: KC_DB\n  value: dev-file\n- name: KC_PROXY\n  value: \"edge\"\n- name: KC_HTTP_RELATIVE_PATH\n  value: /auth\n",
 			},
 		}
 
