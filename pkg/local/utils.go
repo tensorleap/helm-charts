@@ -20,7 +20,7 @@ const (
 	REGISTRY_DIR_NAME               = "registry"
 	LOGS_DIR_NAME                   = "logs"
 	STORAGE_DIR_NAME                = "storage"
-	KEYCLOAK_DB_STORAGE_DIR_NAME    = "storage/keycloak-db"
+	KEYCLOAK_DB_STORAGE_DIR_NAME    = "storage/keycloak"
 	ELASTIC_STORAGE_DIR_NAME        = "storage/elasticsearch"
 	HOSTNAME_FILE                   = "hostname"
 	MANIFEST_DIR_NAME               = "manifests"

@@ -210,6 +210,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		{Name: "KC_DB", Value: "dev-file"},
 		{Name: "KC_PROXY", Value: "edge"},
 		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
+		{Name: "KC_HOSTNAME_STRICT", Value: "false"},
+		{Name: "KC_CACHE", Value: "local"},
 	}
 	if params.ProxyUrl != "" {
 		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
@@ -256,6 +258,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"keycloakx": map[string]interface{}{
 			"enabled":  params.KeycloakEnabled,
 			"replicas": 1,
+			"command":  []string{"/opt/keycloak/bin/kc.sh", "start-dev"},
 			"extraEnv": extraEnvStringYaml,
 		},
 		"datadog": map[string]interface{}{
