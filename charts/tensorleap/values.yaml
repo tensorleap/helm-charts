@@ -8,55 +8,63 @@ ingress-nginx:
     extraArgs:
       default-ssl-certificate: tensorleap/tls-secret
     image:
-      digest: ''
+      digest: ""
     config:
       enable-snippets: "true"
       allow-snippet-annotations: "true"
     admissionWebhooks:
       patch:
         image:
-          digest: ''
+          digest: ""
 
 global:
-  target_namespace: ''
-  storageClassName: ''
+  target_namespace: ""
+  storageClassName: ""
   create_local_volumes: true
   disable_auth: false
-  domain: 'localhost'
-  basePath: ''
-  url: 'http://localhost'
-  proxyUrl: ''
+  domain: "localhost"
+  basePath: ""
+  url: "http://localhost"
+  proxyUrl: ""
   tls:
     enabled: false
-    cert: ''
-    key: ''
+    cert: ""
+    key: ""
 
   elasticsearch:
     enabled: true
-    url: ''
+    url: ""
 
-keycloak:
+  keycloakx:
+    enabled: true
+
+keycloakx:
   enabled: true
   replicas: 1
+  command: ["/opt/keycloak/bin/kc.sh", "start"]
   extraEnv: |
-    - name: KEYCLOAK_USER
+    - name: KEYCLOAK_ADMIN
       value: admin
-    - name: KEYCLOAK_PASSWORD
+    - name: KEYCLOAK_ADMIN_PASSWORD
       value: admin
-    - name: PROXY_ADDRESS_FORWARDING
-      value: "true"
-
+    - name: KC_DB
+      value: dev-file
+    - name: KC_PROXY
+      value: "edge"
+    - name: KC_HTTP_RELATIVE_PATH
+      value: /auth
+    - name: KC_HOSTNAME_STRICT
+      value: "false"
+    - name: KC_CACHE
+      value: "local"
   fullnameOverride: keycloak
   ingress:
     enabled: false
-  postgresql:
-    fullnameOverride: "keycloak-postgresql"
-    persistence:
-      enabled: true
-      existingClaim: "keycloak-postgresql-data"
-  pgchecker:
-    image:
-      repository: docker.io/library/busybox # must to add the library before the image name for air-gapped environments
+  persistence:
+    enabled: true
+    existingClaim: "keycloak-data"
+    size: 8Gi
+    storageClass: "local-path"
 datadog:
   enabled: true
   clusterAgent:
