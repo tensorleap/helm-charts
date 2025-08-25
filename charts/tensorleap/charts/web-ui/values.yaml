@@ -1,4 +1,4 @@
-image_tag: master-794be422
+image_tag: upgrade-keycloak-f34cdf6b
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:

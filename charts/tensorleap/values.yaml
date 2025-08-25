@@ -65,6 +65,7 @@ keycloakx:
     existingClaim: "keycloak-data"
     size: 8Gi
     storageClass: "local-path"
+    mountPath: /opt/keycloak/data # covers /opt/keycloak/data/h2
 datadog:
   enabled: true
   clusterAgent:
