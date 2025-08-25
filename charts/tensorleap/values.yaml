@@ -60,12 +60,23 @@ keycloakx:
   fullnameOverride: keycloak
   ingress:
     enabled: false
-  persistence:
-    enabled: true
-    existingClaim: "keycloak-data"
-    size: 8Gi
-    storageClass: "local-path"
-    mountPath: /opt/keycloak/data # covers /opt/keycloak/data/h2
+  # make sure the container can write the volume (image runs as uid 1000)
+  podSecurityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+
+  extraVolumes: |
+    - name: keycloak-data
+      persistentVolumeClaim:
+        claimName: keycloak-data
+
+  extraVolumeMounts: |
+    - name: keycloak-data
+      mountPath: /opt/keycloak/data
 datadog:
   enabled: true
   clusterAgent:
