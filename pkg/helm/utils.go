@@ -205,12 +205,16 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 	}
 
 	extraEnvSlice := []ExtraEnv{
-		{Name: "KEYCLOAK_USER", Value: "admin"},
-		{Name: "KEYCLOAK_PASSWORD", Value: "admin"},
-		{Name: "PROXY_ADDRESS_FORWARDING", Value: "true"},
+		{Name: "KEYCLOAK_ADMIN", Value: "admin"},
+		{Name: "KEYCLOAK_ADMIN_PASSWORD", Value: "admin"},
+		{Name: "KC_DB", Value: "dev-file"},
+		{Name: "KC_PROXY", Value: "edge"},
+		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
+		{Name: "KC_HOSTNAME_STRICT", Value: "false"},
+		{Name: "KC_CACHE", Value: "local"},
 	}
 	if params.ProxyUrl != "" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KEYCLOAK_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 	}
 	formatExtraEnv := func(extraEnv []ExtraEnv) string {
 		result, _ := yaml.Marshal(extraEnv)
@@ -242,7 +246,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"basePath":             params.BasePath,
 			"create_local_volumes": true,
 			"storageClassName":     "",
-			"keycloak": Record{
+			"keycloakx": Record{
 				"enabled": params.KeycloakEnabled,
 			},
 			"tls": Record{
@@ -251,9 +255,10 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 				"key":     params.Tls.Key,
 			},
 		},
-		"keycloak": map[string]interface{}{
+		"keycloakx": map[string]interface{}{
 			"enabled":  params.KeycloakEnabled,
 			"replicas": 1,
+			"command":  []string{"/opt/keycloak/bin/kc.sh", "start-dev"},
 			"extraEnv": extraEnvStringYaml,
 		},
 		"datadog": map[string]interface{}{
