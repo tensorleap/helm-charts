@@ -1,6 +1,4 @@
 docker.elastic.co/eck/eck-operator:2.8.0
-docker.io/bitnami/postgresql:11.14.0-debian-10-r28
-docker.io/library/busybox:1.32
 docker.io/library/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
@@ -13,8 +11,8 @@ public.ecr.aws/tensorleap/engine-generic:master-70dad86d-py39
 public.ecr.aws/tensorleap/engine:master-70dad86d
 public.ecr.aws/tensorleap/node-server:master-b4855f99
 public.ecr.aws/tensorleap/pippin:master-429ecc32
-public.ecr.aws/tensorleap/web-ui:master-794be422
-quay.io/keycloak/keycloak:17.0.1-legacy
+public.ecr.aws/tensorleap/web-ui:upgrade-keycloak-f34cdf6b
+quay.io/keycloak/keycloak:26.3.2
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
