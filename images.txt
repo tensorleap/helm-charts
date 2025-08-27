@@ -8,6 +8,7 @@ docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 public.ecr.aws/tensorleap/engine-generic:master-c3263302-py310
+public.ecr.aws/tensorleap/engine-generic:master-c3263302-py312
 public.ecr.aws/tensorleap/engine-generic:master-c3263302-py38
 public.ecr.aws/tensorleap/engine-generic:master-c3263302-py39
 public.ecr.aws/tensorleap/engine:master-c3263302
