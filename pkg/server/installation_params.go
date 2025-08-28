@@ -691,8 +691,10 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 
 func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClusterParams {
 	standaloneDir := local.GetServerDataDir()
+	containerdDir := local.GetContainerdDataDir() 
 	volumes := []string{
 		fmt.Sprintf("%v:%v", standaloneDir, local.DEFAULT_DATA_DIR),
+		fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"),
 	}
 	volumes = append(volumes, params.DatasetVolumes...)
 
