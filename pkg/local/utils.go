@@ -26,6 +26,7 @@ const (
 	MANIFEST_DIR_NAME                  = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME      = "params.yaml"
 	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
+	CONTAINERD_DIR_NAME                = "containerd"
 )
 
 func GetServerDataDir() string {
@@ -94,7 +95,7 @@ func InitStandaloneDir() error {
 
 func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
-	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME}
+	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(standaloneDir, dir)
 		_, err := os.Stat(fullPath)
@@ -160,7 +161,7 @@ func OpenLink(link string) error {
 
 func PurgeData() error {
 	log.Infof("Purging data (you may be asked to enter the root user password)")
-	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, MANIFEST_DIR_NAME} {
+	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, CONTAINERD_DIR_NAME, MANIFEST_DIR_NAME} {
 		path := path.Join(GetServerDataDir(), dir)
 		log.Infof("Removing directory: %s", path)
 		err := os.RemoveAll(path)
@@ -188,4 +189,8 @@ func GetInstallationHostnamePath() string {
 
 func GetInstallationParamsPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
+}
+
+func GetContainerdDataDir() string {
+	return path.Join(GetServerDataDir(), CONTAINERD_DIR_NAME)
 }
