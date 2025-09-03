@@ -24,19 +24,20 @@ const DefaultHttpsPort = 443
 const allGpuDevices = "all"
 
 type InstallationParams struct {
-	Version                     string   `json:"version"`
-	GpuDevices                  string   `json:"gpuDevices,omitempty"`
-	Gpus                        uint     `json:"gpus,omitempty"`
-	Port                        uint     `json:"clusterPort"`
-	Domain                      string   `json:"domain"`
-	ProxyUrl                    string   `json:"proxyUrl"`
-	RegistryPort                uint     `json:"registryPort"`
-	DisableMetrics              bool     `json:"disableMetrics"`
-	DatasetDirectory_DEPRECATED string   `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
-	DatasetVolumes              []string `json:"datasetVolumes"`
-	CpuLimit                    string   `json:"cpuLimit,omitempty"`
-	ClearInstallationImages     bool     `json:"removeInstallationImages,omitempty"`
-	DisabledAuth                bool     `json:"disabledAuth,omitempty"`
+	Version                     string                 `json:"version"`
+	GpuDevices                  string                 `json:"gpuDevices,omitempty"`
+	Gpus                        uint                   `json:"gpus,omitempty"`
+	Port                        uint                   `json:"clusterPort"`
+	Domain                      string                 `json:"domain"`
+	ProxyUrl                    string                 `json:"proxyUrl"`
+	RegistryPort                uint                   `json:"registryPort"`
+	DisableMetrics              bool                   `json:"disableMetrics"`
+	DatasetDirectory_DEPRECATED string                 `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
+	DatasetVolumes              []string               `json:"datasetVolumes"`
+	CpuLimit                    string                 `json:"cpuLimit,omitempty"`
+	ClearInstallationImages     bool                   `json:"removeInstallationImages,omitempty"`
+	DisabledAuth                bool                   `json:"disabledAuth,omitempty"`
+	ImageCachingMethod          k3d.ImageCachingMethod `json:"imageCachingMethod,omitempty"`
 	TLSParams
 }
 
@@ -92,7 +93,7 @@ func (params *InstallationParams) IsUseGpu() bool {
 	return params.Gpus > 0 || params.GpuDevices != ""
 }
 
-func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, error) {
+func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*InstallationParams, error) {
 
 	previousParams, err := LoadInstallationParamsFromPrevious()
 	hasInstallationParams := err == nil && previousParams != nil
@@ -172,6 +173,22 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		flags.DisableAuth = new(bool)
 	}
 
+	// Handle image caching method
+	var imageCachingMethod k3d.ImageCachingMethod
+	if hasInstallationParams {
+		imageCachingMethod = previousParams.ImageCachingMethod
+	}
+	if imageCachingMethod == "" {
+		imageCachingMethod = k3d.GetDefaultImageCachingMethod(isAirgap)
+	}
+	if flags.ImageCachingMethod != "" {
+		method := k3d.ImageCachingMethod(flags.ImageCachingMethod)
+		if !k3d.IsImageCachingMethodAvailable(method, isAirgap) {
+			return nil, fmt.Errorf("image caching method '%s' is not available for this environment", method)
+		}
+		imageCachingMethod = method
+	}
+
 	return &InstallationParams{
 		Version:                 CurrentInstallationVersion,
 		Gpus:                    flags.Gpus,
@@ -186,6 +203,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags) (*InstallationParams, 
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
 		DisabledAuth:            *flags.DisableAuth,
+		ImageCachingMethod:      imageCachingMethod,
 	}, nil
 }
 
@@ -193,7 +211,7 @@ func InitInstallationParamsFromPreviousOrAsk() (params *InstallationParams, foun
 	params, err = LoadInstallationParamsFromPrevious()
 
 	if err == ErrNoInstallationParams {
-		params, err = AskInstallationParams()
+		params, err = AskInstallationParams(false)
 		if err != nil {
 			return nil, false, err
 		}
@@ -205,7 +223,7 @@ func InitInstallationParamsFromPreviousOrAsk() (params *InstallationParams, foun
 	return
 }
 
-func AskInstallationParams() (*InstallationParams, error) {
+func AskInstallationParams(isAirgap bool) (*InstallationParams, error) {
 	installationParams := &InstallationParams{}
 
 	if err := InitUseGPU(&installationParams.Gpus, &installationParams.GpuDevices, false, nil); err != nil {
@@ -232,6 +250,8 @@ func AskInstallationParams() (*InstallationParams, error) {
 			&map[string]interface{}{"registryPort": installationParams.RegistryPort, "error": err.Error()})
 		return nil, err
 	}
+
+	installationParams.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(isAirgap)
 
 	return installationParams, nil
 }
@@ -691,10 +711,8 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 
 func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClusterParams {
 	standaloneDir := local.GetServerDataDir()
-	containerdDir := local.GetContainerdDataDir() 
 	volumes := []string{
 		fmt.Sprintf("%v:%v", standaloneDir, local.DEFAULT_DATA_DIR),
-		fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"),
 	}
 	volumes = append(volumes, params.DatasetVolumes...)
 
@@ -705,11 +723,12 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	}
 
 	return &k3d.CreateK3sClusterParams{
-		WithGpu:  useGpu,
-		Port:     params.Port,
-		Volumes:  volumes,
-		CpuLimit: params.CpuLimit,
-		TLSPort:  tlsPort,
+		WithGpu:            useGpu,
+		Port:               params.Port,
+		Volumes:            volumes,
+		CpuLimit:           params.CpuLimit,
+		TLSPort:            tlsPort,
+		ImageCachingMethod: params.ImageCachingMethod,
 	}
 }
 
@@ -755,6 +774,11 @@ func backwardCompatibility_datasetDirectory(params *InstallationParams) {
 		params.DatasetVolumes = []string{params.DatasetDirectory_DEPRECATED}
 	}
 	params.DatasetDirectory_DEPRECATED = ""
+
+	// Set default image caching method if not set
+	if params.ImageCachingMethod == "" {
+		params.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(false)
+	}
 }
 
 func LoadInstallationParams(paramsBytes []byte) (*InstallationParams, error) {

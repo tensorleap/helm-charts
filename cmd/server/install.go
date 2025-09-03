@@ -71,7 +71,7 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 		return err
 	}
 
-	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags)
+	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
 	if err != nil {
 		return err
 	}

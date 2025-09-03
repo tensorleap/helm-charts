@@ -5,6 +5,7 @@ import (
 
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 	"helm.sh/helm/v3/pkg/chart"
@@ -39,10 +40,10 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return err
 	}
 
-	imagesToCache := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), isAirgap)
+	imagesToCache := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), installationParams.ImageCachingMethod)
 
-	if len(imagesToCache) == 0 {
-		err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
+	if len(imagesToCache) > 0 {
+		err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap, string(installationParams.ImageCachingMethod))
 		if err != nil {
 			return err
 		}
@@ -64,11 +65,12 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 	}
 
 	_ = SaveInstallation(mnf, installationParams)
-
-	err = cleanImages(mnf, prvMnf, installationParams.ClearInstallationImages)
-	if err != nil {
-		log.SendCloudReport("error", "Failed cleaning images", "Failed", &map[string]interface{}{"error": err.Error()})
-		log.Warnf("Failed cleaning images: %v", err)
+	if installationParams.ImageCachingMethod == k3d.ImageCachingRegistry {
+		err = cleanImages(mnf, prvMnf, installationParams.ClearInstallationImages)
+		if err != nil {
+			log.SendCloudReport("error", "Failed cleaning images", "Failed", &map[string]interface{}{"error": err.Error()})
+			log.Warnf("Failed cleaning images: %v", err)
+		}
 	}
 
 	return nil
@@ -82,7 +84,7 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 
 	clusterNotExists := cluster == nil
 	if clusterNotExists {
-		cluster, err = k3d.CreateCluster(ctx, mnf, installationParams.GetCreateK3sClusterParams())
+		cluster, err = k3d.CreateCluster(ctx, mnf, installationParams.GetCreateK3sClusterParams(), local.GetContainerdDataDir())
 		if err != nil {
 			createNew = true
 		}
