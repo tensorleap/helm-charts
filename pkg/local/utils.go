@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/k8s"
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
@@ -124,7 +123,7 @@ func SetupInfra(cmdName string) (closeLogFile func(), err error) {
 		return
 	}
 
-	k3d.SetupLogger(log.VerboseLogger)
+	SetupK3dLogger(log.VerboseLogger)
 	k8s.SetupLogger(log.VerboseLogger)
 
 	logPath := createLogFilePath(cmdName)
