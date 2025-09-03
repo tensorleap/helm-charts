@@ -18,6 +18,10 @@ func Uninstall(ctx context.Context, purge bool) (err error) {
 		return err
 	}
 
+	err = k3d.RemoveImageCachingVolume(ctx)
+	if err != nil {
+		return err
+	}
 	if purge {
 		err = local.PurgeData()
 		if err != nil {

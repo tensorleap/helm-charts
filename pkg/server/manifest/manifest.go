@@ -134,10 +134,13 @@ func (mnf *InstallationManifest) Save(path string) error {
 }
 
 func (mnf *InstallationManifest) GetAllImages() []string {
+	images := mnf.GetRunningOnMachineImages()
+	images = append(images, mnf.GetRegisterImages()...)
+	return images
+}
+
+func (mnf *InstallationManifest) GetRunningOnMachineImages() []string {
 	images := []string{}
-	images = append(images, mnf.Images.ServerImages...)
-	images = append(images, mnf.Images.K3sImages...)
-	images = append(images, mnf.Images.K3sGpuImages...)
 	images = append(images, mnf.Images.K3s)
 	images = append(images, mnf.Images.K3sGpu)
 	images = append(images, mnf.Images.Register)

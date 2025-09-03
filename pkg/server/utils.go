@@ -53,11 +53,14 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 					return nil, false, nil, nil, err
 				}
 				if usePreviousMnf {
-					tag = previousMnf.Version
+					tag = previousMnf.Tag
+					mnf = previousMnf
 				}
 
 			}
-			mnf, err = manifest.GetByTag(tag)
+			if mnf == nil {
+				mnf, err = manifest.GetByTag(tag)
+			}
 			log.Info("Using tag: " + mnf.Tag)
 		}
 		if err != nil {
@@ -111,7 +114,11 @@ func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *In
 	return installationParams.Save()
 }
 
-func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string) {
+func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu bool, imageCachingMethod k3d.ImageCachingMethod) (necessaryImages []string) {
+
+	if imageCachingMethod != k3d.ImageCachingRegistry {
+		return []string{}
+	}
 
 	allImages := []string{}
 
@@ -120,9 +127,6 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isA
 		allImages = append(allImages, manifest.Images.K3sGpuImages...)
 	} else {
 		allImages = append(allImages, manifest.Images.K3sImages...)
-	}
-	if isAirgap {
-		return allImages
 	}
 
 	necessaryImages = []string{}
@@ -140,7 +144,7 @@ func IsUseDefaultPropOption() bool {
 }
 
 func AskUserForVersionPreference(previousTag string) (bool, error) {
-	confirmValue := false
+	confirmValue := true
 
 	if IsUseDefaultPropOption() {
 		return confirmValue, nil
@@ -214,15 +218,17 @@ func getHomePath() string {
 
 func cleanImages(currentMnf *manifest.InstallationManifest, previousMnf *manifest.InstallationManifest, isCleanCurrentImages bool) error {
 	imagesToClean := []string{}
-	currentImages := currentMnf.GetAllImages()
+	imageToKeep := []string{}
 	if isCleanCurrentImages {
-		imagesToClean = append(imagesToClean, currentMnf.Images.ServerImages...)
-		imagesToClean = append(imagesToClean, currentMnf.Images.K3sImages...)
+		imagesToClean = append(imagesToClean, currentMnf.GetRegisterImages()...)
+		imageToKeep = append(imageToKeep, currentMnf.GetRunningOnMachineImages()...)
+	} else {
+		imageToKeep = append(imageToKeep, currentMnf.GetAllImages()...)
 	}
 	if previousMnf != nil {
 		previousImages := previousMnf.GetAllImages()
 		for _, img := range previousImages {
-			if !slice.ContainsString(currentImages, img, nil) {
+			if !slice.ContainsString(imageToKeep, img, nil) {
 				imagesToClean = append(imagesToClean, img)
 			}
 		}

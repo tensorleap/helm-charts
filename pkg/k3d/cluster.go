@@ -16,6 +16,7 @@ import (
 	conf "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	k3d "github.com/k3d-io/k3d/v5/pkg/types"
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
@@ -23,6 +24,7 @@ import (
 type Cluster = k3d.Cluster
 
 const CLUSTER_NAME = "tensorleap"
+const CONTAINERD_VOLUME_NAME = "tensorleap-containerd-volume"
 
 func GetCluster(ctx context.Context) (*Cluster, error) {
 	clusters, err := k3dCluster.ClusterList(ctx, runtimes.SelectedRuntime)
@@ -40,16 +42,28 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 }
 
 type CreateK3sClusterParams struct {
-	WithGpu  bool     `json:"gpu"`
-	Port     uint     `json:"port"`
-	Volumes  []string `json:"volumes"`
-	CpuLimit string   `json:"cpuLimit,omitempty"`
-	TLSPort  *uint    `json:"tlsPort,omitempty"`
+	WithGpu            bool               `json:"gpu"`
+	Port               uint               `json:"port"`
+	Volumes            []string           `json:"volumes"`
+	ImageCachingMethod ImageCachingMethod `json:"imageCachingMethod"`
+	CpuLimit           string             `json:"cpuLimit,omitempty"`
+	TLSPort            *uint              `json:"tlsPort,omitempty"`
 }
 
-func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) (cluster *Cluster, err error) {
+func RemoveImageCachingVolume(ctx context.Context) error {
+	return docker.RemoveVolume(ctx, CONTAINERD_VOLUME_NAME, true)
+}
+
+func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams, localContainerdDir string) (cluster *Cluster, err error) {
 	log.SendCloudReport("info", "Creating cluster", "Running", &map[string]interface{}{"params": params})
-	clusterConfig := createClusterConfig(ctx, manifest, params)
+	clusterConfig := createClusterConfig(ctx, manifest, params, localContainerdDir)
+
+	if params.ImageCachingMethod == ImageCachingDockerVolume {
+		_, err = docker.CreateVolumeIfNotExists(ctx, CONTAINERD_VOLUME_NAME, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	cluster, err = GetCluster(ctx)
 	if cluster != nil {
@@ -230,7 +244,7 @@ func RunCluster(ctx context.Context) error {
 	return err
 }
 
-func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) *conf.ClusterConfig {
+func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams, localContainerdDir string) *conf.ClusterConfig {
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		log.Fatalln(err)
@@ -246,6 +260,19 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		log.Fatalln(err)
 	}
 
+	var containerdDir string
+	switch params.ImageCachingMethod {
+	case ImageCachingDockerVolume:
+		containerdDir = CONTAINERD_VOLUME_NAME
+	case ImageCachingLocalVolume:
+		containerdDir = localContainerdDir
+	}
+
+	volumes := params.Volumes
+	if containerdDir != "" {
+		volumes = append(volumes, fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"))
+	}
+
 	simpleK3dConfig := conf.SimpleConfig{
 		TypeMeta: k3dConfTypes.TypeMeta{
 			Kind:       "Simple",
@@ -259,7 +286,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 			HostPort: strconv.Itoa(freePort),
 		},
 		Image:   image,
-		Volumes: make([]conf.VolumeWithNodeFilters, len(params.Volumes)),
+		Volumes: make([]conf.VolumeWithNodeFilters, len(volumes)),
 		Ports: []conf.PortWithNodeFilters{
 			{
 				Port:        fmt.Sprintf("%v:80", params.Port),
@@ -333,7 +360,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		})
 	}
 
-	for i, v := range params.Volumes {
+	for i, v := range volumes {
 		simpleK3dConfig.Volumes[i] = conf.VolumeWithNodeFilters{
 			Volume:      v,
 			NodeFilters: []string{"server:*"},
