@@ -2,6 +2,8 @@ package local
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -188,4 +190,36 @@ func canCreateDirectory(dirPath string) (bool, error) {
 
 		checkPath = path.Dir(checkPath)
 	}
+}
+
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to stat file: %v", err)
+	}
+	return true, nil
+}
+
+func DownloadIntoFile(url string, file *os.File) error {
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return fmt.Errorf("failed downloading (%s): %v", url, res.StatusCode)
+	}
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return err
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

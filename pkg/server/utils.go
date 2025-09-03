@@ -152,7 +152,8 @@ func AskUserForVersionPreference(previousTag string) (bool, error) {
 
 	latestTag, err := manifest.GetLatestManifestTag()
 	if err != nil {
-		return false, err
+		log.Warnf("Failed to get latest manifest tag: %v", err)
+		return confirmValue, nil
 	}
 	if latestTag == previousTag {
 		return confirmValue, nil
