@@ -179,6 +179,19 @@ func PurgeData() error {
 	return nil
 }
 
+func CleanupCacheData() error {
+	log.Infof("Cleaning up cache data")
+	err := os.RemoveAll(GetHelmCacheDir())
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(GetContainerdDataDir())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetInstallationManifestPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
 }

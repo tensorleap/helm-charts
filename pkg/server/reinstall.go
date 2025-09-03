@@ -10,7 +10,7 @@ import (
 )
 
 func Reinstall(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
-	err := Uninstall(ctx, false)
+	err := Uninstall(ctx, false, false)
 	if err != nil {
 		return err
 	}
