@@ -95,11 +95,7 @@ func InitStandaloneDir() error {
 
 func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
-<<<<<<< HEAD
-	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
-=======
-	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, ELASTIC_STORAGE_DIR_NAME}
->>>>>>> 8cf360c5 (Align go helm util with new keycloak)
+	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(standaloneDir, dir)
 		_, err := os.Stat(fullPath)
