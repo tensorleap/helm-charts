@@ -14,6 +14,9 @@ data:
     - id: py310
       displayName: Python 3.10
       image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py310
+    - id: py312
+      displayName: Python 3.12
+      image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py312
   defaultGpuType: {{ .Values.gpu | ternary "gpu" "cpu" }}
   defaultCpuType: cpu
   machineTypes: |
