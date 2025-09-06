@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -30,14 +31,12 @@ func Load(repo, chartName, version string) (chart *Chart, err error) {
 		}
 		return chart, nil
 	}
-	chartFile, _, err := DownloadIntoTempFile(repo, chartName, version)
+	chartFilePath, err := DownloadIfNotCached(repo, chartName, version)
 	if err != nil {
 		return nil, err
 	}
-	tmpChartPath := chartFile.Name()
-	chartFile.Close()
-	defer os.Remove(tmpChartPath)
-	chart, err = loader.Load(chartFile.Name())
+
+	chart, err = loader.Load(chartFilePath)
 	if err != nil {
 		log.SendCloudReport("error", "Failed loading helm chart", "Failed", &map[string]interface{}{"error": err.Error()})
 		return nil, err
@@ -55,11 +54,7 @@ func DownloadIntoTempFile(repo, chartName, version string) (*os.File, func(), er
 	if err != nil {
 		return nil, nil, err
 	}
-	return downloadIntoTempFile(chartVersion.URLs[0], "helm.tgz")
-}
-
-func downloadIntoTempFile(url, tempSuffix string) (*os.File, func(), error) {
-	tempFile, err := os.CreateTemp("", tempSuffix)
+	tempFile, err := os.CreateTemp("", "helm.tgz")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,24 +63,46 @@ func downloadIntoTempFile(url, tempSuffix string) (*os.File, func(), error) {
 		os.Remove(tempFile.Name())
 	}
 
-	res, err := http.Get(url)
+	err = local.DownloadIntoFile(chartVersion.URLs[0], tempFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, nil, fmt.Errorf("failed downloading (%s): %v", url, res.StatusCode)
-	}
-	_, err = io.Copy(tempFile, res.Body)
+	return tempFile, clean, nil
+}
+
+func DownloadIfNotCached(repo, chartName, version string) (string, error) {
+	cacheDir := local.GetHelmCacheDir()
+	cachedPath := filepath.Join(cacheDir, chartName, fmt.Sprintf("%s.tgz", version))
+	cachedDir := filepath.Dir(cachedPath)
+	err := local.EnsureDirExists(cachedDir)
 	if err != nil {
-		return nil, nil, err
+		return "", err
 	}
-	_, err = tempFile.Seek(0, 0)
+	isExists, err := local.FileExists(cachedPath)
 	if err != nil {
-		return nil, nil, err
+		return "", err
+	}
+	if isExists {
+		log.Info("Loading helm chart from cache...")
+		return cachedPath, nil
 	}
 
-	return tempFile, clean, nil
+	log.Info("Downloading helm chart...")
+	chartVersion, err := GetVersion(repo, chartName, version)
+	if err != nil {
+		return "", err
+	}
+	chartFile, err := os.OpenFile(cachedPath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return "", err
+	}
+	defer chartFile.Close()
+
+	err = local.DownloadIntoFile(chartVersion.URLs[0], chartFile)
+	if err != nil {
+		return "", err
+	}
+	return cachedPath, nil
 }
 
 // GetVersion returns version of a helm chart if version is empty it returns the latest version

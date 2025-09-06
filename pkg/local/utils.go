@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/k8s"
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
@@ -26,6 +25,8 @@ const (
 	MANIFEST_DIR_NAME                  = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME      = "params.yaml"
 	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
+	CONTAINERD_DIR_NAME                = "containerd"
+	HELM_CACHE_DIR_NAME                = "helm-cache"
 )
 
 func GetServerDataDir() string {
@@ -94,7 +95,7 @@ func InitStandaloneDir() error {
 
 func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
-	subDirs := []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME}
+	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(standaloneDir, dir)
 		_, err := os.Stat(fullPath)
@@ -122,7 +123,7 @@ func SetupInfra(cmdName string) (closeLogFile func(), err error) {
 		return
 	}
 
-	k3d.SetupLogger(log.VerboseLogger)
+	SetupK3dLogger(log.VerboseLogger)
 	k8s.SetupLogger(log.VerboseLogger)
 
 	logPath := createLogFilePath(cmdName)
@@ -160,7 +161,7 @@ func OpenLink(link string) error {
 
 func PurgeData() error {
 	log.Infof("Purging data (you may be asked to enter the root user password)")
-	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, MANIFEST_DIR_NAME} {
+	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, CONTAINERD_DIR_NAME, MANIFEST_DIR_NAME, HELM_CACHE_DIR_NAME} {
 		path := path.Join(GetServerDataDir(), dir)
 		log.Infof("Removing directory: %s", path)
 		err := os.RemoveAll(path)
@@ -178,6 +179,19 @@ func PurgeData() error {
 	return nil
 }
 
+func CleanupCacheData() error {
+	log.Infof("Cleaning up cache data")
+	err := os.RemoveAll(GetHelmCacheDir())
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(GetContainerdDataDir())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetInstallationManifestPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
 }
@@ -188,4 +202,12 @@ func GetInstallationHostnamePath() string {
 
 func GetInstallationParamsPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
+}
+
+func GetContainerdDataDir() string {
+	return path.Join(GetServerDataDir(), CONTAINERD_DIR_NAME)
+}
+
+func GetHelmCacheDir() string {
+	return path.Join(GetServerDataDir(), HELM_CACHE_DIR_NAME)
 }

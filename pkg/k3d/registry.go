@@ -289,7 +289,8 @@ func CacheImage(ctx context.Context, dockerClient docker.Client, image string, r
 	return nil
 }
 
-func CacheImagesInParallel(ctx context.Context, images []string, regPort string, isAirgap bool) error {
+func CacheImagesInParallel(ctx context.Context, images []string, regPort string, isAirgap bool, imageCachingMethod string) error {
+
 	imagesNotInRegistry := []string{}
 	for _, img := range images {
 		imageInRegistry, err := isImageInRegistry(ctx, img, regPort)

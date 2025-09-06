@@ -52,6 +52,7 @@ type InstallFlags struct {
 	CpuLimit                string   `json:"cpuLimit,omitempty"`
 	DisableAuth             *bool    `json:"disableAuth,omitempty"`
 	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
+	ImageCachingMethod      string   `json:"imageCachingMethod,omitempty"`
 	TLSFlags
 }
 
@@ -69,6 +70,7 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
 	setNilBoolFlag(cmd, &flags.DisableAuth, "disable-auth", "Disable authentication for the tensorleap server")
 	setNilBoolFlag(cmd, &flags.ClearInstallationImages, "clear-images", "Clear installation images after installation")
+	cmd.Flags().StringVar(&flags.ImageCachingMethod, "image-caching", "", "Image caching method: docker-volume (Docker volume to containerd), local-volume (volume from local computer to containerd), or registry (caching by registry). Default is detected based on environment: Linux uses local-volume, macOS uses docker-volume, airgap uses registry")
 
 	deprecatedFlag_datasetDir(cmd)
 
