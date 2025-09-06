@@ -69,8 +69,9 @@ func GetRegistryPort(ctx context.Context, reg *Registry) (string, error) {
 }
 
 type CreateRegistryParams struct {
-	Port    uint     `json:"port"`
-	Volumes []string `json:"volumes"`
+	Port     uint     `json:"port"`
+	Volumes  []string `json:"volumes"`
+	ProxyURL string   `json:"proxyURL"`
 }
 
 func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRegistryParams) (*Registry, error) {
@@ -111,12 +112,19 @@ func createRegistryConfig(imageName string, params *CreateRegistryParams) *Regis
 		log.Fatalln(err)
 	}
 
+	log.Info("Creating registry config with proxy URL: " + params.ProxyURL)
+
 	reg := &Registry{
 		Host:         REGISTRY_NAME,
 		Image:        imageName,
 		ExposureOpts: *exposePort,
 		Network:      k3d.DefaultRuntimeNetwork,
 		Volumes:      params.Volumes,
+		Options: k3d.RegistryOptions{
+			Proxy: k3d.RegistryProxy{
+				RemoteURL: params.ProxyURL,
+			},
+		},
 	}
 
 	return reg

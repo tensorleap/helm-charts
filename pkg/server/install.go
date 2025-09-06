@@ -29,7 +29,12 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 
 	k3d.FixDockerDns() // Always fix DNS
 
-	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams())
+	imagesToCache, proxyUrl, err := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), isAirgap)
+	if err != nil {
+		return err
+	}
+
+	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams(proxyUrl))
 	if err != nil {
 		return err
 	}
@@ -39,11 +44,11 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return err
 	}
 
-	imagesToCache := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), isAirgap)
-
-	err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
-	if err != nil {
-		return err
+	if len(imagesToCache) > 0 {
+		err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, _, err = InitCluster(

@@ -111,18 +111,24 @@ func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *In
 	return installationParams.Save()
 }
 
-func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string) {
+func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu, isAirgap bool) (necessaryImages []string, proxyUrl string, err error) {
 
 	allImages := []string{}
 
-	allImages = append(allImages, manifest.Images.ServerImages...)
 	if useGpu {
 		allImages = append(allImages, manifest.Images.K3sGpuImages...)
 	} else {
 		allImages = append(allImages, manifest.Images.K3sImages...)
 	}
 	if isAirgap {
-		return allImages
+		allImages = append(allImages, manifest.Images.ServerImages...)
+	} else {
+		proxyRegistry, err := docker.FindTensorleapRegistry(manifest.Images.ServerImages)
+		if err != nil {
+			return nil, "", err
+		}
+		proxyUrl = fmt.Sprintf("https://%s", proxyRegistry)
+		log.Info("Using proxy registry: " + proxyUrl)
 	}
 
 	necessaryImages = []string{}
