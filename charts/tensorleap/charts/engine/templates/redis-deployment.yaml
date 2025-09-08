@@ -20,5 +20,6 @@ spec:
             limits:
               memory: 5Gi
           image: docker.io/library/redis:latest
+          imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 6379
