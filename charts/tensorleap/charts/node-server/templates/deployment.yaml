@@ -115,7 +115,7 @@ spec:
       containers:
         - name: tensorleap-node-server
           image: {{ .Values.image }}:{{ .Values.image_tag }}
-          imagePullPolicy: Always
+          imagePullPolicy: ifNotPresent
           ports:
             - name: http
               containerPort: 4000

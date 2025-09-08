@@ -44,6 +44,7 @@ data:
                   mountPath: /shared/logs
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
+              imagePullPolicy: ifNotPresent
               name: engine
               env:
                 - name: JOB_PAYLOAD
