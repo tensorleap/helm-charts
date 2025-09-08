@@ -46,13 +46,13 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 			tag := flags.Tag
 			if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
 
-				usePreviousMnf, err := AskUserForVersionPreference(previousMnf.Tag)
+				isInstallLatestVersion, err := AskUserForIsUseLatestVersion(previousMnf.Tag)
 				if err != nil {
 					log.SendCloudReport("error", "Failed to ask for using current version", "Failed",
 						&map[string]interface{}{"error": err.Error()})
 					return nil, false, nil, nil, err
 				}
-				if usePreviousMnf {
+				if !isInstallLatestVersion {
 					tag = previousMnf.Tag
 					mnf = previousMnf
 				}
@@ -143,38 +143,39 @@ func IsUseDefaultPropOption() bool {
 	return os.Getenv("TL_USE_DEFAULT_OPTION") == "true"
 }
 
-func AskUserForVersionPreference(previousTag string) (bool, error) {
-	confirmValue := true
+func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
+	isInstallLatestVersion := false
 
 	if IsUseDefaultPropOption() {
-		return confirmValue, nil
+		return isInstallLatestVersion, nil
 	}
 
 	latestTag, err := manifest.GetLatestManifestTag()
 	if err != nil {
 		log.Warnf("Failed to get latest manifest tag: %v", err)
-		return confirmValue, nil
+		return isInstallLatestVersion, nil
 	}
 	if latestTag == previousTag {
-		return confirmValue, nil
+		return isInstallLatestVersion, nil
 	}
 
 	prompt := survey.Confirm{
-		Message: fmt.Sprintf("A new version of Tensorleap is available (%s), do you want to use the current version (%s)?", latestTag, previousTag),
-		Default: confirmValue,
+		Message: fmt.Sprintf("Do you want to use latest version (latest: %s, current: %s)?", latestTag, previousTag),
+		Default: isInstallLatestVersion,
 	}
-	err = survey.AskOne(&prompt, &confirmValue)
+	err = survey.AskOne(&prompt, &isInstallLatestVersion)
+
 	if err != nil {
 		return false, err
 	}
-	if confirmValue {
-		log.SendCloudReport("info", "User confirmed using current version", "Running",
-			&map[string]interface{}{"version": previousTag})
-	} else {
+	if isInstallLatestVersion {
 		log.SendCloudReport("info", "User chose to upgrade to latest version", "Running",
 			&map[string]interface{}{"version": latestTag})
+	} else {
+		log.SendCloudReport("info", "User confirmed using current version", "Running",
+			&map[string]interface{}{"version": previousTag})
 	}
-	return confirmValue, nil
+	return isInstallLatestVersion, nil
 }
 
 func AskForReinstall() (bool, error) {
