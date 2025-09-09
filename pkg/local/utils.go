@@ -14,19 +14,19 @@ import (
 )
 
 const (
-	DATA_DIR_ENV_NAME                  = "TL_DATA_DIR"
-	DEFAULT_DATA_DIR                   = "/var/lib/tensorleap/standalone"
-	REGISTRY_DIR_NAME                  = "registry"
-	LOGS_DIR_NAME                      = "logs"
-	STORAGE_DIR_NAME                   = "storage"
-	ELASTIC_STORAGE_DIR_NAME           = "storage/keycloak-postgresql"
-	KECKLOCK_POSTGRES_STORAGE_DIR_NAME = "storage/elasticsearch"
-	HOSTNAME_FILE                      = "hostname"
-	MANIFEST_DIR_NAME                  = "manifests"
-	INSTALLATION_PARAMS_FILE_NAME      = "params.yaml"
-	INSTALLATION_MANIFEST_FILE_NAME    = "manifest.yaml"
-	CONTAINERD_DIR_NAME                = "containerd"
-	HELM_CACHE_DIR_NAME                = "helm-cache"
+	DATA_DIR_ENV_NAME               = "TL_DATA_DIR"
+	DEFAULT_DATA_DIR                = "/var/lib/tensorleap/standalone"
+	REGISTRY_DIR_NAME               = "registry"
+	LOGS_DIR_NAME                   = "logs"
+	STORAGE_DIR_NAME                = "storage"
+	KEYCLOAK_DB_STORAGE_DIR_NAME    = "storage/keycloak"
+	ELASTIC_STORAGE_DIR_NAME        = "storage/elasticsearch"
+	HOSTNAME_FILE                   = "hostname"
+	MANIFEST_DIR_NAME               = "manifests"
+	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
+	INSTALLATION_MANIFEST_FILE_NAME = "manifest.yaml"
+	CONTAINERD_DIR_NAME             = "containerd"
+	HELM_CACHE_DIR_NAME             = "helm-cache"
 )
 
 func GetServerDataDir() string {
@@ -95,7 +95,7 @@ func InitStandaloneDir() error {
 
 func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
-	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KECKLOCK_POSTGRES_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
+	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
 	for _, dir := range subDirs {
 		fullPath := path.Join(standaloneDir, dir)
 		_, err := os.Stat(fullPath)
