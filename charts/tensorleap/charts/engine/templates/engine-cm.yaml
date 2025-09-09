@@ -12,6 +12,7 @@ data:
 {{ else }}
   ELASTIC_HOST: http://tl-elasticsearch-es-master:9200
 {{ end }}
+  IS_TENSORLEAP_PLATFORM: "true"
   SESSION_BUCKET: session
   RABBIT_HOST: rabbitmq.{{ .Release.Namespace }}.svc
   RABBIT_USER: guest
