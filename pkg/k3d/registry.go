@@ -26,11 +26,11 @@ import (
 
 type Registry = k3d.Registry
 
-const (
+var (
 	REQUIRED_MEMORY         = 6227000000
 	REQUIRED_MEMORY_PRETTY  = "6Gb"
-	REQUIRED_STORAGE_KB     = 16777216
-	REQUIRED_STORAGE_PRETTY = "15Gb"
+	REQUIRED_STORAGE_KB     = 20971520
+	REQUIRED_STORAGE_PRETTY = "20Gb"
 )
 
 const (
