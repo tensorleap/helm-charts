@@ -7,7 +7,6 @@ import (
 
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
@@ -25,7 +24,7 @@ func CreateVolumeIfNotExists(ctx context.Context, name string, labels map[string
 	}
 	labels["owner"] = OWNER
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := NewClient()
 	if err != nil {
 		return volume.Volume{}, fmt.Errorf("docker client: %w", err)
 	}
@@ -66,7 +65,7 @@ func RemoveVolume(ctx context.Context, name string, force bool) error {
 	defer cancel()
 	log.Infof("Remove volume %q", name)
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := NewClient()
 	if err != nil {
 		return fmt.Errorf("docker client: %w", err)
 	}
