@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -208,14 +209,20 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		{Name: "KEYCLOAK_ADMIN", Value: "admin"},
 		{Name: "KEYCLOAK_ADMIN_PASSWORD", Value: "admin"},
 		{Name: "KC_DB", Value: "dev-file"},
-		{Name: "KC_PROXY", Value: "edge"},
-		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
-		{Name: "KC_HOSTNAME_STRICT", Value: "false"},
 		{Name: "KC_CACHE", Value: "local"},
+		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
+		{Name: "KC_PROXY", Value: "edge"},
+		{Name: "KC_HOSTNAME_STRICT", Value: "false"},
+		{Name: "KC_HOSTNAME_STRICT_HTTPS", Value: strconv.FormatBool(params.Tls.Enabled)},
 	}
+	
+	// Add hostname URL configuration
 	if params.ProxyUrl != "" {
 		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+	} else if params.Url != "" {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_ADMIN_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
 	}
 	formatExtraEnv := func(extraEnv []ExtraEnv) string {
 		result, _ := yaml.Marshal(extraEnv)
@@ -259,7 +266,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"keycloakx": map[string]interface{}{
 			"enabled":  params.KeycloakEnabled,
 			"replicas": 1,
-			"command":  []string{"/opt/keycloak/bin/kc.sh", "start-dev"},
+			"command":  []string{"/opt/keycloak/bin/kc.sh", "start"},
 			"extraEnv": extraEnvStringYaml,
 		},
 		"datadog": map[string]interface{}{
