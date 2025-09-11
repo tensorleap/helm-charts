@@ -41,22 +41,20 @@ global:
 keycloakx:
   enabled: true
   replicas: 1
-  command: ["/opt/keycloak/bin/kc.sh", "start"]
+  cache:
+    stack: custom # <— IMPORTANT
+
+  command: ["/opt/keycloak/bin/kc.sh", "start", "--proxy-headers=xforwarded"]
+
+  extraEnvFrom: |
+    - configMapRef:
+        name: keycloak-env
+
   extraEnv: |
     - name: KEYCLOAK_ADMIN
       value: admin
     - name: KEYCLOAK_ADMIN_PASSWORD
       value: admin
-    - name: KC_DB
-      value: dev-file
-    - name: KC_PROXY
-      value: "edge"
-    - name: KC_HTTP_RELATIVE_PATH
-      value: /auth
-    - name: KC_HOSTNAME_STRICT
-      value: "false"
-    - name: KC_CACHE
-      value: "local"
   fullnameOverride: keycloak
   ingress:
     enabled: false
