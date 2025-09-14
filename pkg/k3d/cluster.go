@@ -25,6 +25,7 @@ type Cluster = k3d.Cluster
 
 const CLUSTER_NAME = "tensorleap"
 const CONTAINERD_VOLUME_NAME = "tensorleap-containerd-volume"
+const STORAGE_EVICTION_THRESHOLD = "50G"
 
 func GetCluster(ctx context.Context) (*Cluster, error) {
 	clusters, err := k3dCluster.ClusterList(ctx, runtimes.SelectedRuntime)
@@ -337,10 +338,16 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 				DisableLoadbalancer: true,
 			},
 			K3sOptions: conf.SimpleConfigOptionsK3s{
-				ExtraArgs: []conf.K3sArgWithNodeFilters{{
-					Arg:         "--disable=traefik",
-					NodeFilters: []string{"server:*"},
-				}},
+				ExtraArgs: []conf.K3sArgWithNodeFilters{
+					{
+						Arg:         "--disable=traefik",
+						NodeFilters: []string{"server:*"},
+					},
+					{
+						Arg:         fmt.Sprintf("--kubelet-arg=eviction-hard=nodefs.available<%s,imagefs.available<%s", STORAGE_EVICTION_THRESHOLD, STORAGE_EVICTION_THRESHOLD),
+						NodeFilters: []string{"server:*"},
+					},
+				},
 			},
 			// Just for convenience to use kubectl, on install and upgrade we take the kubeconfig from the cluster
 			KubeconfigOptions: conf.SimpleConfigOptionsKubeconfig{
