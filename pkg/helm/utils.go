@@ -212,13 +212,33 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		{Name: "KC_CACHE", Value: "local"},
 		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
 		{Name: "KC_PROXY", Value: "edge"},
-		{Name: "KC_HOSTNAME_STRICT", Value: "false"},
-		{Name: "KC_HOSTNAME_STRICT_HTTPS", Value: strconv.FormatBool(params.Tls.Enabled)},
+		{Name: "KC_PROXY_HEADERS", Value: "forwarded"},
+		{Name: "KC_CACHE_STACK", Value: ""},
 	}
 
-	// Add hostname URL configuration
-	if params.ProxyUrl != "" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+	extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HTTP_ENABLED", Value: "true"})
+
+	if params.Domain != "" && params.Domain != "localhost" {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: params.Domain})
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT", Value: "true"})
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_PROXY_HEADERS", Value: "xforwarded"})
+
+		if params.ProxyUrl != "" {
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
+		} else if params.Url != "" {
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
+		}
+	} else {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT", Value: "false"})
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_PROXY_HEADERS", Value: "forwarded"})
+	}
+
+	extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT_HTTPS", Value: strconv.FormatBool(params.Tls.Enabled)})
+
+	if params.Tls.Enabled && params.Url != "" {
+		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_ADMIN_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
 	}
 	formatExtraEnv := func(extraEnv []ExtraEnv) string {
 		result, _ := yaml.Marshal(extraEnv)
