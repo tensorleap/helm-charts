@@ -63,7 +63,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"enabled":  true,
 				"replicas": 1,
 				"command":  []string{"/opt/keycloak/bin/kc.sh", "start"},
-				"extraEnv": "\n- name: KEYCLOAK_ADMIN\n  value: admin\n- name: KEYCLOAK_ADMIN_PASSWORD\n  value: admin\n- name: KC_DB\n  value: dev-file\n- name: KC_CACHE\n  value: local\n- name: KC_HTTP_RELATIVE_PATH\n  value: /auth\n- name: KC_PROXY\n  value: edge\n- name: KC_HOSTNAME_STRICT\n  value: \"false\"\n- name: KC_HOSTNAME_STRICT_HTTPS\n  value: \"false\"\n",
+				"extraEnv": "\n- name: KEYCLOAK_ADMIN\n  value: admin\n- name: KEYCLOAK_ADMIN_PASSWORD\n  value: admin\n- name: KC_DB\n  value: dev-file\n- name: KC_CACHE\n  value: local\n- name: KC_HTTP_RELATIVE_PATH\n  value: /auth\n- name: KC_PROXY\n  value: edge\n- name: KC_PROXY_HEADERS\n  value: forwarded\n- name: KC_CACHE_STACK\n  value: \"\"\n- name: KC_HOSTNAME_STRICT\n  value: \"false\"\n- name: KC_HOSTNAME_STRICT_HTTPS\n  value: \"false\"\n",
 			},
 		}
 
