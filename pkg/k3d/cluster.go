@@ -283,6 +283,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		},
 		Servers: 1,
 		ExposeAPI: conf.SimpleExposureOpts{
+			HostIP:   "127.0.0.1",
 			HostPort: strconv.Itoa(freePort),
 		},
 		Image:   image,
