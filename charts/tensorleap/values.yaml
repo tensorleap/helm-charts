@@ -46,15 +46,6 @@ keycloakx:
 
   command: ["/opt/keycloak/bin/kc.sh", "start", "--proxy-headers=xforwarded"]
 
-  extraEnvFrom: |
-    - configMapRef:
-        name: keycloak-env
-
-  extraEnv: |
-    - name: KEYCLOAK_ADMIN
-      value: admin
-    - name: KEYCLOAK_ADMIN_PASSWORD
-      value: admin
   fullnameOverride: keycloak
   ingress:
     enabled: false
