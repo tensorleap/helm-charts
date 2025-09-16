@@ -1,5 +1,5 @@
 eck-operator:
-  managedNamespaces: 
+  managedNamespaces:
     - tensorleap
 
 nvidiaGpu:
