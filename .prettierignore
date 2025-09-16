@@ -1,0 +1,3 @@
+# Ignore Helm chart templates
+charts/**/templates/*.yaml
+charts/**/charts/**/templates/*.yaml
