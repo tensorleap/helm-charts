@@ -189,6 +189,12 @@ func CleanupCacheData() error {
 	if err != nil {
 		return err
 	}
+
+	registryDataDir := path.Join(GetServerDataDir(), REGISTRY_DIR_NAME)
+	err = os.RemoveAll(registryDataDir)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
