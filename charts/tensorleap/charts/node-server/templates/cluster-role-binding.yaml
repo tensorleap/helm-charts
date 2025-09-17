@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding            # ← Binds the role to a service account
+metadata:
+  name: node-server-cluster-role-binding
+roleRef:
+  kind: ClusterRole                 # ← References the ClusterRole above
+  name: node-server-cluster-role
+subjects:
+  - kind: ServiceAccount            # ← Who gets the permissions
+    name: node-server-sa
+    namespace: {{ .Release.Namespace }}
