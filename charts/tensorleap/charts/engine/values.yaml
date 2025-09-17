@@ -1,11 +1,11 @@
-image_tag: master-d9bb1d35
+image_tag: master-81aa7ff7
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: master-7a392e82
+dependencies_image_tag: master-aecc79a9
 target_repo: k3d-tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310
