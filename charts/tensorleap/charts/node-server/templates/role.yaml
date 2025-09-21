@@ -35,9 +35,3 @@ rules:
       - configmaps
     verbs:
       - get
-  - apiGroups:
-      - ''
-    resources:
-      - nodes
-    verbs:
-      - get
