@@ -40,5 +40,4 @@ rules:
     resources:
       - nodes
     verbs:
-      - list
       - get
