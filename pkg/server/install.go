@@ -71,6 +71,12 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 			log.SendCloudReport("error", "Failed cleaning images", "Failed", &map[string]interface{}{"error": err.Error()})
 			log.Warnf("Failed cleaning images: %v", err)
 		}
+	} else {
+		err = cleanImagesFromContainerd(ctx, mnf, k3d.CONTAINER_NAME)
+		if err != nil {
+			log.SendCloudReport("error", "Failed cleaning images from containerd", "Failed", &map[string]interface{}{"error": err.Error()})
+			log.Warnf("Failed cleaning images from containerd: %v", err)
+		}
 	}
 
 	return nil
