@@ -223,3 +223,47 @@ func DownloadIntoFile(url string, file *os.File) error {
 
 	return nil
 }
+
+// RealPath returns the true, case-preserved path as it exists on disk.
+// It walks through each directory level and reads the actual names.
+func RealPath(p string) (string, error) {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return "", err
+	}
+
+	// Start from root
+	vol := filepath.VolumeName(abs)
+	path := strings.TrimPrefix(abs, vol)
+	if path == "" {
+		return vol, nil
+	}
+
+	parts := strings.Split(path, string(filepath.Separator))
+	current := vol + string(filepath.Separator)
+
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		entries, err := os.ReadDir(current)
+		if err != nil {
+			return "", fmt.Errorf("reading %q: %w", current, err)
+		}
+
+		found := false
+		for _, e := range entries {
+			if strings.EqualFold(e.Name(), part) {
+				current = filepath.Join(current, e.Name())
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			// Part not found — maybe path doesn’t exist yet
+			current = filepath.Join(current, part)
+		}
+	}
+	return current, nil
+}
