@@ -497,18 +497,60 @@ func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationPa
 	}
 
 	for i, path := range *datasetVolumes {
-		if !strings.Contains(path, ":") {
-			(*datasetVolumes)[i] = fmt.Sprintf("%s:%s", path, path)
-		}
-		dataPath := strings.Split(path, ":")[0]
-		if err := os.MkdirAll(dataPath, 0777); err != nil {
-			return fmt.Errorf("failed to create dataset volume directory: %v", err)
+		var err error
+		(*datasetVolumes)[i], err = validateAndNormalizeDatasetVolumePath(path)
+		if err != nil {
+			return err
 		}
 	}
 
 	log.SendCloudReport("info", "Initialized dataset volumes", "Success",
 		&map[string]interface{}{"datasetVolumes": *datasetVolumes})
 	return nil
+}
+
+func validateAndNormalizeDatasetVolumePath(path string) (string, error) {
+
+	if !strings.Contains(path, ":") {
+		path = fmt.Sprintf("%s:%s", path, path)
+	}
+	hostPath := strings.Split(path, ":")[0]
+	containerPath := strings.Split(path, ":")[1]
+
+	isContainerAndHostIsTheSame := hostPath == containerPath
+
+	if err := os.MkdirAll(hostPath, 0777); err != nil {
+		return "", fmt.Errorf("failed to create dataset volume directory: %v", err)
+	}
+	realDataPath, err := local.RealPath(hostPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get real path of dataset volume directory: %v", err)
+	}
+	if hostPath == realDataPath {
+		return path, nil
+	}
+
+	log.Warnf(`Folder name capitalization does not match existing folder:
+Existing Path: %s
+Provided Path: %s
+`, realDataPath, hostPath)
+
+	suggestedPath := ""
+	if isContainerAndHostIsTheSame {
+		suggestedPath = fmt.Sprintf("%s:%s", realDataPath, realDataPath)
+	} else {
+		suggestedPath = fmt.Sprintf("%s:%s", realDataPath, containerPath)
+	}
+
+	prompt := survey.Input{
+		Message: "Please Supply a new path or accept the default suggested path with the correct capitalization",
+		Default: suggestedPath,
+	}
+	if err := survey.AskOne(&prompt, &suggestedPath); err != nil {
+		return "", err
+	}
+
+	return validateAndNormalizeDatasetVolumePath(suggestedPath)
 }
 
 func addDatasetVolumes(datasetVolumes *[]string) error {
