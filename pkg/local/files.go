@@ -232,7 +232,6 @@ func RealPath(p string) (string, error) {
 		return "", err
 	}
 
-	// Start from root
 	vol := filepath.VolumeName(abs)
 	path := strings.TrimPrefix(abs, vol)
 	if path == "" {
