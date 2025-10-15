@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/tensorleap/helm-charts/pkg/containerd"
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
@@ -216,6 +217,15 @@ func getHomePath() string {
 	}
 
 	return homeDir
+}
+
+func cleanImagesFromContainerd(ctx context.Context, currentMnf *manifest.InstallationManifest, dockerName string) error {
+
+	err := containerd.PruneContainerdExceptImageList(ctx, dockerName, "k8s.io", currentMnf.GetAllImages(), false)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func cleanImages(currentMnf *manifest.InstallationManifest, previousMnf *manifest.InstallationManifest, isCleanCurrentImages bool) error {
