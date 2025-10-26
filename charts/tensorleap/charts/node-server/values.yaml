@@ -1,4 +1,4 @@
-image_tag: master-d2e0390c
+image_tag: master-f21a4ce6
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
