@@ -1,0 +1,57 @@
+name: Create Release Candidate
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+# Allow pushing new branches using the provided token
+permissions:
+  contents: write
+
+jobs:
+  # Job: Create and push a new RC branch; expose its name for later jobs
+  create-rc-branch:
+    runs-on: ubuntu-latest
+    # Output for downstream jobs/steps (if you chain more jobs later)
+    outputs:
+      rc_branch: ${{ steps.mk.outputs.rc_branch }}
+    steps:
+      - name: Checkout repository (master tip)
+        # Uses your PAT so pushes in later steps/jobs are authorized
+        uses: actions/checkout@v4
+        with:
+          # Full history because we’ll branch from master and may inspect refs
+          fetch-depth: 0
+          # Keep credentials so later git commands can push using the same token
+          persist-credentials: true
+          # 👇 Use the secret token you asked for
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Configure Git identity (for branch creation/push)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - id: mk
+        name: Create & push Release Candidate branch (via Makefile)
+        # We capture ONLY the branch name printed by the Makefile to $GITHUB_OUTPUT
+        # Here we call to the makefile function, and get back the output 
+        run: |
+          set -euo pipefail
+          BRANCH="$(make -s checkout-rc-branch)"
+          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          
+      # Commit and push changes to the relevant branch 
+      - name: Commit and push changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Release candidate branch is created: ${{ steps.mk.outputs.rc_branch }}"
+          add: "."                   # adds all modified files; change if needed
+          push: true                 # push commit back to remote
+          default_branch: false      # commit stays on the checked-out branch (important!)
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Print the created RC branch (for logs)
+        run: | 
+          echo "Created RC branch: ${{ steps.mk.outputs.rc_branch }}"
+          echo "It is time to run release charts"
