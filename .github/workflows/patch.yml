@@ -1,0 +1,91 @@
+name: Patch Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_tag_prefix:
+        description: "Custom tag prefix for manifest"
+        required: false
+        default: ""
+
+jobs:
+  patch-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+        shell: bash
+
+      - name: Checkout RC branch
+        id: checkout_rc_branch
+        run: |
+          set -euo pipefail
+          BRANCH="$(make -s checkout-rc-branch)"
+          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Bump rc version number
+        run: |
+          # Bump rc version for tensorleap chart (e.g., 1.2.3-rc.0 -> 1.2.3-rc.1)
+          CHART_FILE="charts/tensorleap/Chart.yaml"
+          CURRENT_VERSION=$(grep -E '^version:' "$CHART_FILE" | awk '{print $2}')
+          
+          if [[ "$CURRENT_VERSION" =~ -rc\.([0-9]+)$ ]]; then
+            RC_NUMBER="${BASH_REMATCH[1]}"
+            BASE_VERSION="${CURRENT_VERSION%-rc.*}"
+            NEW_RC_NUMBER=$((RC_NUMBER + 1))
+            NEW_VERSION="${BASE_VERSION}-rc.${NEW_RC_NUMBER}"
+            sed -i.bak "s/^version: .*/version: $NEW_VERSION/" "$CHART_FILE"
+            rm -f "${CHART_FILE}.bak"
+            echo "Updated tensorleap chart version: $CURRENT_VERSION -> $NEW_VERSION"
+          else
+            echo "Error: Tensorleap chart version does not have rc suffix: $CURRENT_VERSION"
+            exit 1
+          fi
+          
+          # Bump rc version for infra chart
+          INFRA_CHART_FILE="charts/tensorleap-infra/Chart.yaml"
+          INFRA_CURRENT_VERSION=$(grep -E '^version:' "$INFRA_CHART_FILE" | awk '{print $2}')
+          
+          if [[ "$INFRA_CURRENT_VERSION" =~ -rc\.([0-9]+)$ ]]; then
+            INFRA_RC_NUMBER="${BASH_REMATCH[1]}"
+            INFRA_BASE_VERSION="${INFRA_CURRENT_VERSION%-rc.*}"
+            INFRA_NEW_RC_NUMBER=$((INFRA_RC_NUMBER + 1))
+            INFRA_NEW_VERSION="${INFRA_BASE_VERSION}-rc.${INFRA_NEW_RC_NUMBER}"
+            sed -i.bak "s/^version: .*/version: $INFRA_NEW_VERSION/" "$INFRA_CHART_FILE"
+            rm -f "${INFRA_CHART_FILE}.bak"
+            echo "Updated infra chart version: $INFRA_CURRENT_VERSION -> $INFRA_NEW_VERSION"
+          else
+            echo "Error: Infra chart version does not have rc suffix: $INFRA_CURRENT_VERSION"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Commit version changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Bump rc version number"
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Release Charts
+        uses: ./.github/actions/release-chart/action.yml
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Release Manifest
+        uses: ./.github/actions/release-manifest/action.yml
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          manifest_output: manifest.rc.yaml

@@ -1,0 +1,48 @@
+name: Release Charts
+description: Release Helm charts using chart-releaser-action
+
+inputs:
+  github_token:
+    description: 'GitHub token for authentication'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.github_token }}
+        fetch-depth: 0
+      shell: bash
+
+    - name: Configure Git
+      run: |
+        git config user.name "$GITHUB_ACTOR"
+        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      shell: bash
+
+    - name: Switch to index branch
+      run: git checkout index
+      shell: bash
+
+    - name: Update files
+      run: |
+        git checkout ${{ github.ref }}
+      shell: bash
+
+    - name: Commit
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: "Update static files"
+        github_token: ${{ inputs.github_token }}
+
+    - name: Switch to current branch
+      run: git checkout ${{ github.ref }}
+      shell: bash
+
+    - name: Run chart-releaser
+      uses: helm/chart-releaser-action@v1.1.0
+      env:
+        CR_TOKEN: ${{ inputs.github_token }}
+        CR_PAGES_BRANCH: index

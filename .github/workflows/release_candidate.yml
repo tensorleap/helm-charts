@@ -1,0 +1,61 @@
+name: Release Candidate
+
+on:
+  workflow_call:
+    inputs:
+      custom_tag_prefix:
+        description: "Custom tag"
+        required: false
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      custom_tag_prefix:
+        description: "Custom tag"
+        required: false
+        default: ""
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+        shell: bash
+
+      - name: Checkout RC branch
+        id: checkout_rc_branch
+        run: |
+          set -euo pipefail
+          BRANCH="$(make -s checkout-rc-branch)"
+          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Commit RC branch state
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Release candidate branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}"
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Release Charts
+        uses: ./.github/actions/release-chart/action.yml
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Release Candidate Manifest
+        uses: ./.github/actions/release-manifest/action.yml
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          manifest_output: manifest.rc.yaml

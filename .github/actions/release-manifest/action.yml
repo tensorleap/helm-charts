@@ -1,0 +1,77 @@
+name: Release Manifest
+description: Release installation manifest (reusable for both candidate and production)
+
+inputs:
+  github_token:
+    description: 'GitHub token for authentication'
+    required: true
+  custom_tag_prefix:
+    description: 'Custom tag prefix for manifest'
+    required: false
+    default: ''
+  manifest_output:
+    description: 'Output filename for manifest'
+    required: false
+    default: 'manifest.yaml'
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      shell: bash
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: ./go.mod
+
+    - name: Get tensorleap chart version
+      id: get_tensorleap_chart_version
+      run: |
+        CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
+        echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Get tensorleap infra chart version
+      id: get_tensorleap_infra_chart_version
+      run: |
+        INFRA_CHART_VERSION=$(cat charts/tensorleap-infra/Chart.yaml | grep -E '^version:' | awk '{print $2}')
+        echo "version=$INFRA_CHART_VERSION" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Set manifest version
+      id: set_manifest_version
+      run: |
+        # Set the manifest version to the tensorleap chart version (as-is, no suffix removal)
+        CUSTOM_PREFIX="${{ inputs.custom_tag_prefix }}"
+        if [ -z "$CUSTOM_PREFIX" ]; then
+          CUSTOM_PREFIX="manifest"
+        fi
+        echo "tag=${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Create installation manifest
+      run: |
+        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output ${{ inputs.manifest_output }}
+      shell: bash
+
+    - name: Print charts versions
+      run: |
+        echo "Tensorleap chart version: ${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        echo "Tensorleap infra chart version: ${{ steps.get_tensorleap_infra_chart_version.outputs.version }}"
+      shell: bash
+
+    - name: Print manifest
+      run: cat ${{ inputs.manifest_output }}
+      shell: bash
+
+    - name: Create GitHub release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: ${{ inputs.manifest_output }}
+        tag: "${{ steps.set_manifest_version.outputs.tag }}"
+        skipIfReleaseExists: true
+        generateReleaseNotes: true
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
