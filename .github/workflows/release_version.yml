@@ -21,7 +21,7 @@ jobs:
       contents: write
     steps:
       - name: Update Images
-        uses: ./.github/actions/update-images/action.yml
+        uses: ./.github/actions/update-images
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 

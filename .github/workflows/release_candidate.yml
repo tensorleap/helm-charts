@@ -55,12 +55,12 @@ jobs:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
       - name: Release Charts
-        uses: ./.github/actions/release-chart/action.yml
+        uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
       - name: Release Candidate Manifest
-        uses: ./.github/actions/release-manifest/action.yml
+        uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
