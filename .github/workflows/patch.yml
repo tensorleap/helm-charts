@@ -31,7 +31,13 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
-          BRANCH="$(make -s checkout-rc-branch)"
+          OUTPUT="$(make -s checkout-rc-branch 2>&1)"
+          BRANCH="$(echo "$OUTPUT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+' | tail -n1)"
+          if [ -z "$BRANCH" ]; then
+            echo "Error: Failed to extract branch name. Output was:" >&2
+            echo "$OUTPUT" >&2
+            exit 1
+          fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
 
