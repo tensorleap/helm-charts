@@ -14,12 +14,12 @@ runs:
       with:
         token: ${{ inputs.github_token }}
         fetch-depth: 0
-      shell: bash
+        persist-credentials: true
 
     - name: Configure Git
       run: |
-        git config user.name "$GITHUB_ACTOR"
-        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
     - name: Switch to index branch
