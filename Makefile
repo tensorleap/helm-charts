@@ -71,3 +71,37 @@ build-helm:
 	rm ./charts/tensorleap/Chart.lock
 	helm dependency build ./charts/tensorleap-infra
 	rm ./charts/tensorleap-infra/Chart.lock
+
+
+
+.PHONY: checkout-rc-branch
+.ONESHELL:
+checkout-rc-branch:
+	@set -euo pipefail
+	if [ ! -f charts/tensorleap/Chart.yaml ]; then
+	  echo "❌ charts/tensorleap/Chart.yaml not found" >&2
+	  exit 1
+	fi
+	VERSION="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
+	if [ -z "$$VERSION" ]; then
+	  echo "❌ version not found in charts/tensorleap/Chart.yaml" >&2
+	  exit 1
+	fi
+	git fetch origin master --prune
+	PREFIX="$$VERSION-rc."
+	EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" | awk -F'/' '{print $$NF}')"
+	MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
+	if [ -z "$$MAX_RC" ]; then
+	  NEXT=0
+	else
+	  NEXT=$$((MAX_RC+1))
+	fi
+	BRANCH="$${PREFIX}$${NEXT}"
+	if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
+	  git fetch origin "$$BRANCH"
+	  git switch "$$BRANCH"
+	else
+	  git switch -c "$$BRANCH" origin/master
+	  git push -u origin "$$BRANCH"
+	fi
+	echo "$$BRANCH"

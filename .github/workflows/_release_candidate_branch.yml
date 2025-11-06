@@ -1,0 +1,45 @@
+name: Create Release Candidate Branch
+
+on:
+  workflow_call:
+  # Manual trigger
+  workflow_dispatch:
+
+# Allow pushing new branches using the provided token
+permissions:
+  contents: write
+
+jobs:
+  create-rc-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - id: mk
+        name: Create Release Candidate branch
+        run: |
+          set -euo pipefail
+          BRANCH="$(make -s checkout-rc-branch)"
+          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Release candidate branch is created: ${{ steps.mk.outputs.rc_branch }}"
+          add: "."
+          push: true
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Print created RC branch
+        run: |
+          echo "Created RC branch: ${{ steps.mk.outputs.rc_branch }}"

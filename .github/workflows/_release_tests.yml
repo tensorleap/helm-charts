@@ -1,0 +1,41 @@
+name: Release Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+      
+      - id: mk
+        name: Create Release Candidate branch
+        run: |
+          set -euo pipefail
+          BRANCH="$(make -s checkout-rc-branch)"
+          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run tests
+        run: |
+          echo "TODO: Add actual test commands here"
+          # Example: make test
+          # Example: go test ./...
+          # We need to run tests on the release candidate branch, so we need to check out the branch
+          git checkout ${{ steps.mk.outputs.rc_branch }}
+          make test
+
+        
+          # We need to make a conditional check to see if the tests passed, if not, we need to fail the workflow
+          if [ $? -ne 0 ]; then
+            echo "Tests failed"
+            exit 1
+          fi
+
+          echo "Tests passed"
+          # Continue to the next step in the workflow (release production manifest) which is release-production.yml
+          echo "Tests passed, continuing to the next step in the workflow (release production manifest)"

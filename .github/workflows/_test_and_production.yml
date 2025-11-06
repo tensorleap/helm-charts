@@ -1,0 +1,39 @@
+name: Test and Production Release
+
+on:
+  workflow_call:
+    inputs:
+      custom_tag_prefix:
+        description: "Custom tag prefix for manifest"
+        required: false
+        type: string
+        default: ""
+  workflow_run:
+    workflows: ["Patch Release"]
+    types: [completed]
+
+jobs:
+  test:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/_release_tests.yml
+  
+  release-production:
+    needs: test
+    if: success()
+    uses: ./.github/workflows/release_production.yml
+    with:
+      custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+    secrets: inherit
+
+  handle-test-failure-after-patch:
+    needs: test
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tests Failed After Patch - Another Patch Required
+        run: |
+          echo "::error::Tests failed again after patch! Please run the 'Patch Release' workflow again."
+          echo "After the patch workflow completes, tests will run automatically again."
+          echo "This process will repeat until tests pass, then production release will proceed."
+          exit 1
+
