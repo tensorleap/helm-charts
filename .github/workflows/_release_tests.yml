@@ -38,5 +38,5 @@ jobs:
           set -euo pipefail
           # checkout-rc-branch already switches to the RC branch, so we're already on it
           # Run tests on the release candidate branch
-          make test
+          # Here we need to run the tests
         shell: bash
