@@ -89,12 +89,21 @@ checkout-rc-branch:
 	fi
 	git fetch origin master --prune >/dev/null 2>&1
 	PREFIX="$$VERSION-rc."
-	EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" 2>/dev/null | awk -F'/' '{print $$NF}')"
-	MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
-	if [ -z "$$MAX_RC" ]; then
-	  NEXT=0
+	CURRENT_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
+	# Check if current branch matches VERSION-rc.N pattern
+	CURRENT_RC="$$(echo "$$CURRENT_BRANCH" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p")"
+	if [ -n "$$CURRENT_RC" ]; then
+	  # Current branch is an RC branch - bump its RC number
+	  NEXT=$$((CURRENT_RC+1))
 	else
-	  NEXT=$$((MAX_RC+1))
+	  # Current branch is not an RC branch - find the max RC number
+	  EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" 2>/dev/null | awk -F'/' '{print $$NF}')"
+	  MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
+	  if [ -z "$$MAX_RC" ]; then
+	    NEXT=0
+	  else
+	    NEXT=$$((MAX_RC+1))
+	  fi
 	fi
 	BRANCH="$${PREFIX}$${NEXT}"
 	if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
