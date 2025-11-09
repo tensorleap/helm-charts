@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
+        with:   
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
@@ -31,57 +31,46 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
-          OUTPUT="$(make -s checkout-rc-branch 2>&1)"
-          BRANCH="$(echo "$OUTPUT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+' | tail -n1)"
+          BRANCH="$(make -s checkout-rc-branch)"
           if [ -z "$BRANCH" ]; then
-            echo "Error: Failed to extract branch name. Output was:" >&2
-            echo "$OUTPUT" >&2
+            echo "Error: Failed to get branch name from checkout-rc-branch" >&2
             exit 1
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Bump rc version number
+        id: bump_version
+        run: make -s bump-rc-version
+        shell: bash
+
+      - name: Get new version
+        id: get_version
         run: |
-          # Bump rc version for tensorleap chart (e.g., 1.2.3-rc.0 -> 1.2.3-rc.1)
-          CHART_FILE="charts/tensorleap/Chart.yaml"
-          CURRENT_VERSION=$(grep -E '^version:' "$CHART_FILE" | awk '{print $2}')
-          
-          if [[ "$CURRENT_VERSION" =~ -rc\.([0-9]+)$ ]]; then
-            RC_NUMBER="${BASH_REMATCH[1]}"
-            BASE_VERSION="${CURRENT_VERSION%-rc.*}"
-            NEW_RC_NUMBER=$((RC_NUMBER + 1))
-            NEW_VERSION="${BASE_VERSION}-rc.${NEW_RC_NUMBER}"
-            sed -i.bak "s/^version: .*/version: $NEW_VERSION/" "$CHART_FILE"
-            rm -f "${CHART_FILE}.bak"
-            echo "Updated tensorleap chart version: $CURRENT_VERSION -> $NEW_VERSION"
-          else
-            echo "Error: Tensorleap chart version does not have rc suffix: $CURRENT_VERSION"
-            exit 1
-          fi
-          
-          # Bump rc version for infra chart
-          INFRA_CHART_FILE="charts/tensorleap-infra/Chart.yaml"
-          INFRA_CURRENT_VERSION=$(grep -E '^version:' "$INFRA_CHART_FILE" | awk '{print $2}')
-          
-          if [[ "$INFRA_CURRENT_VERSION" =~ -rc\.([0-9]+)$ ]]; then
-            INFRA_RC_NUMBER="${BASH_REMATCH[1]}"
-            INFRA_BASE_VERSION="${INFRA_CURRENT_VERSION%-rc.*}"
-            INFRA_NEW_RC_NUMBER=$((INFRA_RC_NUMBER + 1))
-            INFRA_NEW_VERSION="${INFRA_BASE_VERSION}-rc.${INFRA_NEW_RC_NUMBER}"
-            sed -i.bak "s/^version: .*/version: $INFRA_NEW_VERSION/" "$INFRA_CHART_FILE"
-            rm -f "${INFRA_CHART_FILE}.bak"
-            echo "Updated infra chart version: $INFRA_CURRENT_VERSION -> $INFRA_NEW_VERSION"
-          else
-            echo "Error: Infra chart version does not have rc suffix: $INFRA_CURRENT_VERSION"
-            exit 1
-          fi
+          NEW_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Extract image names
+        run: |
+          make build-helm
+          make update-images
+        shell: bash
+
+      - name: Store custom_tag_prefix for triggered workflow
+        run: |
+          echo "${{ inputs.custom_tag_prefix }}" > .custom_tag_prefix
         shell: bash
 
       - name: Commit version changes
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Bump rc version number"
+          message: "Bump rc version to ${{ steps.get_version.outputs.version }} and update images.txt"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
       - name: Release Charts
