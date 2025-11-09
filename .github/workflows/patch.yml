@@ -39,10 +39,10 @@ jobs:
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
 
-      - name: Bump rc version number
-        id: bump_version
-        run: make -s bump-rc-version
-        shell: bash
+      # - name: Bump rc version number
+      #   id: bump_version
+      #   run: make -s bump-rc-version
+      #   shell: bash
 
       - name: Get new version
         id: get_version
