@@ -16,6 +16,7 @@ jobs:
   test:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     uses: ./.github/workflows/_release_tests.yml
+    secrets: inherit
   
   release-production:
     needs: test
