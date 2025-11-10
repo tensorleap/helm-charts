@@ -35,6 +35,7 @@ jobs:
   # Step 2: Create Release Candidate
   release-candidate:
     needs: update-images
+    if: success()
     uses: ./.github/workflows/release_candidate.yml
     with:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
@@ -43,6 +44,7 @@ jobs:
   # Step 3: Run Tests and Release to Production
   test-and-production:
     needs: release-candidate
+    if: success()
     uses: ./.github/workflows/_test_and_production.yml
     with:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
