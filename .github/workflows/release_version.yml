@@ -20,6 +20,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
       - name: Update Images
         uses: ./.github/actions/update-images
         with:
