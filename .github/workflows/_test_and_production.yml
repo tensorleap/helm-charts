@@ -14,8 +14,7 @@ on:
 
 jobs:
   test:
-    # Run tests if called from workflow_call OR if triggered by workflow_run with success
-    if: ${{ github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    if: github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     uses: ./.github/workflows/_release_tests.yml
     secrets: inherit
   
@@ -37,8 +36,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            echo "::error::Tests failed again after patch! Please run the 'Patch Release' workflow again."
-            echo "After the patch workflow completes, tests will run automatically again."
+            WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            echo "::error::Tests failed after $WORKFLOW_NAME workflow!"
+            echo "Please run the '$WORKFLOW_NAME' workflow again."
+            echo "After the workflow completes, tests will run automatically again."
             echo "This process will repeat until tests pass, then production release will proceed."
           else
             echo "::error::Tests failed! Please run the 'Patch Release' workflow manually."
