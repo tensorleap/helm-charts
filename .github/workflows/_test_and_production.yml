@@ -14,7 +14,8 @@ on:
 
 jobs:
   test:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run tests if called from workflow_call OR if triggered by workflow_run with success
+    if: ${{ github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     uses: ./.github/workflows/_release_tests.yml
     secrets: inherit
   
@@ -26,15 +27,24 @@ jobs:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
     secrets: inherit
 
-  handle-test-failure-after-patch:
+  handle-test-failure:
+    # Handle failures for both workflow_call and workflow_run events
     needs: test
-    if: failure()
+    if: ${{ needs.test.result == 'failure' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Tests Failed After Patch - Another Patch Required
+      - name: Tests Failed - Handle Failure
         run: |
-          echo "::error::Tests failed again after patch! Please run the 'Patch Release' workflow again."
-          echo "After the patch workflow completes, tests will run automatically again."
-          echo "This process will repeat until tests pass, then production release will proceed."
+          set -euo pipefail
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            echo "::error::Tests failed again after patch! Please run the 'Patch Release' workflow again."
+            echo "After the patch workflow completes, tests will run automatically again."
+            echo "This process will repeat until tests pass, then production release will proceed."
+          else
+            echo "::error::Tests failed! Please run the 'Patch Release' workflow manually."
+            echo "After the patch workflow completes, tests will run automatically."
+            echo "This process will repeat until tests pass, then production release will proceed."
+          fi
           exit 1
+        shell: bash
 
