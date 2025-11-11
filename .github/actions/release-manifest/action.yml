@@ -72,7 +72,14 @@ runs:
             CUSTOM_PREFIX="testing"
           fi
         fi
-        echo "tag=${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
+        TAG="${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        # Only mark as latest if tag starts with "manifest-"
+        if [[ "$TAG" == manifest-* ]]; then
+          echo "make_latest=true" >> $GITHUB_OUTPUT
+        else
+          echo "make_latest=false" >> $GITHUB_OUTPUT
+        fi
       shell: bash
 
     - name: Create installation manifest
@@ -95,6 +102,7 @@ runs:
       with:
         artifacts: ${{ steps.set_manifest_output.outputs.filename }}
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
+        makeLatest: ${{ steps.set_manifest_version.outputs.make_latest }}
         skipIfReleaseExists: true
         generateReleaseNotes: true
       env:
