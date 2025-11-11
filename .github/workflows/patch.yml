@@ -78,4 +78,3 @@ jobs:
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
-          manifest_output: manifest.rc.yaml

@@ -10,9 +10,9 @@ inputs:
     required: false
     default: ''
   manifest_output:
-    description: 'Output filename for manifest'
+    description: 'Output filename for manifest (if not provided, defaults to testing.yaml or manifest.yaml based on calling workflow)'
     required: false
-    default: 'manifest.yaml'
+    default: ''
 
 runs:
   using: composite
@@ -42,20 +42,42 @@ runs:
         echo "version=$INFRA_CHART_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
+    - name: Set manifest output filename
+      id: set_manifest_output
+      run: |
+        # If manifest_output is explicitly provided, use it
+        if [ -n "${{ inputs.manifest_output }}" ]; then
+          MANIFEST_FILE="${{ inputs.manifest_output }}"
+        else
+          # If called from release_production.yml, use "manifest.yaml", otherwise use "testing.yaml"
+          if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
+            MANIFEST_FILE="manifest.yaml"
+          else
+            MANIFEST_FILE="testing.yaml"
+          fi
+        fi
+        echo "filename=$MANIFEST_FILE" >> $GITHUB_OUTPUT
+      shell: bash
+
     - name: Set manifest version
       id: set_manifest_version
       run: |
         # Set the manifest version to the tensorleap chart version (as-is, no suffix removal)
         CUSTOM_PREFIX="${{ inputs.custom_tag_prefix }}"
         if [ -z "$CUSTOM_PREFIX" ]; then
-          CUSTOM_PREFIX="manifest"
+          # If called from release_production.yml, use "manifest", otherwise use "testing"
+          if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
+            CUSTOM_PREFIX="manifest"
+          else
+            CUSTOM_PREFIX="testing"
+          fi
         fi
         echo "tag=${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Create installation manifest
       run: |
-        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output ${{ inputs.manifest_output }}
+        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output ${{ steps.set_manifest_output.outputs.filename }}
       shell: bash
 
     - name: Print charts versions
@@ -65,13 +87,13 @@ runs:
       shell: bash
 
     - name: Print manifest
-      run: cat ${{ inputs.manifest_output }}
+      run: cat ${{ steps.set_manifest_output.outputs.filename }}
       shell: bash
 
     - name: Create GitHub release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: ${{ inputs.manifest_output }}
+        artifacts: ${{ steps.set_manifest_output.outputs.filename }}
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
         skipIfReleaseExists: true
         generateReleaseNotes: true
