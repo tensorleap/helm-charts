@@ -62,3 +62,4 @@ jobs:
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}

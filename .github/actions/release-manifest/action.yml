@@ -10,17 +10,32 @@ inputs:
     required: false
     default: ''
   manifest_output:
-    description: 'Output filename for manifest (if not provided, defaults to testing.yaml or manifest.yaml based on calling workflow)'
+    description: 'Output filename for manifest'
+    required: false
+    default: 'manifest.yaml'
+  branch:
+    description: 'Branch to checkout (if not provided, uses github.ref)'
     required: false
     default: ''
 
 runs:
   using: composite
   steps:
+    - name: Determine checkout ref
+      id: checkout_ref
+      run: |
+        if [ -n "${{ inputs.branch }}" ]; then
+          echo "ref=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+        else
+          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
     - name: Checkout
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.github_token }}
+        ref: ${{ steps.checkout_ref.outputs.ref }}
         fetch-depth: 0
 
     - name: Set up Go
@@ -42,27 +57,10 @@ runs:
         echo "version=$INFRA_CHART_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: Set manifest output filename
-      id: set_manifest_output
-      run: |
-        # If manifest_output is explicitly provided, use it
-        if [ -n "${{ inputs.manifest_output }}" ]; then
-          MANIFEST_FILE="${{ inputs.manifest_output }}"
-        else
-          # If called from release_production.yml, use "manifest.yaml", otherwise use "testing.yaml"
-          if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-            MANIFEST_FILE="manifest.yaml"
-          else
-            MANIFEST_FILE="testing.yaml"
-          fi
-        fi
-        echo "filename=$MANIFEST_FILE" >> $GITHUB_OUTPUT
-      shell: bash
-
     - name: Set manifest version
       id: set_manifest_version
       run: |
-        # Set the manifest version to the tensorleap chart version (as-is, no suffix removal)
+        # Use the full chart version as-is (includes RC suffix if present, e.g., 1.4.34-rc.0)
         CUSTOM_PREFIX="${{ inputs.custom_tag_prefix }}"
         if [ -z "$CUSTOM_PREFIX" ]; then
           # If called from release_production.yml, use "manifest", otherwise use "testing"
@@ -72,7 +70,9 @@ runs:
             CUSTOM_PREFIX="testing"
           fi
         fi
+        # Build tag with full version: testing-1.4.34-rc.0 or manifest-1.4.34
         TAG="${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        echo "Creating release tag: $TAG"
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         # Only mark as latest if tag starts with "manifest-"
         if [[ "$TAG" == manifest-* ]]; then
@@ -84,7 +84,7 @@ runs:
 
     - name: Create installation manifest
       run: |
-        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output ${{ steps.set_manifest_output.outputs.filename }}
+        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
       shell: bash
 
     - name: Print charts versions
@@ -94,13 +94,13 @@ runs:
       shell: bash
 
     - name: Print manifest
-      run: cat ${{ steps.set_manifest_output.outputs.filename }}
+      run: cat manifest.yaml
       shell: bash
 
     - name: Create GitHub release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: ${{ steps.set_manifest_output.outputs.filename }}
+        artifacts: manifest.yaml
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
         makeLatest: ${{ steps.set_manifest_version.outputs.make_latest }}
         skipIfReleaseExists: true
