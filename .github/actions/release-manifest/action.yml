@@ -47,6 +47,18 @@ runs:
       id: get_tensorleap_chart_version
       run: |
         CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
+        # If branch is provided and contains RC suffix, extract and append it to chart version
+        if [ -n "${{ inputs.branch }}" ]; then
+          BRANCH="${{ inputs.branch }}"
+          # Extract RC suffix from branch name (e.g., 1.4.35-rc.0 -> -rc.0)
+          if [[ "$BRANCH" =~ -rc\.[0-9]+$ ]]; then
+            RC_SUFFIX=$(echo "$BRANCH" | grep -oE '-rc\.[0-9]+$')
+            # Only append if chart version doesn't already have the suffix
+            if [[ ! "$CHART_VERSION" =~ -rc\.[0-9]+$ ]]; then
+              CHART_VERSION="${CHART_VERSION}${RC_SUFFIX}"
+            fi
+          fi
+        fi
         echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
