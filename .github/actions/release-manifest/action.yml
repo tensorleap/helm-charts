@@ -46,13 +46,7 @@ runs:
     - name: Get tensorleap chart version
       id: get_tensorleap_chart_version
       run: |
-        # If branch is provided, use branch name as version (includes RC suffix, e.g., 1.4.35-rc.0)
-        if [ -n "${{ inputs.branch }}" ]; then
-          CHART_VERSION="${{ inputs.branch }}"
-        else
-          # Otherwise, read from Chart.yaml
-          CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
-        fi
+        CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
         echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
