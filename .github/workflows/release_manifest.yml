@@ -9,8 +9,8 @@ on:
         default: ""
   workflow_run:
     workflows: ["Release Charts"]
-    branches:
-      - default_is_master_changed_while_working_on_release_workflows
+    # branches:
+      # - master
     types:
       - completed
 
