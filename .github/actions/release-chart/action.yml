@@ -26,13 +26,30 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
+    - name: Checkout specific branch if provided
+      if: inputs.branch != ''
+      run: |
+        git fetch origin ${{ inputs.branch }} || true
+        git checkout ${{ inputs.branch }}
+      shell: bash
+
+    - name: Determine checkout ref
+      id: checkout_ref
+      run: |
+        if [ -n "${{ inputs.branch }}" ]; then
+          echo "ref=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+        else
+          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
     - name: Switch to index branch
       run: git checkout index
       shell: bash
 
     - name: Update files
       run: |
-        git checkout ${{ github.ref }}
+        git checkout ${{ steps.checkout_ref.outputs.ref }}
       shell: bash
 
     - name: Commit
@@ -42,7 +59,7 @@ runs:
         github_token: ${{ inputs.github_token }}
 
     - name: Switch to current branch
-      run: git checkout ${{ github.ref }}
+      run: git checkout ${{ steps.checkout_ref.outputs.ref }}
       shell: bash
 
     - name: Verify chart versions before release
