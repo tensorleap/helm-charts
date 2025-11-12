@@ -67,7 +67,7 @@ var manifestTagReg = regexp.MustCompile(`manifest-\d+\.\d+\.\d+`)
 
 func GetLatestManifestTag() (string, error) {
 
-	releases, err := github.GetReleasesPage(tlOwner, tlRepo, 1, 10)
+	releases, err := github.GetReleasesPage(tlOwner, tlRepo, 1, 100)
 	if err != nil {
 		return "", err
 	}

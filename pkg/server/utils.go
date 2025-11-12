@@ -61,6 +61,11 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 			}
 			if mnf == nil {
 				mnf, err = manifest.GetByTag(tag)
+				if err != nil {
+					log.SendCloudReport("error", "Build manifest failed", "Failed",
+						&map[string]interface{}{"error": err.Error()})
+					return nil, false, nil, nil, err
+				}
 			}
 			log.Info("Using tag: " + mnf.Tag)
 		}
