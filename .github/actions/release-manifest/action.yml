@@ -84,7 +84,7 @@ runs:
 
     - name: Create installation manifest
       run: |
-        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
+        go run . create-manifest --tensorleap-chart-version ${{ steps.set_manifest_version.outputs.tag }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
       shell: bash
 
     - name: Print charts versions
