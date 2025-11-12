@@ -89,10 +89,6 @@ runs:
         fi
       shell: bash
 
-
-
-
-
     - name: Create installation manifest
       run: |
         echo "📦 Tensorleap chart version: ${{ steps.get_tensorleap_chart_version.outputs.version }}"

@@ -7,13 +7,13 @@ on:
         description: "Custom tag"
         required: false
         type: string
-        default: "testing"
+        default: ""
   workflow_dispatch:
     inputs:
       custom_tag_prefix:
         description: "Custom tag"
         required: false
-        default: "testing"
+        default: ""
 
 jobs:
   release:
