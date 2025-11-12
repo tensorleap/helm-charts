@@ -65,13 +65,14 @@ runs:
         if [ -z "$CUSTOM_PREFIX" ]; then
           # If called from release_production.yml, use "manifest", otherwise use "testing"
           if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-            CUSTOM_PREFIX="manifest"
+            PREFIX="manifest"
           else
-            CUSTOM_PREFIX="testing"
+            PREFIX="testing"
           fi
+        else
+          PREFIX="$CUSTOM_PREFIX"
         fi
-        # Build tag with full version: testing-1.4.34-rc.0 or manifest-1.4.34
-        TAG="${CUSTOM_PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        TAG="${PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
         echo "Creating release tag: $TAG"
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         # Only mark as latest if tag starts with "manifest-"
@@ -84,7 +85,7 @@ runs:
 
     - name: Create installation manifest
       run: |
-        go run . create-manifest --tensorleap-chart-version ${{ steps.set_manifest_version.outputs.tag }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
+        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
       shell: bash
 
     - name: Print charts versions
