@@ -38,6 +38,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
+      - name: Get current branch name
+        id: get_branch
+        run: |
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "Current branch: $BRANCH"
+        shell: bash
+
       - name: Remove -rc.x suffix from chart versions
         run: |
           # Remove rc.* suffix from tensorleap chart version if present (e.g., 1.2.3-rc.0 -> 1.2.3)
@@ -88,9 +96,11 @@ jobs:
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          branch: ${{ steps.get_branch.outputs.branch }}
 
       - name: Release Manifest
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          branch: ${{ steps.get_branch.outputs.branch }}

@@ -94,7 +94,12 @@ runs:
         echo "📦 Tensorleap chart version: ${{ steps.get_tensorleap_chart_version.outputs.version }}"
         echo "📦 Tensorleap infra chart version: ${{ steps.get_tensorleap_infra_chart_version.outputs.version }}"
         echo "🏷️  Release tag: ${{ steps.set_manifest_version.outputs.tag }}"
-        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
+        # Use --local flag when branch is provided (files are already checked out)
+        if [ -n "${{ inputs.branch }}" ]; then
+          go run . create-manifest --local --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
+        else
+          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
+        fi
       shell: bash
 
     - name: Print charts versions
