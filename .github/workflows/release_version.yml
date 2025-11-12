@@ -20,6 +20,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
       - name: Update Images
         uses: ./.github/actions/update-images
         with:
@@ -33,30 +40,10 @@ jobs:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
     secrets: inherit
 
-  # Step 3: Run Tests
-  run-tests:
+  # Step 3: Run Tests and Release to Production
+  test-and-production:
     needs: release-candidate
-    uses: ./.github/workflows/_release_tests.yml
-    secrets: inherit
-
-  # Step 4: Release Production (only if tests pass)
-  release-production:
-    needs: run-tests
-    if: success()
-    uses: ./.github/workflows/release_production.yml
+    uses: ./.github/workflows/_test_and_production.yml
     with:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
     secrets: inherit
-
-  # Step 5: Handle test failure - output message for manual patch
-  handle-test-failure:
-    needs: [release-candidate, run-tests]
-    if: failure() && needs.run-tests.result == 'failure'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Tests Failed - Manual Patch Required
-        run: |
-          echo "::error::Tests failed! Please run the 'Patch Release' workflow manually."
-          echo "After the patch workflow completes, tests will run automatically."
-          echo "This process will repeat until tests pass, then production release will proceed."
-          exit 1

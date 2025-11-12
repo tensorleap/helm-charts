@@ -87,21 +87,53 @@ checkout-rc-branch:
 	  echo "❌ version not found in charts/tensorleap/Chart.yaml" >&2
 	  exit 1
 	fi
-	git fetch origin master --prune
+	git fetch origin master --prune >/dev/null 2>&1
 	PREFIX="$$VERSION-rc."
-	EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" | awk -F'/' '{print $$NF}')"
-	MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
-	if [ -z "$$MAX_RC" ]; then
-	  NEXT=0
+	CURRENT_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
+	# Check if current branch matches VERSION-rc.N pattern
+	CURRENT_RC="$$(echo "$$CURRENT_BRANCH" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p")"
+	if [ -n "$$CURRENT_RC" ]; then
+	  # Current branch is an RC branch - bump its RC number
+	  NEXT=$$((CURRENT_RC+1))
 	else
-	  NEXT=$$((MAX_RC+1))
+	  # Current branch is not an RC branch - find the max RC number
+	  EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" 2>/dev/null | awk -F'/' '{print $$NF}')"
+	  MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
+	  if [ -z "$$MAX_RC" ]; then
+	    NEXT=0
+	  else
+	    NEXT=$$((MAX_RC+1))
+	  fi
 	fi
 	BRANCH="$${PREFIX}$${NEXT}"
 	if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
-	  git fetch origin "$$BRANCH"
-	  git switch "$$BRANCH"
+	  git fetch origin "$$BRANCH" >/dev/null 2>&1
+	  git switch "$$BRANCH" >/dev/null 2>&1
 	else
-	  git switch -c "$$BRANCH" origin/master
-	  git push -u origin "$$BRANCH"
+	  git switch -c "$$BRANCH" origin/master >/dev/null 2>&1
+	  git push -u origin "$$BRANCH" >/dev/null 2>&1
 	fi
+	# Update Chart.yaml version to match branch name (e.g., 1.4.35-rc.2)
+	sed -i.bak "s/^version: .*/version: $$BRANCH/" charts/tensorleap/Chart.yaml
+	rm -f charts/tensorleap/Chart.yaml.bak
+	# Output only the branch name (for use in workflows)
 	echo "$$BRANCH"
+
+.PHONY: remove-rc-suffix
+remove-rc-suffix:
+	@set -euo pipefail
+	# Remove rc.* suffix from tensorleap chart version if present (e.g., 1.2.3-rc.0 -> 1.2.3)
+	CHART_FILE="charts/tensorleap/Chart.yaml"
+	if [ ! -f "$$CHART_FILE" ]; then
+	  echo "❌ $$CHART_FILE not found" >&2
+	  exit 1
+	fi
+	CURRENT_VERSION="$$(grep -E '^version:' "$$CHART_FILE" | awk '{print $$2}')"
+	if [[ "$$CURRENT_VERSION" =~ -rc\. ]]; then
+	  CLEAN_VERSION="$$(echo "$$CURRENT_VERSION" | sed 's/-rc\.[0-9]*$$//')"
+	  sed -i.bak "s/^version: .*/version: $$CLEAN_VERSION/" "$$CHART_FILE"
+	  rm -f "$${CHART_FILE}.bak"
+	  echo "Updated tensorleap chart version: $$CURRENT_VERSION -> $$CLEAN_VERSION"
+	else
+	  echo "Tensorleap chart version has no rc suffix: $$CURRENT_VERSION"
+	fi

@@ -38,11 +38,9 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
-          OUTPUT="$(make -s checkout-rc-branch 2>&1)"
-          BRANCH="$(echo "$OUTPUT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+' | tail -n1)"
+          BRANCH="$(make -s checkout-rc-branch)"
           if [ -z "$BRANCH" ]; then
-            echo "Error: Failed to extract branch name. Output was:" >&2
-            echo "$OUTPUT" >&2
+            echo "Error: Failed to get branch name from checkout-rc-branch" >&2
             exit 1
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
@@ -58,10 +56,11 @@ jobs:
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
 
       - name: Release Candidate Manifest
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
-          manifest_output: manifest.rc.yaml
+          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}

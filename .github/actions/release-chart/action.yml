@@ -5,6 +5,10 @@ inputs:
   github_token:
     description: 'GitHub token for authentication'
     required: true
+  branch:
+    description: 'Branch to checkout (if not provided, uses github.ref)'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -22,13 +26,30 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
+    - name: Checkout specific branch if provided
+      if: inputs.branch != ''
+      run: |
+        git fetch origin ${{ inputs.branch }} || true
+        git checkout ${{ inputs.branch }}
+      shell: bash
+
+    - name: Determine checkout ref
+      id: checkout_ref
+      run: |
+        if [ -n "${{ inputs.branch }}" ]; then
+          echo "ref=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+        else
+          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
     - name: Switch to index branch
       run: git checkout index
       shell: bash
 
     - name: Update files
       run: |
-        git checkout ${{ github.ref }}
+        git checkout ${{ steps.checkout_ref.outputs.ref }}
       shell: bash
 
     - name: Commit
@@ -38,7 +59,14 @@ runs:
         github_token: ${{ inputs.github_token }}
 
     - name: Switch to current branch
-      run: git checkout ${{ github.ref }}
+      run: git checkout ${{ steps.checkout_ref.outputs.ref }}
+      shell: bash
+
+    - name: Verify chart versions before release
+      run: |
+        echo "📦 Tensorleap chart version: $(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')"
+        echo "📦 Tensorleap infra chart version: $(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')"
+        echo "ℹ️  Chart-releaser will create tags: tensorleap-<version> and tensorleap-infra-<version>"
       shell: bash
 
     - name: Run chart-releaser
