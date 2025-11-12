@@ -20,7 +20,7 @@ jobs:
   
   release-production:
     needs: test
-    if: success()
+    if: needs.test.result == 'success'
     uses: ./.github/workflows/release_production.yml
     with:
       custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
