@@ -116,22 +116,6 @@ checkout-rc-branch:
 	# Update Chart.yaml version to match branch name (e.g., 1.4.35-rc.2)
 	sed -i.bak "s/^version: .*/version: $$BRANCH/" charts/tensorleap/Chart.yaml
 	rm -f charts/tensorleap/Chart.yaml.bak
-	# Update tensorleap-infra Chart.yaml with RC suffix based on its own version
-	if [ -f charts/tensorleap-infra/Chart.yaml ]; then
-	  INFRA_VERSION="$$(awk '/^version:/{print $$2}' charts/tensorleap-infra/Chart.yaml)"
-	  # Extract RC suffix from branch (e.g., -rc.2 from 1.4.35-rc.2)
-	  RC_SUFFIX="$$(echo "$$BRANCH" | sed -nE 's/.*(-rc\.[0-9]+)$$/\1/p')"
-	  if [ -n "$$RC_SUFFIX" ]; then
-	    # Remove existing RC suffix from infra version if present, then add new one
-	    INFRA_BASE="$$(echo "$$INFRA_VERSION" | sed 's/-rc\.[0-9]*$$//')"
-	    INFRA_NEW_VERSION="$${INFRA_BASE}$${RC_SUFFIX}"
-	    # Only update if version would change
-	    if [ "$$INFRA_VERSION" != "$$INFRA_NEW_VERSION" ]; then
-	      sed -i.bak "s/^version: .*/version: $$INFRA_NEW_VERSION/" charts/tensorleap-infra/Chart.yaml
-	      rm -f charts/tensorleap-infra/Chart.yaml.bak
-	    fi
-	  fi
-	fi
 	# Output only the branch name (for use in workflows)
 	echo "$$BRANCH"
 
@@ -152,17 +136,4 @@ remove-rc-suffix:
 	  echo "Updated tensorleap chart version: $$CURRENT_VERSION -> $$CLEAN_VERSION"
 	else
 	  echo "Tensorleap chart version has no rc suffix: $$CURRENT_VERSION"
-	fi
-	# Remove rc.* suffix from infra chart version if present
-	INFRA_CHART_FILE="charts/tensorleap-infra/Chart.yaml"
-	if [ -f "$$INFRA_CHART_FILE" ]; then
-	  INFRA_CURRENT_VERSION="$$(grep -E '^version:' "$$INFRA_CHART_FILE" | awk '{print $$2}')"
-	  if [[ "$$INFRA_CURRENT_VERSION" =~ -rc\. ]]; then
-	    INFRA_CLEAN_VERSION="$$(echo "$$INFRA_CURRENT_VERSION" | sed 's/-rc\.[0-9]*$$//')"
-	    sed -i.bak "s/^version: .*/version: $$INFRA_CLEAN_VERSION/" "$$INFRA_CHART_FILE"
-	    rm -f "$${INFRA_CHART_FILE}.bak"
-	    echo "Updated infra chart version: $$INFRA_CURRENT_VERSION -> $$INFRA_CLEAN_VERSION"
-	  else
-	    echo "Infra chart version has no rc suffix: $$INFRA_CURRENT_VERSION"
-	  fi
 	fi
