@@ -60,21 +60,27 @@ runs:
     - name: Set manifest version
       id: set_manifest_version
       run: |
+
         # Use the full chart version as-is (includes RC suffix if present, e.g., 1.4.34-rc.0)
-        CUSTOM_PREFIX="${{ inputs.custom_tag_prefix }}"
-        if [ -z "$CUSTOM_PREFIX" ]; then
-          # If called from release_production.yml, use "manifest", otherwise use "testing"
+        # Default prefix: 'manifest' if called from release_production.yml, otherwise empty string
+        if [ -z "${{ inputs.custom_tag_prefix }}" ]; then
           if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-            PREFIX="manifest"
+            DEFAULT_PREFIX="manifest"
           else
-            PREFIX="testing"
+            DEFAULT_PREFIX=""
           fi
+          PREFIX="$DEFAULT_PREFIX"
         else
-          PREFIX="$CUSTOM_PREFIX"
+          PREFIX="${{ inputs.custom_tag_prefix }}"
         fi
-        TAG="${PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
-        echo "Creating release tag: $TAG"
+        # Set the manifest version to the tensorleap chart version
+        if [ -n "$PREFIX" ]; then
+          TAG="${PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        else
+          TAG="${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        fi
         echo "tag=$TAG" >> $GITHUB_OUTPUT
+
         # Only mark as latest if tag starts with "manifest-"
         if [[ "$TAG" == manifest-* ]]; then
           echo "make_latest=true" >> $GITHUB_OUTPUT
@@ -82,6 +88,10 @@ runs:
           echo "make_latest=false" >> $GITHUB_OUTPUT
         fi
       shell: bash
+
+
+
+
 
     - name: Create installation manifest
       run: |

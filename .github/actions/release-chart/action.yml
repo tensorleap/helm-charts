@@ -5,6 +5,10 @@ inputs:
   github_token:
     description: 'GitHub token for authentication'
     required: true
+  branch:
+    description: 'Branch to checkout (if not provided, uses github.ref)'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -28,7 +32,11 @@ runs:
 
     - name: Update files
       run: |
-        git checkout ${{ github.ref }}
+        if [ -n "${{ inputs.branch }}" ]; then
+          git checkout ${{ inputs.branch }}
+        else
+          git checkout ${{ github.ref }}
+        fi
       shell: bash
 
     - name: Commit

@@ -56,6 +56,7 @@ jobs:
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
 
       - name: Release Candidate Manifest
         uses: ./.github/actions/release-manifest
