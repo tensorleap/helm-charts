@@ -32,11 +32,7 @@ runs:
 
     - name: Update files
       run: |
-        if [ -n "${{ inputs.branch }}" ]; then
-          git checkout ${{ inputs.branch }}
-        else
-          git checkout ${{ github.ref }}
-        fi
+        git checkout ${{ github.ref }}
       shell: bash
 
     - name: Commit
@@ -47,6 +43,13 @@ runs:
 
     - name: Switch to current branch
       run: git checkout ${{ github.ref }}
+      shell: bash
+
+    - name: Verify chart versions before release
+      run: |
+        echo "📦 Tensorleap chart version: $(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')"
+        echo "📦 Tensorleap infra chart version: $(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')"
+        echo "ℹ️  Chart-releaser will create tags: tensorleap-<version> and tensorleap-infra-<version>"
       shell: bash
 
     - name: Run chart-releaser
