@@ -47,32 +47,7 @@ jobs:
         shell: bash
 
       - name: Remove -rc.x suffix from chart versions
-        run: |
-          # Remove rc.* suffix from tensorleap chart version if present (e.g., 1.2.3-rc.0 -> 1.2.3)
-          CHART_FILE="charts/tensorleap/Chart.yaml"
-          CURRENT_VERSION=$(grep -E '^version:' "$CHART_FILE" | awk '{print $2}')
-          
-          if [[ "$CURRENT_VERSION" =~ -rc\. ]]; then
-            CLEAN_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-rc\.[0-9]*$//')
-            sed -i.bak "s/^version: .*/version: $CLEAN_VERSION/" "$CHART_FILE"
-            rm -f "${CHART_FILE}.bak"
-            echo "Updated tensorleap chart version: $CURRENT_VERSION -> $CLEAN_VERSION"
-          else
-            echo "Tensorleap chart version has no rc suffix: $CURRENT_VERSION"
-          fi
-          
-          # Remove rc.* suffix from infra chart version if present
-          INFRA_CHART_FILE="charts/tensorleap-infra/Chart.yaml"
-          INFRA_CURRENT_VERSION=$(grep -E '^version:' "$INFRA_CHART_FILE" | awk '{print $2}')
-          
-          if [[ "$INFRA_CURRENT_VERSION" =~ -rc\. ]]; then
-            INFRA_CLEAN_VERSION=$(echo "$INFRA_CURRENT_VERSION" | sed 's/-rc\.[0-9]*$//')
-            sed -i.bak "s/^version: .*/version: $INFRA_CLEAN_VERSION/" "$INFRA_CHART_FILE"
-            rm -f "${INFRA_CHART_FILE}.bak"
-            echo "Updated infra chart version: $INFRA_CURRENT_VERSION -> $INFRA_CLEAN_VERSION"
-          else
-            echo "Infra chart version has no rc suffix: $INFRA_CURRENT_VERSION"
-          fi
+        run: make remove-rc-suffix
         shell: bash
 
       - name: Set up Helm
