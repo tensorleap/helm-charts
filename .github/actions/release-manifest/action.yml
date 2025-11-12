@@ -83,9 +83,9 @@ runs:
 
         # Only mark as latest if tag starts with "manifest-"
         if [[ "$TAG" == manifest-* ]]; then
-          echo "make_latest=true" >> $GITHUB_OUTPUT
+          echo "prerelease=false" >> $GITHUB_OUTPUT
         else
-          echo "make_latest=false" >> $GITHUB_OUTPUT
+          echo "prerelease=true" >> $GITHUB_OUTPUT
         fi
       shell: bash
 
@@ -117,7 +117,7 @@ runs:
       with:
         artifacts: manifest.yaml
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
-        makeLatest: ${{ steps.set_manifest_version.outputs.make_latest }}
+        prerelease: ${{ steps.set_manifest_version.outputs.prerelease }}
         skipIfReleaseExists: true
         generateReleaseNotes: true
       env:
