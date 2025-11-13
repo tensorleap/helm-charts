@@ -33,16 +33,6 @@ runs:
         git checkout ${{ inputs.branch }}
       shell: bash
 
-    - name: Determine checkout ref
-      id: checkout_ref
-      run: |
-        if [ -n "${{ inputs.branch }}" ]; then
-          echo "ref=${{ inputs.branch }}" >> $GITHUB_OUTPUT
-        else
-          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
     - name: Verify chart versions before release
       run: |
         echo "📦 Tensorleap chart version: $(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')"
