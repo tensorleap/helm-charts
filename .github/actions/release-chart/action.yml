@@ -33,15 +33,33 @@ runs:
         git checkout ${{ inputs.branch }}
       shell: bash
 
-    - name: Verify chart versions before release
+    - name: Verify chart versions and determine prerelease status
+      id: chart_info
       run: |
-        echo "📦 Tensorleap chart version: $(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')"
-        echo "📦 Tensorleap infra chart version: $(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')"
+        # Get chart versions (read once)
+        CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+        INFRA_CHART_VERSION=$(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')
+        echo "📦 Tensorleap chart version: $CHART_VERSION"
+        echo "📦 Tensorleap infra chart version: $INFRA_CHART_VERSION"
         echo "ℹ️  Chart-releaser will create tags: tensorleap-<version> and tensorleap-infra-<version>"
+        # Use Makefile function to check if version contains -rc. (reusable logic)
+        IS_RC=$(make -s check-rc-version)
+        if [ "$IS_RC" = "true" ]; then
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          echo "is_latest=false" >> $GITHUB_OUTPUT
+          echo "🔖 Detected RC version: $CHART_VERSION - will mark chart release as prerelease (not latest)"
+        else
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          echo "is_latest=true" >> $GITHUB_OUTPUT
+          echo "✅ Detected production version: $CHART_VERSION - will mark chart release as latest"
+        fi
       shell: bash
 
     - name: Run chart-releaser
-      uses: helm/chart-releaser-action@v1.1.0
+      uses: helm/chart-releaser-action@v1.6.0
+      with:
+        prerelease: ${{ steps.chart_info.outputs.is_prerelease }}
+        latest: ${{ steps.chart_info.outputs.is_latest }}
       env:
         CR_TOKEN: ${{ inputs.github_token }}
         CR_PAGES_BRANCH: index
