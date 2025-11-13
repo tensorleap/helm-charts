@@ -52,18 +52,30 @@ runs:
         # If user provides 'manifest' OR calling workflow is 'Release Version To Production'
         if [ "${{ inputs.custom_tag_prefix }}" == "manifest" ] || [ "${{ github.workflow }}" == "Release Version To Production" ]; then
           PREFIX="manifest"
-          echo "is_latest=true" >> $GITHUB_OUTPUT
-          echo "prerelease=false" >> $GITHUB_OUTPUT
         else
           # Use custom_tag_prefix if provided, otherwise empty string
           if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
             PREFIX="${{ inputs.custom_tag_prefix }}"
           fi
-          echo "is_latest=false" >> $GITHUB_OUTPUT
-          echo "prerelease=true" >> $GITHUB_OUTPUT
         fi
         
         echo "prefix=$PREFIX" >> $GITHUB_OUTPUT
+        
+        # Use Makefile function to check if version contains -rc. (reusable logic, same as release-chart)
+        IS_RC=$(make -s check-rc-version)
+        if [ "$IS_RC" = "true" ]; then
+          echo "is_latest=false" >> $GITHUB_OUTPUT
+          echo "prerelease=true" >> $GITHUB_OUTPUT
+        else
+          # Only mark as latest if prefix is "manifest" (production release)
+          if [ "$PREFIX" == "manifest" ]; then
+            echo "is_latest=true" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          else
+            echo "is_latest=false" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          fi
+        fi
       shell: bash
 
     - name: Get tensorleap chart version
