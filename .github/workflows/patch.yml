@@ -57,11 +57,6 @@ jobs:
           make update-images
         shell: bash
 
-      - name: Store custom_tag_prefix for triggered workflow
-        run: |
-          echo "${{ inputs.custom_tag_prefix }}" > .custom_tag_prefix
-        shell: bash
-
       - name: Commit version changes
         uses: EndBug/add-and-commit@v9
         with:
