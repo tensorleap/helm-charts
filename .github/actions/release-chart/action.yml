@@ -43,25 +43,6 @@ runs:
         fi
       shell: bash
 
-    - name: Switch to index branch
-      run: git checkout index
-      shell: bash
-
-    - name: Update files
-      run: |
-        git checkout ${{ steps.checkout_ref.outputs.ref }}
-      shell: bash
-
-    - name: Commit
-      uses: EndBug/add-and-commit@v9
-      with:
-        message: "Update static files"
-        github_token: ${{ inputs.github_token }}
-
-    - name: Switch to current branch
-      run: git checkout ${{ steps.checkout_ref.outputs.ref }}
-      shell: bash
-
     - name: Verify chart versions before release
       run: |
         echo "📦 Tensorleap chart version: $(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')"
