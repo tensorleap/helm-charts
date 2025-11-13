@@ -43,44 +43,35 @@ runs:
       with:
         go-version-file: ./go.mod
 
-    - name: Determine if this is a latest release
+    - name: Determine release prefix and type
       id: determine_release_type
       run: |
-        # Determine prefix and if this is a latest release
-        if [ -z "${{ inputs.custom_tag_prefix }}" ]; then
-          if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-            DEFAULT_PREFIX="manifest"
-          else
-            DEFAULT_PREFIX=""
-          fi
-          PREFIX="$DEFAULT_PREFIX"
-        else
-          PREFIX="${{ inputs.custom_tag_prefix }}"
-        fi
-        # Only mark as latest if tag will start with "manifest-"
-        if [[ "$PREFIX" == "manifest" ]]; then
+        # Default prefix is empty string
+        PREFIX=""
+        
+        # If user provides 'manifest' OR calling workflow is 'Release Version To Production'
+        if [ "${{ inputs.custom_tag_prefix }}" == "manifest" ] || [ "${{ github.workflow }}" == "Release Version To Production" ]; then
+          PREFIX="manifest"
           echo "is_latest=true" >> $GITHUB_OUTPUT
+          echo "prerelease=false" >> $GITHUB_OUTPUT
         else
+          # Use custom_tag_prefix if provided, otherwise empty string
+          if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
+            PREFIX="${{ inputs.custom_tag_prefix }}"
+          fi
           echo "is_latest=false" >> $GITHUB_OUTPUT
+          echo "prerelease=true" >> $GITHUB_OUTPUT
         fi
-      shell: bash
-
-    - name: Remove RC suffix for latest releases
-      if: steps.determine_release_type.outputs.is_latest == 'true'
-      run: make remove-rc-suffix
+        
+        echo "prefix=$PREFIX" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Get tensorleap chart version
       id: get_tensorleap_chart_version
       run: |
-        # If branch is provided and it's NOT a latest release, use branch name as version (includes RC suffix, e.g., 1.4.35-rc.0)
-        # But if we removed RC suffix above (latest release), read from Chart.yaml instead
-        if [ -n "${{ inputs.branch }}" ] && [ "${{ steps.determine_release_type.outputs.is_latest }}" != "true" ]; then
-          CHART_VERSION="${{ inputs.branch }}"
-        else
-          # Otherwise, read from Chart.yaml (will have RC suffix removed if it was latest)
-          CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
-        fi
+        # - For RC releases: Chart.yaml has RC suffix (updated by checkout-rc-branch)
+        # - For production: Chart.yaml has RC suffix removed (updated by release_production.yml)
+        CHART_VERSION=$(cat charts/tensorleap/Chart.yaml | grep -E '^version:' | awk '{print $2}')
         echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
       shell: bash
 
@@ -94,17 +85,8 @@ runs:
     - name: Set manifest version
       id: set_manifest_version
       run: |
-        # Determine prefix (same logic as determine_release_type step)
-        if [ -z "${{ inputs.custom_tag_prefix }}" ]; then
-          if [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-            DEFAULT_PREFIX="manifest"
-          else
-            DEFAULT_PREFIX=""
-          fi
-          PREFIX="$DEFAULT_PREFIX"
-        else
-          PREFIX="${{ inputs.custom_tag_prefix }}"
-        fi
+        # Use prefix from determine_release_type step
+        PREFIX="${{ steps.determine_release_type.outputs.prefix }}"
         # Set the manifest version to the tensorleap chart version
         if [ -n "$PREFIX" ]; then
           TAG="${PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
@@ -112,15 +94,6 @@ runs:
           TAG="${{ steps.get_tensorleap_chart_version.outputs.version }}"
         fi
         echo "tag=$TAG" >> $GITHUB_OUTPUT
-
-        # Only mark as latest if tag starts with "manifest-"
-        if [[ "$TAG" == manifest-* ]]; then
-          echo "make_latest=true" >> $GITHUB_OUTPUT
-          echo "prerelease=false" >> $GITHUB_OUTPUT
-        else
-          echo "make_latest=false" >> $GITHUB_OUTPUT
-          echo "prerelease=true" >> $GITHUB_OUTPUT
-        fi
       shell: bash
 
     - name: Create installation manifest
@@ -128,12 +101,7 @@ runs:
         echo "📦 Tensorleap chart version: ${{ steps.get_tensorleap_chart_version.outputs.version }}"
         echo "📦 Tensorleap infra chart version: ${{ steps.get_tensorleap_infra_chart_version.outputs.version }}"
         echo "🏷️  Release tag: ${{ steps.set_manifest_version.outputs.tag }}"
-        # Use --local flag when branch is provided (files are already checked out)
-        if [ -n "${{ inputs.branch }}" ]; then
-          go run . create-manifest --local --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
-        else
-          go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version  }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
-        fi
+        go run . create-manifest --tensorleap-chart-version ${{ steps.get_tensorleap_chart_version.outputs.version }} --tensorleap-infra-chart-version ${{ steps.get_tensorleap_infra_chart_version.outputs.version }} --tag ${{ steps.set_manifest_version.outputs.tag }} --output manifest.yaml
       shell: bash
 
     - name: Print charts versions
@@ -151,8 +119,8 @@ runs:
       with:
         artifacts: manifest.yaml
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
-        makeLatest: ${{ steps.set_manifest_version.outputs.make_latest }}
-        prerelease: ${{ steps.set_manifest_version.outputs.prerelease }}
+        makeLatest: ${{ steps.determine_release_type.outputs.is_latest }}
+        prerelease: ${{ steps.determine_release_type.outputs.prerelease }}
         skipIfReleaseExists: true
         generateReleaseNotes: true
       env:
