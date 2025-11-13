@@ -41,7 +41,21 @@ jobs:
       - name: Get current branch name
         id: get_branch
         run: |
+          # Get branch name, handling various git states
           BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          # Remove any refs/heads/ or heads/ prefix if present
+          BRANCH=$(echo "$BRANCH" | sed 's|^refs/heads/||' | sed 's|^heads/||')
+          # If HEAD is detached, try to get branch from remote tracking or use github.ref
+          if [ "$BRANCH" = "HEAD" ]; then
+            # Try to get branch from remote tracking
+            REMOTE_BRANCH=$(git branch -r --contains HEAD 2>/dev/null | head -1 | sed 's|origin/||' | xargs)
+            if [ -n "$REMOTE_BRANCH" ]; then
+              BRANCH="$REMOTE_BRANCH"
+            else
+              # Fallback to github.ref (remove refs/heads/ prefix)
+              BRANCH=$(echo "${{ github.ref }}" | sed 's|^refs/heads/||')
+            fi
+          fi
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
           echo "Current branch: $BRANCH"
         shell: bash
