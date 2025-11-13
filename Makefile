@@ -137,3 +137,20 @@ remove-rc-suffix:
 	else
 	  echo "Tensorleap chart version has no rc suffix: $$CURRENT_VERSION"
 	fi
+
+.PHONY: check-rc-version
+check-rc-version:
+	@set -euo pipefail
+	# Check if chart version contains -rc. suffix
+	# Outputs: is_rc (true/false)
+	CHART_FILE="charts/tensorleap/Chart.yaml"
+	if [ ! -f "$$CHART_FILE" ]; then
+	  echo "❌ $$CHART_FILE not found" >&2
+	  exit 1
+	fi
+	CHART_VERSION="$$(grep -E '^version:' "$$CHART_FILE" | awk '{print $$2}')"
+	if [[ "$$CHART_VERSION" =~ -rc\. ]]; then
+	  echo "true"
+	else
+	  echo "false"
+	fi
