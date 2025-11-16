@@ -46,9 +46,7 @@ runs:
       shell: bash
 
     - name: Switch to index branch
-      run: |
-        git fetch origin index || true
-        git checkout index || git checkout -b index
+      run: git checkout index
       shell: bash
 
     - name: Update files from source branch
