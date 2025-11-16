@@ -1,4 +1,4 @@
-name: Release Version To Production
+name: Release Production
 
 on:
   workflow_call:
