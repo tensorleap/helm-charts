@@ -33,25 +33,26 @@ images:
         - docker.io/library/redis:latest
         - gcr.io/datadoghq/agent:7.52.0
         - nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-        - public.ecr.aws/tensorleap/engine-generic:master-e83319cc-py310
-        - public.ecr.aws/tensorleap/engine-generic:master-e83319cc-py312
-        - public.ecr.aws/tensorleap/engine-generic:master-e83319cc-py38
-        - public.ecr.aws/tensorleap/engine-generic:master-e83319cc-py39
-        - public.ecr.aws/tensorleap/engine:master-e83319cc
-        - public.ecr.aws/tensorleap/node-server:master-ac119be9
+        - public.ecr.aws/tensorleap/engine-generic:master-4bcdd4e0-py310
+        - public.ecr.aws/tensorleap/engine-generic:master-4bcdd4e0-py312
+        - public.ecr.aws/tensorleap/engine-generic:master-4bcdd4e0-py38
+        - public.ecr.aws/tensorleap/engine-generic:master-4bcdd4e0-py39
+        - public.ecr.aws/tensorleap/engine:master-4bcdd4e0
+        - public.ecr.aws/tensorleap/node-server:master-091c5b35
         - public.ecr.aws/tensorleap/pippin:master-2a8d7971
-        - public.ecr.aws/tensorleap/web-ui:master-4710c9f0
+        - public.ecr.aws/tensorleap/web-ui:master-bd55ef4d
         - quay.io/keycloak/keycloak:26.3.2
         - quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
         - registry.k8s.io/ingress-nginx/controller:v1.10.0
         - registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
+tag: tensorleap-1.4.58-rc.5
 serverHelmChart:
-    version: 1.4.44
-    repoUrl: charts
+    version: 1.4.58-rc.5
+    repoUrl: https://helm.tensorleap.ai
     chartName: tensorleap
     releaseName: tensorleap
 infraHelmChart:
     version: 1.1.3
-    repoUrl: charts
+    repoUrl: https://helm.tensorleap.ai
     chartName: tensorleap-infra
     releaseName: tensorleap-infra
