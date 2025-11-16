@@ -26,11 +26,46 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
-    - name: Checkout specific branch if provided
-      if: inputs.branch != ''
+    - name: Determine source branch
+      id: source_branch
       run: |
-        git fetch origin ${{ inputs.branch }} || true
-        git checkout ${{ inputs.branch }}
+        if [ -n "${{ inputs.branch }}" ]; then
+          echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+        else
+          # Clean up github.ref - remove refs/heads/ prefix
+          REF="${{ github.ref }}"
+          REF=$(echo "$REF" | sed 's|^refs/heads/||')
+          echo "branch=$REF" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Fetch source branch
+      run: |
+        # Fetch the source branch so it's available locally for later operations
+        git fetch origin ${{ steps.source_branch.outputs.branch }} || true
+      shell: bash
+
+    - name: Switch to index branch
+      run: |
+        git fetch origin index || true
+        git checkout index || git checkout -b index
+      shell: bash
+
+    - name: Update files from source branch
+      run: |
+        # Checkout all files from source branch into current (index) branch
+        git checkout ${{ steps.source_branch.outputs.branch }} -- .
+      shell: bash
+
+    - name: Commit static files to index branch
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: "Update static files"
+        github_token: ${{ inputs.github_token }}
+
+    - name: Switch back to source branch
+      run: |
+        git checkout ${{ steps.source_branch.outputs.branch }}
       shell: bash
 
     - name: Verify chart versions and determine prerelease status
