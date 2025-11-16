@@ -13,9 +13,32 @@ on:
     types: [completed]
 
 jobs:
+  determine-source-branch:
+    if: github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      source_branch: ${{ steps.get_branch.outputs.branch }}
+    steps:
+      - name: Get source branch
+        id: get_branch
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            # Get branch from triggering workflow
+            echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+          else
+            # Get branch from github.ref (remove refs/heads/ prefix)
+            REF="${{ github.ref }}"
+            REF=$(echo "$REF" | sed 's|^refs/heads/||')
+            echo "branch=$REF" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
   test:
+    needs: determine-source-branch
     if: github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     uses: ./.github/workflows/_release_tests.yml
+    with:
+      source_branch: ${{ needs.determine-source-branch.outputs.source_branch }}
     secrets: inherit
   
   release-production:
