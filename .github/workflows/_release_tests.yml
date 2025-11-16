@@ -1,4 +1,4 @@
-name: Release Tests
+name: NOT FOR USE - Release Tests
 
 on:
   workflow_call:
