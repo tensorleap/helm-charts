@@ -8,9 +8,9 @@ on:
         required: false
         type: string
         default: ""
-  workflow_run:
-    workflows: ["Patch"]
-    types: [completed]
+  # workflow_run:
+  #   workflows: ["Patch"]
+  #   types: [completed]
 
 jobs:
   determine-source-branch:
