@@ -60,19 +60,6 @@ runs:
         fi
         
         echo "prefix=$PREFIX" >> $GITHUB_OUTPUT
-        
-        # Use Makefile function to check if version contains -rc. (reusable logic, same as release-chart)
-        IS_RC=$(make -s check-rc-version)
-        if [ "$IS_RC" = "true" ]; then
-          echo "is_latest=false" >> $GITHUB_OUTPUT
-        else
-          # Only mark as latest if prefix is "manifest" (production release)
-          if [ "$PREFIX" == "manifest" ]; then
-            echo "is_latest=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_latest=false" >> $GITHUB_OUTPUT
-          fi
-        fi
       shell: bash
 
     - name: Get tensorleap chart version
@@ -128,7 +115,6 @@ runs:
       with:
         artifacts: manifest.yaml
         tag: "${{ steps.set_manifest_version.outputs.tag }}"
-        makeLatest: ${{ steps.determine_release_type.outputs.is_latest }}
         skipIfReleaseExists: true
         generateReleaseNotes: true
       env:
