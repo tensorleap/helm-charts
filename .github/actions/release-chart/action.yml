@@ -26,24 +26,24 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
-    # - name: Determine source branch
-    #   id: source_branch
-    #   run: |
-    #     if [ -n "${{ inputs.branch }}" ]; then
-    #       echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
-    #     else
-    #       # Clean up github.ref - remove refs/heads/ prefix
-    #       REF="${{ github.ref }}"
-    #       REF=$(echo "$REF" | sed 's|^refs/heads/||')
-    #       echo "branch=$REF" >> $GITHUB_OUTPUT
-    #     fi
-    #   shell: bash
+    - name: Determine source branch
+      id: source_branch
+      run: |
+        if [ -n "${{ inputs.branch }}" ]; then
+          echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+        else
+          # Clean up github.ref - remove refs/heads/ prefix
+          REF="${{ github.ref }}"
+          REF=$(echo "$REF" | sed 's|^refs/heads/||')
+          echo "branch=$REF" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
 
-    # - name: Fetch source branch
-    #   run: |
-    #     # Fetch the source branch so it's available locally for later operations
-    #     git fetch origin ${{ steps.source_branch.outputs.branch }} || true
-    #   shell: bash
+    - name: Fetch source branch
+      run: |
+        # Fetch the source branch so it's available locally for later operations
+        git fetch origin ${{ steps.source_branch.outputs.branch }} || true
+      shell: bash
 
     - name: Switch to index branch
       run: git checkout index
@@ -52,8 +52,7 @@ runs:
     - name: Update files from source branch
       run: |
         # Checkout all files from source branch into current (index) branch
-        # git checkout ${{ steps.source_branch.outputs.branch }} -- .
-        git checkout ${{ github.ref }}
+        git checkout ${{ steps.source_branch.outputs.branch }} -- .
       shell: bash
 
     - name: Commit static files to index branch
@@ -64,31 +63,30 @@ runs:
 
     - name: Switch back to source branch
       run: |
-        # git checkout ${{ steps.source_branch.outputs.branch }}
-        git checkout ${{ github.ref }}
+        git checkout ${{ steps.source_branch.outputs.branch }}
       shell: bash
 
-    - name: Verify chart versions and determine prerelease status
-      id: chart_info
-      run: |
-        # Get chart versions (read once)
-        CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
-        INFRA_CHART_VERSION=$(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')
-        echo "📦 Tensorleap chart version: $CHART_VERSION"
-        echo "📦 Tensorleap infra chart version: $INFRA_CHART_VERSION"
-        echo "ℹ️  Chart-releaser will create tags: tensorleap-<version> and tensorleap-infra-<version>"
-        # Use Makefile function to check if version contains -rc. (reusable logic)
-        IS_RC=$(make -s check-rc-version)
-        if [ "$IS_RC" = "true" ]; then
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          echo "is_latest=false" >> $GITHUB_OUTPUT
-          echo "🔖 Detected RC version: $CHART_VERSION - will mark chart release as prerelease (not latest)"
-        else
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          echo "is_latest=true" >> $GITHUB_OUTPUT
-          echo "✅ Detected production version: $CHART_VERSION - will mark chart release as latest"
-        fi
-      shell: bash
+    # - name: Verify chart versions and determine prerelease status
+    #   id: chart_info
+    #   run: |
+    #     # Get chart versions (read once)
+    #     CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+    #     INFRA_CHART_VERSION=$(grep -E '^version:' charts/tensorleap-infra/Chart.yaml | awk '{print $2}')
+    #     echo "📦 Tensorleap chart version: $CHART_VERSION"
+    #     echo "📦 Tensorleap infra chart version: $INFRA_CHART_VERSION"
+    #     echo "ℹ️  Chart-releaser will create tags: tensorleap-<version> and tensorleap-infra-<version>"
+    #     # Use Makefile function to check if version contains -rc. (reusable logic)
+    #     IS_RC=$(make -s check-rc-version)
+    #     if [ "$IS_RC" = "true" ]; then
+    #       echo "is_prerelease=true" >> $GITHUB_OUTPUT
+    #       echo "is_latest=false" >> $GITHUB_OUTPUT
+    #       echo "🔖 Detected RC version: $CHART_VERSION - will mark chart release as prerelease (not latest)"
+    #     else
+    #       echo "is_prerelease=false" >> $GITHUB_OUTPUT
+    #       echo "is_latest=true" >> $GITHUB_OUTPUT
+    #       echo "✅ Detected production version: $CHART_VERSION - will mark chart release as latest"
+    #     fi
+    #   shell: bash
 
     - name: Run chart-releaser
       uses: helm/chart-releaser-action@v1.6.0
