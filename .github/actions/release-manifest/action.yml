@@ -14,28 +14,18 @@ inputs:
     required: false
     default: 'manifest.yaml'
   branch:
-    description: 'Branch to checkout (if not provided, uses github.ref)'
+    description: 'Branch to checkout'
     required: false
     default: ''
 
 runs:
   using: composite
   steps:
-    - name: Determine checkout ref
-      id: checkout_ref
-      run: |
-        if [ -n "${{ inputs.branch }}" ]; then
-          echo "ref=${{ inputs.branch }}" >> $GITHUB_OUTPUT
-        else
-          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
     - name: Checkout
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.github_token }}
-        ref: ${{ steps.checkout_ref.outputs.ref }}
+        ref: ${{ inputs.branch || github.ref }}
         fetch-depth: 0
 
     - name: Set up Go
@@ -46,17 +36,11 @@ runs:
     - name: Determine release prefix and type
       id: determine_release_type
       run: |
-        # Default prefix is empty string
-        PREFIX=""
-        
-        # If user provides 'manifest' OR calling workflow is 'Release Version To Production'
-        if [ "${{ inputs.custom_tag_prefix }}" == "manifest" ] || [ "${{ github.workflow }}" == "Release Version To Production" ]; then
-          PREFIX="manifest"
+        # Use custom_tag_prefix if provided, otherwise empty string
+        if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
+          PREFIX="${{ inputs.custom_tag_prefix }}"
         else
-          # Use custom_tag_prefix if provided, otherwise empty string
-          if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
-            PREFIX="${{ inputs.custom_tag_prefix }}"
-          fi
+          PREFIX=""
         fi
         
         echo "prefix=$PREFIX" >> $GITHUB_OUTPUT
