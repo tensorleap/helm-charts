@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
@@ -22,10 +24,18 @@ func NewCreateManifestCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var mnf *manifest.InstallationManifest
 			var err error
+			fmt.Println("Creating manifest from local files")
+			fmt.Println("fromLocal:", fromLocal)
+			fmt.Println("serverChartVersion:", serverChartVersion)
+			fmt.Println("infraChartVersion:", infraChartVersion)
+			fmt.Println("tag:", tag)
+			fmt.Println("output:", output)
 			if fromLocal {
+				fmt.Println("@@ i am in the local block")
 				fileGetter := manifest.BuildLocalFileGetter("")
 				mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
 			} else {
+				fmt.Println("@@@@@@ i am in the remote block")
 				mnf, err = manifest.GenerateManifestFromRemote(serverChartVersion, infraChartVersion)
 			}
 			if err != nil {
