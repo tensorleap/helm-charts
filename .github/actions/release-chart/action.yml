@@ -29,6 +29,7 @@ runs:
       run: |
         # Fetch the source branch so it's available locally for later operations
         git fetch origin ${{ inputs.branch }} || true
+        git checkout ${{ inputs.branch }}
       shell: bash
 
     - name: Switch to index branch
