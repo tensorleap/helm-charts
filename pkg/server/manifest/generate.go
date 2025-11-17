@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"strings"
 )
 
 func GenerateManifestFromLocal(fileGetter FileGetter) (*InstallationManifest, error) {
@@ -34,7 +35,13 @@ func GenerateManifestFromRemote(serverChartVersion, infraChartVersion string) (*
 		serverChartVersion = GetHelmVersionFromTag(serverChartTag)
 
 	} else {
-		serverChartTag = fmt.Sprintf("tensorleap-%s", serverChartVersion)
+		// For RC versions, chart-releaser creates tags without the "tensorleap-" prefix
+		// e.g., "1.4.61-rc.1" instead of "tensorleap-1.4.61-rc.1"
+		if strings.Contains(serverChartVersion, "-rc.") {
+			serverChartTag = serverChartVersion
+		} else {
+			serverChartTag = fmt.Sprintf("tensorleap-%s", serverChartVersion)
+		}
 	}
 	if len(infraChartVersion) == 0 {
 		var err error
