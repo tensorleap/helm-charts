@@ -39,11 +39,11 @@ runs:
         fi
       shell: bash
 
-    # - name: Fetch source branch
-    #   run: |
-    #     # Fetch the source branch so it's available locally for later operations
-    #     git fetch origin ${{ steps.source_branch.outputs.branch }} || true
-    #   shell: bash
+    - name: Fetch source branch
+      run: |
+        # Fetch the source branch so it's available locally for later operations
+        git fetch origin ${{ steps.source_branch.outputs.branch }} || true
+      shell: bash
 
     - name: Switch to index branch
       run: git checkout index
