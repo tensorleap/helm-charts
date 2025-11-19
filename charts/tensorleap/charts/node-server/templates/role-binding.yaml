@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: node-server-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ empty .Values.global.target_namespace | ternary "Role" "ClusterRole" }}
+  name: node-server-role
+subjects:
+  - kind: ServiceAccount
+    name: node-server-sa
+    namespace: {{ .Release.Namespace }}
+---
+{{ if and .Values.global.target_namespace (ne .Values.global.target_namespace .Release.Namespace) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: node-server-role-binding
+  namespace: {{ .Values.global.target_namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-server-role
+subjects:
+  - kind: ServiceAccount
+    name: node-server-sa
+    namespace: {{ .Release.Namespace }}
+{{ end }}

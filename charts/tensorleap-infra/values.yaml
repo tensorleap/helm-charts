@@ -1,0 +1,11 @@
+eck-operator:
+  managedNamespaces:
+    - tensorleap
+
+nvidiaGpu:
+  enabled: false
+  visibleDevices: "all"
+
+global:
+  elasticsearch:
+    enabled: true

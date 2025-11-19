@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engine-cm
+{{ if .Values.global.target_namespace }}
+  namespace: {{ .Values.global.target_namespace }}
+{{ end }}
+data:
+  PY_CONFIG: /app/config/config.yaml
+{{ if .Values.global.elasticsearch.url }}
+  ELASTIC_HOST: {{ .Values.global.elasticsearch.url }}
+{{ else }}
+  ELASTIC_HOST: http://tl-elasticsearch-es-master:9200
+{{ end }}
+  SESSION_BUCKET: session
+  RABBIT_HOST: rabbitmq.{{ .Release.Namespace }}.svc
+  RABBIT_USER: guest
+  RABBIT_PASSWORD: guest
+  FEEDBACK_TOPIC: feedback
+  SUBSCRIBER_TOPIC: job-control-channel
+  STORAGE_PROVIDER: minio
+  STORAGE_ENDPOINT: tensorleap-minio.{{ .Release.Namespace }}.svc
+  STORAGE_PORT: "9000"
+  CONTENT_BASE_URL: /session/
+  MOUNTHPATH: /usr/minio/session/
+  UI_SETTINGS_SCHEMA: '{"N_DATASET_PROCESSES":{"type":"number","title":"Number of Dataset Processes","min":1,"description":"Number of processes to use for dataset processing (if empty, calculated automatically)"},"N_METRICS_PROCESSES":{"type":"number","title":"Number of Metrics Processes","min":1,"description":"Number of processes to use for metrics processing (if empty, calculated automatically)"},"N_VISUALIZERS_PROCESSES":{"type":"number","title":"Number of Visualizers Processes","min":1,"description":"Number of processes to use for visualizers processing (if empty, calculated automatically)"}}'
+
+  GENERIC_CALCULATOR_IMAGE: "public.ecr.aws/tensorleap/engine-generic"
+  GENERIC_CALCULATOR_IMAGE_TAG: {{ .Values.image_tag }}-{{ .Values.generic_py_ver }}
+  GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
+  GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
+  GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
+
+
+  REDIS_HOST: redis.tensorleap.svc.cluster.local
+  REDIS_PORT: "6379"

@@ -1,0 +1,62 @@
+{{ if .Values.global.elasticsearch.enabled }}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: tl-elasticsearch
+spec:
+  version: 8.10.1
+  # It is important to specify the image for extract images script to work
+  image: docker.io/library/elasticsearch:8.10.1
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+
+  updateStrategy:
+    changeBudget: 
+      maxUnavailable: 0
+
+  nodeSets:
+    - name: master
+      count: 1
+      config:
+        http.max_content_length: 200mb 
+        node.roles: ["master", "data", "ingest"]
+        xpack.security.enabled: false
+        xpack.security.authc:
+          anonymous:
+            username: anonymous_user 
+            roles: superuser 
+            authz_exception: false
+   
+      volumeClaimTemplates:
+      - metadata:
+          name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 60Gi
+      podTemplate:
+        metadata:
+          labels:
+            app: elastic
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+              - name: ES_JAVA_OPTS
+                value: "-Xms3g -Xmx3g"
+              resources:
+                requests:
+                  memory: "6Gi"
+                limits:
+                  memory: "6Gi"
+          initContainers:
+            - name: sysctl
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+{{ end }}

@@ -1,0 +1,60 @@
+name: Release Charts
+description: Release Helm charts using chart-releaser-action
+
+inputs:
+  github_token:
+    description: 'GitHub token for authentication'
+    required: true
+  branch:
+    description: 'Branch to checkout'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.github_token }}
+        fetch-depth: 0
+        persist-credentials: true
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+      shell: bash
+
+    - name: Fetch source branch
+      run: |
+        # Fetch the source branch so it's available locally for later operations
+        git fetch origin ${{ inputs.branch }} || true
+        git checkout ${{ inputs.branch }}
+      shell: bash
+
+    - name: Switch to index branch
+      run: git checkout index
+      shell: bash
+
+    - name: Update files from source branch
+      run: |
+        # Checkout all files from source branch into current (index) branch
+        git checkout ${{ inputs.branch }} -- .
+      shell: bash
+
+    - name: Commit static files to index branch
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: "Update static files"
+        github_token: ${{ inputs.github_token }}
+
+    - name: Switch back to source branch
+      run: |
+        git checkout ${{ inputs.branch }}
+      shell: bash
+
+    - name: Run chart-releaser
+      uses: helm/chart-releaser-action@v1.1.0
+      env:
+        CR_TOKEN: ${{ inputs.github_token }}
+        CR_PAGES_BRANCH: index

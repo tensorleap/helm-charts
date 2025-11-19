@@ -1,0 +1,145 @@
+name: Update Images
+description: Wait for stable images and update chart image tags
+
+inputs:
+  github_token:
+    description: 'GitHub token for authentication'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for web-ui build to succeed
+      uses: fountainhead/action-wait-for-check@v1.1.0
+      id: wait-for-build
+      with:
+        token: ${{ inputs.github_token }}
+        repo: web-ui
+        ref: master
+        checkName: tag-public-ecr-image-as-stable
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.github_token }}
+        fetch-depth: 0
+        persist-credentials: true
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+      shell: bash
+
+    - name: Install dependencies
+      run: npm install js-yaml
+      shell: bash
+
+    - name: Update charts
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+          let updated = false;
+          let bumpEngineChart = false;
+          const chartsPath = 'charts/tensorleap/charts';
+
+          async function getImageTag(github, repo) {
+            const {
+              data: { sha },
+            } = await github.rest.repos.getCommit({
+              owner: 'tensorleap',
+              repo,
+              ref: 'master',
+            });
+            return `master-${sha.substring(0, 8)}`;
+          }
+
+          for (let repo of ['engine', 'node-server', 'web-ui']) {
+            const imageTag = await getImageTag(github, repo);
+            const valuesPath = `${chartsPath}/${repo}/values.yaml`;
+            const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
+            const { image_tag: currentImageTag } = yaml.load(valuesFile);
+            if (currentImageTag !== imageTag) {
+              const updatedValues = valuesFile.replace(
+                `image_tag: ${currentImageTag}`,
+                `image_tag: ${imageTag}`,
+              );
+              fs.writeFileSync(valuesPath, updatedValues);
+
+              bumpChart(repo);
+              if (repo === 'engine') {
+                bumpEngineChart = true;
+              }
+              fs.writeFileSync(
+                `${repo}-latest-image`,
+                `public.ecr.aws/tensorleap/${repo}:${imageTag}`,
+              );
+
+              updated = true;
+            }
+          }
+
+          const imageTag = await getImageTag(github, 'pippin');
+          const valuesPath = `${chartsPath}/engine/values.yaml`;
+          const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
+          const { dependencies_image_tag: currentImageTag } = yaml.load(valuesFile);
+          if (currentImageTag !== imageTag) {
+            const updatedValues = valuesFile.replace(
+              `dependencies_image_tag: ${currentImageTag}`,
+              `dependencies_image_tag: ${imageTag}`,
+            );
+            fs.writeFileSync(valuesPath, updatedValues);
+
+            if (!bumpEngineChart) {
+              bumpChart('engine');
+            }
+            fs.writeFileSync(
+              `pippin-latest-image`,
+              `public.ecr.aws/tensorleap/pippin:${imageTag}`,
+            );
+
+            updated = true;
+          }
+
+          if (updated) {
+            const chartPath = 'charts/tensorleap/Chart.yaml';
+            const chartFile = fs.readFileSync(chartPath, 'utf-8');
+            const { version } = yaml.load(chartFile);
+            const versionParts = version.split('.');
+            versionParts[2] = (parseInt(versionParts[2]) + 1).toString();
+            const newVersion = versionParts.join('.');
+            const updatedChart = chartFile.replace(
+              `version: ${version}`,
+              `version: ${newVersion}`,
+            );
+            fs.writeFileSync(chartPath, updatedChart);
+          }
+          function bumpChart(repo) {
+            const chartPath = `${chartsPath}/${repo}/Chart.yaml`;
+            const chartFile = fs.readFileSync(chartPath, 'utf-8');
+            const { version } = yaml.load(chartFile);
+            const versionParts = version.split('.');
+            versionParts[2] = (parseInt(versionParts[2]) + 1).toString();
+            const newVersion = versionParts.join('.');
+            const updatedChart = chartFile.replace(
+              `version: ${version}`,
+              `version: ${newVersion}`,
+            );
+            fs.writeFileSync(chartPath, updatedChart);
+          }
+
+    - name: Extract image names
+      run: |
+        make build-helm
+        make update-images
+      shell: bash
+
+    - name: Commit
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: "Update image tags"
+        github_token: ${{ inputs.github_token }}
+

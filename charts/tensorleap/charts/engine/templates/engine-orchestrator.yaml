@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine-orchestrator
+  labels:
+    tags.datadoghq.com/env: {{ .Values.env_name }}
+    tags.datadoghq.com/service: {{ .Release.Name }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: engine
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/orchestrator.logs: '[{"source": "python", "service": "orchestrator"}]'
+      labels:
+        app: engine
+        tags.datadoghq.com/env: {{ .Values.env_name }}
+        tags.datadoghq.com/service: {{ .Release.Name }}
+    spec:
+      serviceAccountName: deployment-manager
+      containers:
+        - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 500Mi
+            limits:
+              memory: 500Mi
+          command: ["python", "-m", "src_tensorleap.engine.engine_scheduler"]
+          name: orchestrator
+          env:
+            - name: HMAC_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootUser
+            - name: HMAC_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootPassword
+          envFrom:
+            - configMapRef:
+                name: engine-cm

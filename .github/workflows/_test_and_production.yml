@@ -1,0 +1,74 @@
+name: NOT FOR USE - Test and Production Release
+
+on:
+  workflow_call:
+    inputs:
+      custom_tag_prefix:
+        description: "Custom tag prefix for manifest"
+        required: false
+        type: string
+        default: ""
+  # workflow_run:
+  #   workflows: ["Patch"]
+  #   types: [completed]
+
+jobs:
+  determine-source-branch:
+    if: github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      source_branch: ${{ steps.get_branch.outputs.branch }}
+    steps:
+      - name: Get source branch
+        id: get_branch
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            # Get branch from triggering workflow
+            echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+          else
+            # Get branch from github.ref (remove refs/heads/ prefix)
+            REF="${{ github.ref }}"
+            REF=$(echo "$REF" | sed 's|^refs/heads/||')
+            echo "branch=$REF" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+  test:
+    needs: determine-source-branch
+    if: github.event_name == 'workflow_call' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    uses: ./.github/workflows/_release_tests.yml
+    with:
+      source_branch: ${{ needs.determine-source-branch.outputs.source_branch }}
+    secrets: inherit
+  
+  release-production:
+    needs: test
+    if: needs.test.result == 'success'
+    uses: ./.github/workflows/release_production.yml
+    with:
+      custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+    secrets: inherit
+
+  handle-test-failure:
+    # Handle failures for both workflow_call and workflow_run events
+    needs: test
+    if: needs.test.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tests Failed - Handle Failure
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            echo "::error::Tests failed after $WORKFLOW_NAME workflow!"
+            echo "Please run the '$WORKFLOW_NAME' workflow again."
+            echo "After the workflow completes, tests will run automatically again."
+            echo "This process will repeat until tests pass, then production release will proceed."
+          else
+            echo "::error::Tests failed! Please run the 'Patch Release' workflow manually."
+            echo "After the patch workflow completes, tests will run automatically."
+            echo "This process will repeat until tests pass, then production release will proceed."
+          fi
+          exit 1
+        shell: bash
+
