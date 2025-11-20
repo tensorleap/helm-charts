@@ -7,12 +7,6 @@ on:
         description: "Custom tag"
         required: false
         default: ""
-  workflow_run:
-    workflows: ["Release Charts"]
-    branches:
-      - master
-    types:
-      - completed
 
 jobs:
   release:
