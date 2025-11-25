@@ -1,19 +1,7 @@
 name: Release Production
 
 on:
-  workflow_call:
-    inputs:
-      custom_tag_prefix:
-        description: "Custom tag prefix for manifest"
-        required: false
-        type: string
-        default: ""
   workflow_dispatch:
-    inputs:
-      custom_tag_prefix:
-        description: "Custom tag prefix for manifest"
-        required: false
-        default: ""
 
 # Allow pushing new branches using the provided token
 permissions:
@@ -91,5 +79,5 @@ jobs:
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          custom_tag_prefix: 'manifest'
           branch: ${{ steps.get_branch.outputs.branch }}
