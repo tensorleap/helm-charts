@@ -36,9 +36,9 @@ runs:
     - name: Determine release prefix and type
       id: determine_release_type
       run: |
-          # Use custom_tag_prefix if provided, otherwise empty string
-          if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
-            PREFIX="${{ inputs.custom_tag_prefix }}"
+        # Use custom_tag_prefix if provided, otherwise empty string
+        if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
+          PREFIX="${{ inputs.custom_tag_prefix }}"
         else
           PREFIX=""
         fi
