@@ -1,4 +1,4 @@
-image_tag: master-4226fad3
+image_tag: unify-code-integration-with-version-c181027c
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:

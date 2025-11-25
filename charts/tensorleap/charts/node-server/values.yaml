@@ -1,4 +1,4 @@
-image_tag: master-8c86c5a5
+image_tag: unify-code-integration-with-version-1f25905b
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
