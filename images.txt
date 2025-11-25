@@ -10,9 +10,9 @@ public.ecr.aws/tensorleap/engine-generic:master-5d4a5041-py312
 public.ecr.aws/tensorleap/engine-generic:master-5d4a5041-py38
 public.ecr.aws/tensorleap/engine-generic:master-5d4a5041-py39
 public.ecr.aws/tensorleap/engine:master-5d4a5041
-public.ecr.aws/tensorleap/node-server:master-8c86c5a5
+public.ecr.aws/tensorleap/node-server:unify-code-integration-with-version-1f25905b
 public.ecr.aws/tensorleap/pippin:master-2a8d7971
-public.ecr.aws/tensorleap/web-ui:master-4226fad3
+public.ecr.aws/tensorleap/web-ui:unify-code-integration-with-version-c181027c
 quay.io/keycloak/keycloak:26.3.2
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
