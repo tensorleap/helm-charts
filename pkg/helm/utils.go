@@ -282,7 +282,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"keycloakx": map[string]interface{}{
 			"enabled":  params.KeycloakEnabled,
 			"replicas": 1,
-			"command":  []string{"/opt/keycloak/bin/kc.sh", "start"},
+			"command":  []interface{}{"/opt/keycloak/bin/kc.sh", "start"},
 			"extraEnv": extraEnvStringYaml,
 		},
 		"datadog": map[string]interface{}{
