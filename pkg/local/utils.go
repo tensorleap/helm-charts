@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/tensorleap/helm-charts/pkg/k8s"
+	// "github.com/tensorleap/helm-charts/pkg/k8s"
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
@@ -117,14 +117,14 @@ func initStandaloneSubDirs() error {
 
 // SetupInfra init VAR_DIR, setup VerboseLog and connect its output into a file
 func SetupInfra(cmdName string) (closeLogFile func(), err error) {
-	err = InitStandaloneDir()
+
 	if err != nil {
 		log.SendCloudReport("error", "Failed initializing standalone dir", "Failed", &map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	SetupK3dLogger(log.VerboseLogger)
-	k8s.SetupLogger(log.VerboseLogger)
+	//k8s.SetupLogger(log.VerboseLogger)
 
 	logPath := createLogFilePath(cmdName)
 	closeLogFile, err = log.ConnectFileToVerboseLogOutput(logPath)
