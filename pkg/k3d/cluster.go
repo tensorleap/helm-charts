@@ -375,7 +375,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		}
 	}
 
-	k3dClusterConfig, err := config.TransformSimpleToClusterConfig(ctx, runtimes.SelectedRuntime, simpleK3dConfig)
+	k3dClusterConfig, err := config.TransformSimpleToClusterConfig(ctx, runtimes.SelectedRuntime, simpleK3dConfig, "")
 	if err != nil {
 		log.Fatalln(err)
 	}
