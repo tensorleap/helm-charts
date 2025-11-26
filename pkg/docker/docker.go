@@ -11,8 +11,7 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"github.com/spf13/pflag"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"k8s.io/utils/strings/slices"
@@ -44,13 +43,13 @@ func NewClient() (Client, error) {
 
 func LoadingImages(dockerClient Client, reader io.Reader) error {
 	log.Info("Loading images...")
-	res, err := dockerClient.ImageLoad(context.Background(), reader, false)
+	res, err := dockerClient.ImageLoad(context.Background(), reader, client.ImageLoadWithQuiet(false))
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer res.Close()
 
-	_, err = io.Copy(log.VerboseLogger.Out, res.Body)
+	_, err = io.Copy(log.VerboseLogger.Out, res)
 	if err != nil {
 		return err
 	}
@@ -141,7 +140,7 @@ func PullDockerImages(dockerCli Client, imageNames []string) error {
 				limiter.WaitIfOverLimit()
 
 				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
-				out, err := dockerCli.ImagePull(ctx, imageName, types.ImagePullOptions{})
+				out, err := dockerCli.ImagePull(ctx, imageName, client.ImagePullOptions{})
 				if err == nil {
 					defer out.Close() // Ensure the output stream is closed
 
@@ -196,8 +195,7 @@ func trimDefaultRegistry(imageName string) string {
 }
 
 func GetExistedAndNotExistedImages(dockerCli client.APIClient, imageNames []string) (foundImages []string, notFoundImages []string, err error) {
-	var allLocalImages []types.ImageSummary
-	allLocalImages, err = dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+	allLocalImages, err := dockerCli.ImageList(context.Background(), client.ImageListOptions{})
 	if err != nil {
 		err = fmt.Errorf("error listing Docker images: %v", err)
 		return
@@ -206,7 +204,7 @@ func GetExistedAndNotExistedImages(dockerCli client.APIClient, imageNames []stri
 outer:
 	for _, imageName := range imageNames {
 		trimImageName := trimDefaultRegistry(imageName)
-		for _, image := range allLocalImages {
+		for _, image := range allLocalImages.Items {
 			if slices.Contains(image.RepoTags, trimImageName) {
 				foundImages = append(foundImages, imageName)
 				continue outer
@@ -241,7 +239,7 @@ func RemoveImages(dockerCli client.APIClient, imageNames []string) error {
 
 		log.Printf("Removing image: %s\n", imageName)
 
-		_, err := dockerCli.ImageRemove(context.Background(), imageName, types.ImageRemoveOptions{})
+		_, err := dockerCli.ImageRemove(context.Background(), imageName, client.ImageRemoveOptions{})
 		if err != nil {
 			log.Warnf("failed to remove image %s: %v", imageName, err)
 		}

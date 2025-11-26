@@ -44,8 +44,6 @@ keycloakx:
   cache:
     stack: custom # <— IMPORTANT
 
-  command: ["/opt/keycloak/bin/kc.sh", "start", "--proxy-headers=xforwarded"]
-
   fullnameOverride: keycloak
   ingress:
     enabled: false
