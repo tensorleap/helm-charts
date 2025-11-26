@@ -124,7 +124,7 @@ func SetupInfra(cmdName string) (closeLogFile func(), err error) {
 	}
 
 	SetupK3dLogger(log.VerboseLogger)
-	//k8s.SetupLogger(log.VerboseLogger)
+	k8s.SetupLogger(log.VerboseLogger)
 
 	logPath := createLogFilePath(cmdName)
 	closeLogFile, err = log.ConnectFileToVerboseLogOutput(logPath)
