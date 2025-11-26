@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	dockerimage "github.com/docker/docker/api/types/image"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
 	"github.com/k3d-io/k3d/v5/pkg/client"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
@@ -206,7 +207,7 @@ func PullingImage(ctx context.Context, dockerClient docker.Client, image string)
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		log.Printf("Pulling image '%s' (attempt %d/%d)\n", image, attempt, maxRetries)
-		resp, err := dockerClient.ImagePull(ctx, image, dockerTypes.ImagePullOptions{})
+		resp, err := dockerClient.ImagePull(ctx, image, dockerimage.PullOptions{})
 		if err == nil {
 			defer resp.Close() // Ensure the response is closed to avoid resource leaks
 
@@ -250,7 +251,7 @@ func CacheImage(ctx context.Context, dockerClient docker.Client, image string, r
 
 	retry := PUSH_IMAGE_RETRY
 	for {
-		resp, err := dockerClient.ImagePush(ctx, targetImage, dockerTypes.ImagePushOptions{
+		resp, err := dockerClient.ImagePush(ctx, targetImage, dockerimage.PushOptions{
 			RegistryAuth: "empty auth",
 		})
 		if err != nil {
@@ -358,7 +359,7 @@ func CacheImageInTheBackground(ctx context.Context, image string) error {
 			fmt.Sprintf("ctr image push --plain-http %s", targetImage),
 		}, " && ")
 	}
-	exec, err := dockerClient.ContainerExecCreate(ctx, CONTAINER_NAME, dockerTypes.ExecConfig{
+	exec, err := dockerClient.ContainerExecCreate(ctx, CONTAINER_NAME, container.ExecOptions{
 		Privileged: true,
 		Detach:     true,
 		Cmd:        []string{"sh", "-c", shellScript},
@@ -370,7 +371,7 @@ func CacheImageInTheBackground(ctx context.Context, image string) error {
 	}
 
 	log.SendCloudReport("info", "Successfully cached images in background", "Running", nil)
-	return dockerClient.ContainerExecStart(ctx, exec.ID, dockerTypes.ExecStartCheck{})
+	return dockerClient.ContainerExecStart(ctx, exec.ID, container.ExecStartOptions{})
 }
 
 func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) error {
@@ -404,7 +405,7 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	log.Println("Checking docker storage limits...")
 
 	if !isAirgap {
-		_, err = dockerClient.ImagePull(context.Background(), checkDockerRequirementImage, dockerTypes.ImagePullOptions{})
+		_, err = dockerClient.ImagePull(context.Background(), checkDockerRequirementImage, dockerimage.PullOptions{})
 		if err != nil {
 			log.Fatalf("Failed pulling  %s image, %s", checkDockerRequirementImage, err)
 		}

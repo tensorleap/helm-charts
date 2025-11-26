@@ -11,7 +11,7 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/spf13/pflag"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -141,7 +141,7 @@ func PullDockerImages(dockerCli Client, imageNames []string) error {
 				limiter.WaitIfOverLimit()
 
 				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
-				out, err := dockerCli.ImagePull(ctx, imageName, types.ImagePullOptions{})
+				out, err := dockerCli.ImagePull(ctx, imageName, image.PullOptions{})
 				if err == nil {
 					defer out.Close() // Ensure the output stream is closed
 
@@ -196,8 +196,8 @@ func trimDefaultRegistry(imageName string) string {
 }
 
 func GetExistedAndNotExistedImages(dockerCli client.APIClient, imageNames []string) (foundImages []string, notFoundImages []string, err error) {
-	var allLocalImages []types.ImageSummary
-	allLocalImages, err = dockerCli.ImageList(context.Background(), types.ImageListOptions{})
+	var allLocalImages []image.Summary
+	allLocalImages, err = dockerCli.ImageList(context.Background(), image.ListOptions{})
 	if err != nil {
 		err = fmt.Errorf("error listing Docker images: %v", err)
 		return
@@ -241,7 +241,7 @@ func RemoveImages(dockerCli client.APIClient, imageNames []string) error {
 
 		log.Printf("Removing image: %s\n", imageName)
 
-		_, err := dockerCli.ImageRemove(context.Background(), imageName, types.ImageRemoveOptions{})
+		_, err := dockerCli.ImageRemove(context.Background(), imageName, image.RemoveOptions{})
 		if err != nil {
 			log.Warnf("failed to remove image %s: %v", imageName, err)
 		}
