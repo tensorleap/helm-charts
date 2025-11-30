@@ -33,19 +33,6 @@ runs:
       with:
         go-version-file: ./go.mod
 
-    - name: Determine release prefix and type
-      id: determine_release_type
-      run: |
-        # Use custom_tag_prefix if provided, otherwise empty string
-        if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
-          PREFIX="${{ inputs.custom_tag_prefix }}"
-        else
-          PREFIX=""
-        fi
-        
-        echo "prefix=$PREFIX" >> $GITHUB_OUTPUT
-      shell: bash
-
     - name: Get tensorleap chart version
       id: get_tensorleap_chart_version
       run: |
@@ -65,11 +52,9 @@ runs:
     - name: Set manifest version
       id: set_manifest_version
       run: |
-        # Use prefix from determine_release_type step
-        PREFIX="${{ steps.determine_release_type.outputs.prefix }}"
-        # Set the manifest version to the tensorleap chart version
-        if [ -n "$PREFIX" ]; then
-          TAG="${PREFIX}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
+        # Use custom_tag_prefix if provided, otherwise empty string
+        if [ -n "${{ inputs.custom_tag_prefix }}" ]; then
+          TAG="${{ inputs.custom_tag_prefix }}-${{ steps.get_tensorleap_chart_version.outputs.version }}"
         else
           TAG="${{ steps.get_tensorleap_chart_version.outputs.version }}"
         fi
