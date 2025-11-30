@@ -1,4 +1,4 @@
-image_tag: master-5d4a5041
+image_tag: dataset-balancing-0c2bec8a
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
