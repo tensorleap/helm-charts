@@ -82,39 +82,40 @@ checkout-rc-branch:
 	  echo "❌ charts/tensorleap/Chart.yaml not found" >&2
 	  exit 1
 	fi
-	VERSION="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
-	if [ -z "$$VERSION" ]; then
+	VERSION_FULL="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
+	if [ -z "$$VERSION_FULL" ]; then
 	  echo "❌ version not found in charts/tensorleap/Chart.yaml" >&2
 	  exit 1
 	fi
+	# Remove -rc.* suffix if present to get base version
+	VERSION=$$(echo "$$VERSION_FULL" | sed 's/-rc\.[0-9]*$$//')
 	git fetch origin master --prune >/dev/null 2>&1
-	PREFIX="$$VERSION-rc."
+	# Branch name is just the base version (e.g., 1.4.75)
+	BRANCH="$$VERSION"
 	CURRENT_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
-	# Check if current branch matches VERSION-rc.N pattern
-	CURRENT_RC="$$(echo "$$CURRENT_BRANCH" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p")"
-	if [ -n "$$CURRENT_RC" ]; then
-	  # Current branch is an RC branch - bump its RC number
-	  NEXT=$$((CURRENT_RC+1))
-	else
-	  # Current branch is not an RC branch - find the max RC number
-	  EXISTING="$$(git ls-remote --heads origin "$${PREFIX}*" 2>/dev/null | awk -F'/' '{print $$NF}')"
-	  MAX_RC="$$(printf "%s\n" "$$EXISTING" | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p" | sort -n | tail -1)"
-	  if [ -z "$$MAX_RC" ]; then
-	    NEXT=0
+	# Check if we're already on the version branch
+	if [ "$$CURRENT_BRANCH" != "$$BRANCH" ]; then
+	  # Checkout or create the version branch
+	  if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
+	    git fetch origin "$$BRANCH" >/dev/null 2>&1
+	    git switch "$$BRANCH" >/dev/null 2>&1
 	  else
-	    NEXT=$$((MAX_RC+1))
+	    git switch -c "$$BRANCH" origin/master >/dev/null 2>&1
+	    git push -u origin "$$BRANCH" >/dev/null 2>&1
 	  fi
 	fi
-	BRANCH="$${PREFIX}$${NEXT}"
-	if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
-	  git fetch origin "$$BRANCH" >/dev/null 2>&1
-	  git switch "$$BRANCH" >/dev/null 2>&1
+	# Find the next RC number by checking existing tags (fetch tags first)
+	git fetch origin --tags >/dev/null 2>&1
+	EXISTING_TAGS="$$(git tag -l "$${VERSION}-rc.*" 2>/dev/null | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p")"
+	if [ -z "$$EXISTING_TAGS" ]; then
+	  NEXT=0
 	else
-	  git switch -c "$$BRANCH" origin/master >/dev/null 2>&1
-	  git push -u origin "$$BRANCH" >/dev/null 2>&1
+	  MAX_RC="$$(printf "%s\n" "$$EXISTING_TAGS" | sort -n | tail -1)"
+	  NEXT=$$((MAX_RC+1))
 	fi
-	# Update Chart.yaml version to match branch name (e.g., 1.4.35-rc.2)
-	sed -i.bak "s/^version: .*/version: $$BRANCH/" charts/tensorleap/Chart.yaml
+	# Update Chart.yaml version to include RC suffix (matches tag)
+	VERSION_WITH_RC="$${VERSION}-rc.$${NEXT}"
+	sed -i.bak "s/^version: .*/version: $$VERSION_WITH_RC/" charts/tensorleap/Chart.yaml
 	rm -f charts/tensorleap/Chart.yaml.bak
 	# Output only the branch name (for use in workflows)
 	echo "$$BRANCH"

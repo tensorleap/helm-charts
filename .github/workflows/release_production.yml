@@ -26,26 +26,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
-      - name: Get current branch name
+      - name: Get branch name from chart version
         id: get_branch
         run: |
-          # Get branch name, handling various git states
-          BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          # Remove any refs/heads/ or heads/ prefix if present
-          BRANCH=$(echo "$BRANCH" | sed 's|^refs/heads/||' | sed 's|^heads/||')
-          # If HEAD is detached, try to get branch from remote tracking or use github.ref
-          if [ "$BRANCH" = "HEAD" ]; then
-            # Try to get branch from remote tracking
-            REMOTE_BRANCH=$(git branch -r --contains HEAD 2>/dev/null | head -1 | sed 's|origin/||' | xargs)
-            if [ -n "$REMOTE_BRANCH" ]; then
-              BRANCH="$REMOTE_BRANCH"
-            else
-              # Fallback to github.ref (remove refs/heads/ prefix)
-              BRANCH=$(echo "${{ github.ref }}" | sed 's|^refs/heads/||')
-            fi
-          fi
+          # Branch name matches the base version (without RC suffix)
+          # Get version from Chart.yaml and remove RC suffix if present
+          CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+          BRANCH=$(echo "$CHART_VERSION" | sed 's/-rc\.[0-9]*$//')
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-          echo "Current branch: $BRANCH"
+          echo "Branch name: $BRANCH (derived from chart version: $CHART_VERSION)"
         shell: bash
 
       - name: Remove -rc.x suffix from chart versions
