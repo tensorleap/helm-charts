@@ -245,6 +245,88 @@ func RunCluster(ctx context.Context) error {
 	return err
 }
 
+func AddToNoProxy(existing string, add []string) string {
+	// Split existing no_proxy into a set (unique map)
+	entries := map[string]struct{}{}
+
+	for _, item := range strings.Split(existing, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			entries[item] = struct{}{}
+		}
+	}
+
+	// Add new items
+	for _, item := range add {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			entries[item] = struct{}{}
+		}
+	}
+
+	// Rebuild the no_proxy string
+	out := make([]string, 0, len(entries))
+	for k := range entries {
+		out = append(out, k)
+	}
+
+	return strings.Join(out, ",")
+}
+
+var NO_PROXY_ADDITIONAL_ENTRIES = []string{
+	"localhost",
+	"127.0.0.1",
+	"*.svc",           // kubernetes service domain
+	"*.cluster.local", // kubernetes internal domain
+	"10.42.0.0/16",
+	"10.43.0.0/16",
+	"10.0.0.0/8",
+	"172.16.0.0/12",
+	"192.168.0.0/16",
+	"172.18.0.0/16",
+	"k3d-tensorleap-registry", // local registry
+}
+
+func buildEnvVars() []conf.EnvVarWithNodeFilters {
+
+	envVars := []conf.EnvVarWithNodeFilters{
+		{
+			EnvVar:      fmt.Sprintf("all_proxy=%s", os.Getenv("all_proxy")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("ALL_PROXY=%s", os.Getenv("ALL_PROXY")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("http_proxy=%s", os.Getenv("http_proxy")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("HTTP_PROXY=%s", os.Getenv("HTTP_PROXY")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("https_proxy=%s", os.Getenv("https_proxy")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("HTTPS_PROXY=%s", os.Getenv("HTTPS_PROXY")),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("no_proxy=%s", AddToNoProxy(os.Getenv("no_proxy"), NO_PROXY_ADDITIONAL_ENTRIES)),
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			EnvVar:      fmt.Sprintf("NO_PROXY=%s", AddToNoProxy(os.Getenv("NO_PROXY"), NO_PROXY_ADDITIONAL_ENTRIES)),
+			NodeFilters: []string{"server:*"},
+		},
+	}
+
+	return envVars
+}
+
 func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams, localContainerdDir string) *conf.ClusterConfig {
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
@@ -295,40 +377,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 				NodeFilters: []string{"server:*:direct"},
 			},
 		},
-		Env: []conf.EnvVarWithNodeFilters{
-			{
-				EnvVar:      fmt.Sprintf("all_proxy=%s", os.Getenv("all_proxy")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("ALL_PROXY=%s", os.Getenv("ALL_PROXY")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("http_proxy=%s", os.Getenv("http_proxy")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("HTTP_PROXY=%s", os.Getenv("HTTP_PROXY")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("https_proxy=%s", os.Getenv("https_proxy")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("HTTPS_PROXY=%s", os.Getenv("HTTPS_PROXY")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("no_proxy=%s", os.Getenv("no_proxy")),
-				NodeFilters: []string{"server:*"},
-			},
-			{
-				EnvVar:      fmt.Sprintf("NO_PROXY=%s", os.Getenv("NO_PROXY")),
-				NodeFilters: []string{"server:*"},
-			},
-		},
+		Env: buildEnvVars(),
 		Registries: conf.SimpleConfigRegistries{
 			Use:    []string{"tensorleap-registry"},
 			Config: mirrorConfig,
