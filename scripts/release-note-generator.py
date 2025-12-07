@@ -10,7 +10,7 @@ from datetime import datetime
 
 JIRA_DOMAIN = "https://tensorleap.atlassian.net"
 JIRA_EMAIL = "asaf.yehezkel@tensorleap.ai"
-JIRA_API_TOKEN = "ATATT3xFfGF0poI8Mri19YIXs0p2WwspYyyoo0gbnCVXoJqQ8ic0N-DXHURcbuFUDeLX8wk6gyDO6L6YNJYS1I6KEkyFKupBJSKuBg3QBsUnG17ud4AOXU7wbgWHFdamdJ5q0qUF7QgLDotqneZ0ml9gEnWghsLchGv1QKCg9GT4hqlpt1M=55EE7F6C"
+JIRA_API_TOKEN = "ASAFS-TOKEN"
 PROJECTS = ["EN", "NGNB", "BF", "SR"]
 
 # JQL Configuration
