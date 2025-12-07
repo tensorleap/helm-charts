@@ -4,7 +4,7 @@ import json
 
 url = "https://tensorleap.atlassian.net/rest/api/3/search/jql"
 
-auth = HTTPBasicAuth("asaf.yehezkel@tensorleap.ai", "ATATT3xFfGF0poI8Mri19YIXs0p2WwspYyyoo0gbnCVXoJqQ8ic0N-DXHURcbuFUDeLX8wk6gyDO6L6YNJYS1I6KEkyFKupBJSKuBg3QBsUnG17ud4AOXU7wbgWHFdamdJ5q0qUF7QgLDotqneZ0ml9gEnWghsLchGv1QKCg9GT4hqlpt1M=55EE7F6C")
+auth = HTTPBasicAuth("asaf.yehezkel@tensorleap.ai", "ASAFS-TOKEN")
 
 headers = {
   "Accept": "application/json",
