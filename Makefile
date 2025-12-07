@@ -141,5 +141,6 @@ remove-rc-suffix:
 
 .PHONY: release-notes
 release-notes:
+
 	@python3 scripts/release-note-generator.py
 
