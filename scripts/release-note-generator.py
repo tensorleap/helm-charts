@@ -2,29 +2,16 @@ import json
 import sys
 import base64
 import urllib.request
-import urllib.parse
-import ssl
 import os
 import re
 from datetime import datetime
 
 # --- CONFIGURATION ---
 
-# 1. IMPORTANT: Replace 'YOUR_JIRA_DOMAIN' with your actual Jira Cloud URL
-#    (e.g., mycompany.atlassian.net)
 JIRA_DOMAIN = "https://tensorleap.atlassian.net"
-
-# 2. IMPORTANT: Replace 'YOUR_EMAIL' with the email associated with the API Token.
-#    Jira uses Basic Auth with (Email, API Token)
 JIRA_EMAIL = "asaf.yehezkel@tensorleap.ai"
-
-# 3. The API Token provided by the user. Used for authentication.
 JIRA_API_TOKEN = "ATATT3xFfGF0poI8Mri19YIXs0p2WwspYyyoo0gbnCVXoJqQ8ic0N-DXHURcbuFUDeLX8wk6gyDO6L6YNJYS1I6KEkyFKupBJSKuBg3QBsUnG17ud4AOXU7wbgWHFdamdJ5q0qUF7QgLDotqneZ0ml9gEnWghsLchGv1QKCg9GT4hqlpt1M=55EE7F6C"
-
-# 4. IMPORTANT: Update this list with the Jira project keys you want to query (e.g., 'PROJ1', 'PROJ2').
-#    Based on your screenshot, the "Engineering" project key appears to be 'EN'.
-#    Add other project keys (like 'BFR' for 'Bugs & FR') if needed.
-PROJECTS = ["EN"]
+PROJECTS = ["EN", "NGNB", "BF", "SR"]
 
 # JQL Configuration
 JQL_STATUS = "Done"
@@ -54,24 +41,25 @@ def generate_release_notes():
     """
     Connects to Jira using the standard urllib library, retrieves all tickets in
     the specified projects that are in the 'Done' status, and formats their
-    summaries as a release note. Handles pagination automatically.
+    summaries as a release note. Handles pagination automatically using the
+    enhanced JQL search endpoint with nextPageToken.
     Writes the release notes to a file in the charts directory.
     """
     if not all([JIRA_DOMAIN, JIRA_EMAIL, JIRA_API_TOKEN, PROJECTS]):
         print("ERROR: Please update all configuration variables (JIRA_DOMAIN, JIRA_EMAIL, JIRA_API_TOKEN, PROJECTS) before running.")
         sys.exit(1)
 
-    # Correct Jira REST API v3 search endpoint
-    jira_base_url = f"{JIRA_DOMAIN}/rest/api/3/search"
+    # Use the enhanced Jira REST API v3 JQL search endpoint (POST)
+    jira_api_url = f"{JIRA_DOMAIN}/rest/api/3/search/jql"
     
     # Format the PROJECTS list into a JQL-friendly string
     project_list_jql = ", ".join(f'"{p}"' for p in PROJECTS)
 
     # Construct the JQL query: Find issues in selected projects that are 'Done', ordered by last update
-    jql_query = f'project in ({project_list_jql}) AND status = "{JQL_STATUS}" ORDER BY updated DESC'
-
+    # jql_query = f'project in ({project_list_jql}) AND status = "{JQL_STATUS}" ORDER BY updated DESC'
+    jql_query = f'project in ("EN", "NGNB", "BF", "SR") and status = Done ORDER BY created DESC'
     print(f"--- Running JQL Query: {jql_query} ---")
-    print(f"API Endpoint: {jira_base_url}")
+    print(f"API Endpoint: {jira_api_url}")
     print("Fetching data from Jira...")
 
     # Prepare Basic Authentication Header
@@ -84,24 +72,29 @@ def generate_release_notes():
         "Authorization": f"Basic {encoded_auth}"
     }
     
-    start_at = 0
+    next_page_token = None
     all_issues = []
+    page_count = 0
     
-    # Loop to handle pagination, fetching tickets in batches
+    # Loop to handle pagination using nextPageToken
     while True:
-        params = {
+        # Build request body according to API documentation
+        request_body = {
             "jql": jql_query,
-            "fields": "summary", # Only fetch the summary (title) field
-            "maxResults": MAX_RESULTS,
-            "startAt": start_at
+            "fields": ["summary"],  # Only fetch the summary (title) field
+            "maxResults": MAX_RESULTS
         }
         
-        # Construct the full URL with query parameters
-        url_with_params = f"{jira_base_url}?{urllib.parse.urlencode(params)}"
+        # Add nextPageToken if we have one (for pagination)
+        if next_page_token:
+            request_body["nextPageToken"] = next_page_token
 
         try:
-            # Create the request object
-            req = urllib.request.Request(url_with_params, headers=headers)
+            # Convert request body to JSON
+            json_data = json.dumps(request_body).encode('utf-8')
+            
+            # Create the POST request object
+            req = urllib.request.Request(jira_api_url, data=json_data, headers=headers, method='POST')
             
             # Open the URL and get the response
             with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
@@ -110,17 +103,17 @@ def generate_release_notes():
                 data = json.loads(response_body)
 
             issues = data.get("issues", [])
-            total_results = data.get("total", 0)
+            is_last = data.get("isLast", True)
+            next_page_token = data.get("nextPageToken")
 
             all_issues.extend(issues)
-            print(f"  > Fetched {len(all_issues)} of {total_results} total issues...")
+            page_count += 1
+            print(f"  > Fetched page {page_count}: {len(issues)} issues (total: {len(all_issues)})...")
 
-            # If the number of issues collected equals the total count, we are done
-            if len(all_issues) >= total_results:
+            # Check if this is the last page
+            if is_last or not next_page_token:
+                print(f"  > Reached end of results (isLast: {is_last})")
                 break
-            
-            # Update start_at for the next page
-            start_at += MAX_RESULTS
 
             if not issues:
                 break # Stop if no issues are returned (end of data)
@@ -129,7 +122,8 @@ def generate_release_notes():
             # Handle Jira/API errors (e.g., 401 Unauthorized, 404 Not Found)
             # e.code contains the status code
             print(f"\nERROR: HTTP request failed. Status Code: {e.code}")
-            print(f"URL: {url_with_params}")
+            print(f"URL: {jira_api_url}")
+            print(f"Request Body: {json.dumps(request_body, indent=2)}")
             try:
                 # Try to read and display the error response body
                 error_body = e.read().decode('utf-8')
