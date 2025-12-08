@@ -17,5 +17,7 @@ Chart.lock
 # Python virtual environment
 venv/
 
+# Generated files
+done_tickets.json
 
 .idea/
