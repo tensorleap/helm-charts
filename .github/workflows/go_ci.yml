@@ -1,0 +1,36 @@
+name: Go CI
+
+on:
+  push:
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "main.go"
+      - "cmd/**"
+      - "pkg/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./go.mod
+
+      - name: Check format
+        run: make check-fmt
+
+      - name: Build
+        run: go build .
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          only-new-issues: true
+
+      - name: Test
+        run: make test
