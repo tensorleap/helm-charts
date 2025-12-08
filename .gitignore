@@ -16,3 +16,6 @@ Chart.lock
 
 # Python virtual environment
 venv/
+
+
+.idea/
