@@ -1,9 +1,11 @@
 from jira import JIRA
+from jira.resources import Issue
 import os
 import re
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
+from typing import List, Optional
 
 # =============================================================================
 # Configuration
@@ -12,11 +14,16 @@ from collections import defaultdict
 # Projects to include in release notes
 # PROJECTS = ["EN", "NGNB", "BF", "SR"]
 PROJECTS = ["EN"]
+
+FIX_VERSION_JIRA_FIELD= "fixVersion"
+
 # JQL query for finding done tickets without a fix version
-JQL_TEMPLATE = 'project in ({projects}) AND status = Done AND fixVersion IS EMPTY ORDER BY issuetype ASC'
+JQL_TEMPLATE = f'project in ({PROJECTS}) AND status = Done AND {FIX_VERSION_JIRA_FIELD} IS EMPTY ORDER BY issuetype ASC'
 
 # Output file path
 OUTPUT_FILE = "RELEASE_NOTES.md"
+
+
 
 # =============================================================================
 # Helper Functions
@@ -50,7 +57,7 @@ def load_env_file():
         pass
 
 
-def get_chart_version():
+def get_chart_version() -> str:
     """Read chart version from Chart.yaml."""
     script_dir = Path(__file__).parent
     chart_path = script_dir.parent / "charts" / "tensorleap" / "Chart.yaml"
@@ -66,19 +73,18 @@ def get_chart_version():
     return "unknown"
 
 
-def categorize_issue_type(issue_type):
+def categorize_issue_type(issue_type: str) -> str:
     """Map Jira issue types to release note categories."""
     type_lower = issue_type.lower()
     
     if 'bug' in type_lower:
         return '🐛 Bug Fixes'
-    elif any(t in type_lower for t in ['story', 'task', 'improvement', 'feature', 'enhancement']):
+    if any(t in type_lower for t in ['story', 'task', 'improvement', 'feature', 'enhancement']):
         return '✨ New Features & Improvements'
-    else:
-        return '📝 Other'
+    return '📝 Other'
 
 
-def generate_release_notes(issues, version, jira_domain):
+def generate_release_notes(issues: List[Issue], version: str, jira_domain: str) -> str:
     """Generate markdown release notes."""
     # Group issues by category
     categories = defaultdict(list)
