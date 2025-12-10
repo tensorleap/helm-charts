@@ -117,3 +117,14 @@ jobs:
           add: 'RELEASE_NOTES.md'
           message: "docs: update release notes for v${{ steps.get_version.outputs.version }}"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          
+      - name: Notify Slack - Release Complete
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: 'releases'
+          payload: |
+            {
+              "text": "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
