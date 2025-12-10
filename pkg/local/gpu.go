@@ -23,60 +23,99 @@ func (g GPU) String() string {
 
 func CheckNvidiaGPU() ([]GPU, error) {
 	log.Info("Check for NVIDIA GPU")
-	var cmd *exec.Cmd
-	switch os := runtime.GOOS; os {
-	case "darwin": // macOS
-		cmd = exec.Command("system_profiler", "SPDisplaysDataType")
+
+	switch runtime.GOOS {
+	case "darwin":
+		return checkNvidiaOnMac()
 	case "linux":
-		cmd = exec.Command("lspci")
+		return checkNvidiaOnLinux()
 	default:
-		return nil, fmt.Errorf("unsupported operating system: %s", os)
+		// Same semantics as before for unsupported OSs
+		return nil, fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
-	gpuOutput, err := cmd.Output()
+}
+
+func checkNvidiaOnMac() ([]GPU, error) {
+	log.Info("Using system_profiler to detect NVIDIA GPU on macOS...")
+
+	cmd := exec.Command("system_profiler", "SPDisplaysDataType")
+	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("error executing lspci command: %s", err)
+		return nil, fmt.Errorf("error executing system_profiler: %w", err)
 	}
 
-	if !strings.Contains(string(gpuOutput), "NVIDIA") {
+	if !strings.Contains(string(out), "NVIDIA") {
 		log.Info("No NVIDIA GPU found.")
 		return nil, nil
 	}
-	log.Info("NVIDIA GPU found.")
-	// Check for NVIDIA driver and version
+
+	log.Info("NVIDIA GPU found on macOS. Querying details via nvidia-smi...")
+	return queryGPUsViaNvidiaSMI()
+}
+
+func checkNvidiaOnLinux() ([]GPU, error) {
+	// On Linux we *used* to rely on lspci. Now we just let nvidia-smi
+	// tell us whether there is a usable NVIDIA GPU.
+	log.Info("Using nvidia-smi to detect NVIDIA GPU...")
+	return queryGPUsViaNvidiaSMI()
+}
+
+func queryGPUsViaNvidiaSMI() ([]GPU, error) {
+	// Make sure nvidia-smi exists at all.
+	if _, err := exec.LookPath("nvidia-smi"); err != nil {
+		return nil, fmt.Errorf("nvidia-smi not found in PATH: %w", err)
+	}
+
 	log.Info("Checking NVIDIA driver and version...")
-	cmd = exec.Command("nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader")
+	cmd := exec.Command("nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader")
 	driverOutput, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("NVIDIA driver not found or nvidia-smi not available: %s", err)
+		return nil, fmt.Errorf("NVIDIA driver not found or nvidia-smi not available: %w", err)
 	}
 	driverVersion := strings.TrimSpace(string(driverOutput))
-	fmt.Printf("NVIDIA Driver Version: %s\n", driverVersion)
+	log.Infof("NVIDIA Driver Version: %s", driverVersion)
 
-	// List NVIDIA GPUs
+	// List GPUs.
 	cmd = exec.Command("nvidia-smi", "--query-gpu=index,name,uuid", "--format=csv,noheader")
 	listOutput, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("error listing NVIDIA GPUs: %s", err)
+		return nil, fmt.Errorf("error listing NVIDIA GPUs: %w", err)
 	}
+
 	gpus := []GPU{}
 	scanner := bufio.NewScanner(strings.NewReader(string(listOutput)))
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
 		fields := strings.Split(line, ", ")
+		if len(fields) < 3 {
+			return nil, fmt.Errorf("unexpected nvidia-smi output line: %q", line)
+		}
+
 		index, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return nil, fmt.Errorf("error parsing GPU index: %s", err)
+			return nil, fmt.Errorf("error parsing GPU index %q: %w", fields[0], err)
 		}
-		gpu := GPU{
+
+		gpus = append(gpus, GPU{
 			Index: index,
 			Name:  fields[1],
 			ID:    fields[2],
-		}
-		gpus = append(gpus, gpu)
+		})
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning NVIDIA GPU list: %s", err)
+		return nil, fmt.Errorf("error scanning NVIDIA GPU list: %w", err)
 	}
+
+	if len(gpus) == 0 {
+		log.Info("No NVIDIA GPU found (nvidia-smi returned an empty list).")
+		return nil, nil
+	}
+
+	log.Infof("Found %d NVIDIA GPU(s).", len(gpus))
 	return gpus, nil
 }
 
