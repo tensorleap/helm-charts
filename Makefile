@@ -141,6 +141,12 @@ remove-rc-suffix:
 
 .PHONY: release-notes
 release-notes:
-
-	@python3 scripts/release-note-generator.py
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@echo "Installing dependencies..."
+	@venv/bin/pip install --quiet jira
+	@echo "Running release note generator..."
+	@venv/bin/python scripts/release-note-generator.py
 
