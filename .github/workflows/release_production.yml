@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  remove-rc-suffix:
+  release-production:
     runs-on: ubuntu-latest
     permissions:
       contents: write
