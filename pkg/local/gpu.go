@@ -84,6 +84,7 @@ func queryGPUsViaNvidiaSMI() ([]GPU, error) {
 
 	gpus := []GPU{}
 	scanner := bufio.NewScanner(strings.NewReader(string(listOutput)))
+	failedToParseGPUsCount := 0
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -97,7 +98,9 @@ func queryGPUsViaNvidiaSMI() ([]GPU, error) {
 
 		index, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return nil, fmt.Errorf("error parsing GPU index %q: %w", fields[0], err)
+			failedToParseGPUsCount++
+			log.Warnf("Failed to parse GPU index (gpu row:%q) Try to continue. error: %v", strings.Join(fields, ", "), err)
+			continue
 		}
 
 		gpus = append(gpus, GPU{
@@ -105,6 +108,9 @@ func queryGPUsViaNvidiaSMI() ([]GPU, error) {
 			Name:  fields[1],
 			ID:    fields[2],
 		})
+	}
+	if failedToParseGPUsCount > 0 && len(gpus) == 0 {
+		return nil, fmt.Errorf("failed to parse any GPU(s)")
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error scanning NVIDIA GPU list: %w", err)
