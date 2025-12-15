@@ -287,8 +287,19 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 
 	availableDevices, err := local.CheckNvidiaGPU()
 	if err != nil {
-		log.Warnf("Failed to check NVIDIA GPU: %s", err)
-		return askToContinueWithoutGPU(gpus)
+		if !isCurrentGpuSettingsUnset {
+			log.Warnf("Failed to validate previous NVIDIA GPU: %s", err)
+			continueWithoutValidation, err := askToContinueWithoutGPUValidation(gpus, gpuDevices)
+			if err != nil {
+				return err
+			}
+			if continueWithoutValidation {
+				return nil
+			}
+		} else {
+			log.Warnf("Failed to check NVIDIA GPU: %s", err)
+		}
+		return askToContinueWithoutGPU(gpus, gpuDevices)
 	}
 
 	if availableDevices != nil {
@@ -319,7 +330,19 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 	}
 }
 
-func askToContinueWithoutGPU(gpus *uint) error {
+func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, error) {
+	prompt := survey.Confirm{
+		Message: "Do you want to continue without GPU validation?",
+		Default: false,
+	}
+	continueWithoutValidation := false
+	if err := survey.AskOne(&prompt, &continueWithoutValidation); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func askToContinueWithoutGPU(gpus *uint, gpuDevices *string) error {
 	prompt := survey.Confirm{
 		Message: "Do you want to continue without GPU?",
 		Default: false,
@@ -330,6 +353,7 @@ func askToContinueWithoutGPU(gpus *uint) error {
 	}
 	if continueWithoutGpu {
 		*gpus = 0
+		*gpuDevices = ""
 		return nil
 	}
 	return fmt.Errorf("GPU setup aborted")
