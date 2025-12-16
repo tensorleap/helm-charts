@@ -68,36 +68,6 @@ jobs:
           custom_tag_prefix: "manifest"
           branch: ${{ github.ref_name }}
 
-      - name: Create Jira FixVersion 
-        env:
-          TAG: ${{ steps.get_version.outputs.version }}       # e.g. 1.4.83 (from Chart.yaml)
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}       # stored in GitHub Secrets
-          JIRA_EMAIL: omri.yonatani@tensorleap.ai              
-          JIRA_BASE_URL: https://tensorleap.atlassian.net 
-          JIRA_PROJECT_KEY: EN                            
-        run: |
-          echo "Creating Jira FixVersion '${TAG}' in project ${JIRA_PROJECT_KEY}"
-
-          RESPONSE=$(curl -sS -w "%{http_code}" -o /tmp/jira_resp.json \
-            -X POST \
-            -u "${JIRA_EMAIL}:${JIRA_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            "${JIRA_BASE_URL}/rest/api/3/version" \
-            -d "{
-              \"name\": \"${TAG}\",
-              \"project\": \"${JIRA_PROJECT_KEY}\"
-            }")
-
-          echo "HTTP status: $RESPONSE"
-
-          # Allow 201 (created) or 400 (version already exists)
-          if [ "$RESPONSE" != "201" ] && [ "$RESPONSE" != "400" ]; then
-            echo "❌ Failed to create Jira version"
-            cat /tmp/jira_resp.json || true
-            exit 1
-          fi
-          echo "✅ Jira FixVersion '${TAG}' created (or already existed)."
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -108,6 +78,7 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_EMAIL: omri.yonatani@tensorleap.ai
           JIRA_DOMAIN: https://tensorleap.atlassian.net
+          CREATE_FIX_VERSION: 'true'
           UPDATE_FIX_VERSION: 'true'
         run: make release-notes
 
