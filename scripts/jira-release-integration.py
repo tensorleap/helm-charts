@@ -18,7 +18,7 @@ PROJECTS = ["EN"]
 FIX_VERSION_JIRA_FIELD= "fixVersion"
 
 # JQL query for finding done tickets without a fix version
-JQL_TEMPLATE = f'project in ({PROJECTS}) AND status = Done AND {FIX_VERSION_JIRA_FIELD} IS EMPTY ORDER BY issuetype ASC'
+JQL_TEMPLATE = f'project in ({{PROJECTS}}) AND status = Done AND {FIX_VERSION_JIRA_FIELD} IS EMPTY ORDER BY issuetype ASC'
 
 # Output file path
 OUTPUT_FILE = "RELEASE_NOTES.md"
@@ -82,6 +82,24 @@ def categorize_issue_type(issue_type: str) -> str:
     if any(t in type_lower for t in ['story', 'task', 'improvement', 'feature', 'enhancement']):
         return '✨ New Features & Improvements'
     return '📝 Other'
+
+
+def create_fix_version(jira: JIRA, project_key: str, version_name: str) -> bool:
+    """Create a FixVersion in Jira project. Returns True if created or already exists."""
+    print(f"\n📌 Creating Jira FixVersion '{version_name}' in project {project_key}...")
+    
+    try:
+        jira.create_version(name=version_name, project=project_key)
+        print(f"  ✅ FixVersion '{version_name}' created successfully")
+        return True
+    except Exception as e:
+        error_msg = str(e).lower()
+        # Version already exists is not an error
+        if 'already exists' in error_msg or 'duplicate' in error_msg:
+            print(f"  ✅ FixVersion '{version_name}' already exists")
+            return True
+        print(f"  ❌ Failed to create FixVersion: {e}")
+        return False
 
 
 def generate_release_notes(issues: List[Issue], version: str, jira_domain: str) -> str:
@@ -152,6 +170,13 @@ def main():
     # Get chart version
     version = get_chart_version()
     print(f"📦 Chart version: {version}\n")
+    
+    # Create FixVersion in Jira (before fetching issues)
+    create_fix_version_enabled = os.getenv('CREATE_FIX_VERSION', 'false').lower() == 'true'
+    if create_fix_version_enabled:
+        for project in PROJECTS:
+            create_fix_version(jira, project, version)
+        print()
     
     # Build JQL query
     project_list = ", ".join(PROJECTS)
