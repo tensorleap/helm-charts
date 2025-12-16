@@ -148,5 +148,5 @@ release-notes:
 	@echo "Installing dependencies..."
 	@venv/bin/pip install --quiet jira
 	@echo "Running release note generator..."
-	@venv/bin/python scripts/release-note-generator.py
+	@venv/bin/python scripts/jira-release-integration.py
 

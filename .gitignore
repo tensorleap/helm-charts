@@ -18,3 +18,5 @@ Chart.lock
 venv/
 
 .idea/
+
+.DS_Store
