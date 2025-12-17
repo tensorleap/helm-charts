@@ -120,6 +120,36 @@ checkout-rc-branch:
 	# Output only the branch name (for use in workflows)
 	echo "$$BRANCH"
 
+.PHONY: bump-rc-version
+.ONESHELL:
+bump-rc-version:
+	@set -euo pipefail
+	if [ ! -f charts/tensorleap/Chart.yaml ]; then
+	  echo "❌ charts/tensorleap/Chart.yaml not found" >&2
+	  exit 1
+	fi
+	VERSION_FULL="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
+	if [ -z "$$VERSION_FULL" ]; then
+	  echo "❌ version not found in charts/tensorleap/Chart.yaml" >&2
+	  exit 1
+	fi
+	# Remove -rc.* suffix if present to get base version
+	VERSION=$$(echo "$$VERSION_FULL" | sed 's/-rc\.[0-9]*$$//')
+	# Find the next RC number by checking existing tags
+	git fetch origin --tags >/dev/null 2>&1
+	EXISTING_TAGS="$$(git tag -l "$${VERSION}-rc.*" 2>/dev/null | sed -nE "s/^$${VERSION}-rc\.([0-9]+)$$/\1/p")"
+	if [ -z "$$EXISTING_TAGS" ]; then
+	  NEXT=0
+	else
+	  MAX_RC="$$(printf "%s\n" "$$EXISTING_TAGS" | sort -n | tail -1)"
+	  NEXT=$$((MAX_RC+1))
+	fi
+	# Update Chart.yaml version to include RC suffix
+	VERSION_WITH_RC="$${VERSION}-rc.$${NEXT}"
+	sed -i.bak "s/^version: .*/version: $$VERSION_WITH_RC/" charts/tensorleap/Chart.yaml
+	rm -f charts/tensorleap/Chart.yaml.bak
+	echo "Updated Chart.yaml version to $$VERSION_WITH_RC"
+
 .PHONY: remove-rc-suffix
 remove-rc-suffix:
 	@set -euo pipefail

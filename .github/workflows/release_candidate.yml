@@ -38,10 +38,18 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
-          BRANCH="$(make -s checkout-rc-branch)"
-          if [ -z "$BRANCH" ]; then
-            echo "Error: Failed to get branch name from checkout-rc-branch" >&2
-            exit 1
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            echo "Running from master - using checkout-rc-branch"
+            BRANCH="$(make -s checkout-rc-branch)"
+            if [ -z "$BRANCH" ]; then
+              echo "Error: Failed to get branch name from checkout-rc-branch" >&2
+              exit 1
+            fi
+          else
+            echo "Running from branch: ${{ github.ref_name }} - using selected branch"
+            BRANCH="${{ github.ref_name }}"
+            # Still bump RC version for non-master branches
+            make bump-rc-version
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
