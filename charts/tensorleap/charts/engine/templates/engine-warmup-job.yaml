@@ -17,9 +17,6 @@ data:
                   image: {{ .Values.image_name }}:{{ .Values.image_tag }}
                   command: ["bash"]
                   args: ["-c", "sleep $WARMUP_TIMEOUT_SEC"]
-                  envFrom:
-                  - configMapRef:
-                      name: engine-placeholder-env-configmap
                   resources:
                     limits:
                       nvidia.com/gpu: "1"
