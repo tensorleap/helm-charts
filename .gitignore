@@ -10,3 +10,13 @@ package.json
 .gp.md
 
 Chart.lock
+
+# Environment variables
+.env
+
+# Python virtual environment
+venv/
+
+.idea/
+
+.DS_Store

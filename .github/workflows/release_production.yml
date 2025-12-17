@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  remove-rc-suffix:
+  release-production:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,19 +26,16 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
-      - name: Get branch name from chart version
-        id: get_branch
-        run: |
-          # Branch name matches the base version (without RC suffix)
-          # Get version from Chart.yaml and remove RC suffix if present
-          CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
-          BRANCH=$(echo "$CHART_VERSION" | sed 's/-rc\.[0-9]*$//')
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-          echo "Branch name: $BRANCH (derived from chart version: $CHART_VERSION)"
-        shell: bash
-
       - name: Remove -rc.x suffix from chart versions
         run: make remove-rc-suffix
+        shell: bash
+
+      - name: Get chart version
+        id: get_version
+        run: |
+          CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+          echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "Chart version: $CHART_VERSION"
         shell: bash
 
       - name: Set up Helm
@@ -62,11 +59,43 @@ jobs:
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          branch: ${{ steps.get_branch.outputs.branch }}
+          branch: ${{ github.ref_name }}
 
       - name: Release Manifest
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: "manifest"
-          branch: ${{ steps.get_branch.outputs.branch }}
+          branch: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate Release Notes & Update Jira fixVersion
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_EMAIL: omri.yonatani@tensorleap.ai
+          JIRA_DOMAIN: https://tensorleap.atlassian.net
+          CREATE_FIX_VERSION: 'true'
+          UPDATE_FIX_VERSION: 'true'
+        run: make release-notes
+
+      - name: Commit Release Notes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'RELEASE_NOTES.md'
+          message: "docs: update release notes for v${{ steps.get_version.outputs.version }}"
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          
+      - name: Notify Slack - Release Complete
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: 'releases'
+          payload: |
+            {
+              "text": "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

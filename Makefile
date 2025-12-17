@@ -1,4 +1,4 @@
-.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env
+.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env release-notes
 
 SHELL := /bin/bash
 CLUSTER_NAME ?= tensorleap
@@ -138,4 +138,15 @@ remove-rc-suffix:
 	else
 	  echo "Tensorleap chart version has no rc suffix: $$CURRENT_VERSION"
 	fi
+
+.PHONY: release-notes
+release-notes:
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@echo "Installing dependencies..."
+	@venv/bin/pip install --quiet jira
+	@echo "Running release note generator..."
+	@venv/bin/python scripts/jira-release-integration.py
 
