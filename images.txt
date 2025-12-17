@@ -5,11 +5,11 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.14.0
-public.ecr.aws/tensorleap/engine-generic:dataset-balancing-419272ad-py310
-public.ecr.aws/tensorleap/engine-generic:dataset-balancing-419272ad-py312
-public.ecr.aws/tensorleap/engine-generic:dataset-balancing-419272ad-py38
-public.ecr.aws/tensorleap/engine-generic:dataset-balancing-419272ad-py39
-public.ecr.aws/tensorleap/engine:dataset-balancing-419272ad
+public.ecr.aws/tensorleap/engine-generic:master-720650fe-py310
+public.ecr.aws/tensorleap/engine-generic:master-720650fe-py312
+public.ecr.aws/tensorleap/engine-generic:master-720650fe-py38
+public.ecr.aws/tensorleap/engine-generic:master-720650fe-py39
+public.ecr.aws/tensorleap/engine:master-720650fe
 public.ecr.aws/tensorleap/node-server:master-e57c91c7
 public.ecr.aws/tensorleap/pippin:master-2a8d7971
 public.ecr.aws/tensorleap/web-ui:master-d1316b24
