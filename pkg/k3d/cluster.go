@@ -408,14 +408,23 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		},
 	}
 	if params.WithGpu {
-		if params.GpuDevices != "" && params.GpuDevices != "all" {
-			// User selected specific GPU devices by their IDs
+		var nvidiaVisibleDevices string
+		// Only use specific device mode if GpuDevices contains UUIDs (not old-style indexes)
+		if params.GpuDevices != "" && params.GpuDevices != "all" && isGpuDevicesUUIDs(params.GpuDevices) {
+			// User selected specific GPU devices by their UUIDs
 			simpleK3dConfig.Options.Runtime.GPURequest = fmt.Sprintf("device=%s", params.GpuDevices)
+			nvidiaVisibleDevices = params.GpuDevices
 		} else {
-			// User selected "all" or a count of GPUs - use all available
+			// User selected "all", a count of GPUs, or has old-style indexes - use all available
 			simpleK3dConfig.Options.Runtime.GPURequest = "all"
+			nvidiaVisibleDevices = "all"
 		}
-		log.Infof("Docker GPU request: %s", simpleK3dConfig.Options.Runtime.GPURequest)
+		// Set NVIDIA_VISIBLE_DEVICES env var inside the k3d node container
+		simpleK3dConfig.Env = append(simpleK3dConfig.Env, conf.EnvVarWithNodeFilters{
+			EnvVar:      fmt.Sprintf("NVIDIA_VISIBLE_DEVICES=%s", nvidiaVisibleDevices),
+			NodeFilters: []string{"server:*"},
+		})
+		log.Infof("Docker GPU request: %s, NVIDIA_VISIBLE_DEVICES: %s", simpleK3dConfig.Options.Runtime.GPURequest, nvidiaVisibleDevices)
 	}
 
 	if params.TLSPort != nil {
@@ -494,4 +503,18 @@ func DeleteCluster(ctx context.Context, cluster *Cluster) (err error) {
 
 func FixDockerDns() {
 	os.Setenv(k3d.K3dEnvFixDNS, "true")
+}
+
+// isGpuDevicesUUIDs checks if gpuDevices contains GPU UUIDs (vs old-style indexes).
+// GPU UUIDs start with "GPU-" prefix.
+func isGpuDevicesUUIDs(gpuDevices string) bool {
+	if gpuDevices == "" {
+		return false
+	}
+	for _, device := range strings.Split(gpuDevices, ",") {
+		if !strings.HasPrefix(strings.TrimSpace(device), "GPU-") {
+			return false
+		}
+	}
+	return true
 }
