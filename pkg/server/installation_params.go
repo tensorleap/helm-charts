@@ -781,6 +781,7 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 		} else {
 			nvidiaGpuVisibleDevices = allGpuDevices
 		}
+		log.Infof("Helm chart NVIDIA_VISIBLE_DEVICES: %s", nvidiaGpuVisibleDevices)
 	}
 
 	return &helm.InfraHelmValuesParams{
