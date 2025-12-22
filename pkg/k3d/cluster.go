@@ -44,6 +44,7 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 
 type CreateK3sClusterParams struct {
 	WithGpu            bool               `json:"gpu"`
+	GpuDevices         string             `json:"gpuDevices,omitempty"`
 	Port               uint               `json:"port"`
 	Volumes            []string           `json:"volumes"`
 	ImageCachingMethod ImageCachingMethod `json:"imageCachingMethod"`
@@ -407,7 +408,13 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		},
 	}
 	if params.WithGpu {
-		simpleK3dConfig.Options.Runtime.GPURequest = "all"
+		if params.GpuDevices != "" && params.GpuDevices != "all" {
+			// User selected specific GPU devices by their IDs
+			simpleK3dConfig.Options.Runtime.GPURequest = fmt.Sprintf("device=%s", params.GpuDevices)
+		} else {
+			// User selected "all" or a count of GPUs - use all available
+			simpleK3dConfig.Options.Runtime.GPURequest = "all"
+		}
 	}
 
 	if params.TLSPort != nil {

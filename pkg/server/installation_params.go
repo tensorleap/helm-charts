@@ -324,7 +324,7 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 	} else if gpuDevices == allGpuDevices {
 		return "all GPUs"
 	} else if gpuDevices != "" {
-		return fmt.Sprintf("GPU devices index(s): %s", gpuDevices)
+		return fmt.Sprintf("GPU device(s): %s", gpuDevices)
 	} else {
 		return "0 GPUs"
 	}
@@ -424,24 +424,24 @@ func selectHowManyGPUs(availableDevices []local.GPU, selectedGpus *uint) error {
 }
 
 func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) error {
-	defaultDevices := []string{}
-	availableGpusNames := []string{}
-	for _, device := range availableDevices {
-		availableGpusNames = append(availableGpusNames, device.String())
+	// Build display names and a lookup map from GPU ID to display name
+	availableGpusNames := make([]string, len(availableDevices))
+	gpuIdToName := make(map[string]string, len(availableDevices))
+	for i, device := range availableDevices {
+		displayName := device.String()
+		availableGpusNames[i] = displayName
+		gpuIdToName[device.ID] = displayName
 	}
 
+	// Determine default selection based on previous settings
+	var defaultDevices []string
 	if *selectedGpuDevices == allGpuDevices {
 		defaultDevices = availableGpusNames
-	} else {
-		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
-		for _, device := range selectedDeviceArray {
-			trimedDevice := strings.TrimSpace(device)
-			asNumber, err := strconv.Atoi(trimedDevice)
-			if err != nil || asNumber >= len(availableDevices) {
-				log.Warnf("Device %s is not available", device)
-				continue
+	} else if *selectedGpuDevices != "" {
+		for _, deviceId := range strings.Split(*selectedGpuDevices, ",") {
+			if name, found := gpuIdToName[strings.TrimSpace(deviceId)]; found {
+				defaultDevices = append(defaultDevices, name)
 			}
-			defaultDevices = append(defaultDevices, availableGpusNames[asNumber])
 		}
 	}
 
@@ -466,18 +466,32 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 		return err
 	}
 
-	devicesIndexes := []string{}
+	devicesIds := []string{}
 	for _, device := range selected {
 		for i, availableDevice := range availableGpusNames {
 			if device == availableDevice {
-				devicesIndexes = append(devicesIndexes, fmt.Sprint(i))
+				devicesIds = append(devicesIds, availableDevices[i].ID)
 			}
 		}
 	}
 
-	*selectedGpuDevices = strings.Join(devicesIndexes, ",")
+	*selectedGpuDevices = strings.Join(devicesIds, ",")
 
 	return nil
+}
+
+func isGpuDevicesUUIDs(gpuDevices string) bool {
+	if gpuDevices == "" {
+		return false
+	}
+	devices := strings.Split(gpuDevices, ",")
+	for _, device := range devices {
+		trimmed := strings.TrimSpace(device)
+		if !strings.HasPrefix(trimmed, "GPU-") {
+			return false
+		}
+	}
+	return true
 }
 
 func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationParams) error {
@@ -788,8 +802,15 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		tlsPort = &params.TLSParams.Port
 	}
 
+	// Pass GpuDevices only when user selected specific devices by UUID (not "all", count, or old-style indexes)
+	gpuDevices := ""
+	if useGpu && params.GpuDevices != "" && params.GpuDevices != allGpuDevices && isGpuDevicesUUIDs(params.GpuDevices) {
+		gpuDevices = params.GpuDevices
+	}
+
 	return &k3d.CreateK3sClusterParams{
 		WithGpu:            useGpu,
+		GpuDevices:         gpuDevices,
 		Port:               params.Port,
 		Volumes:            volumes,
 		CpuLimit:           params.CpuLimit,
