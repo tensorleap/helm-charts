@@ -415,6 +415,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 			// User selected "all" or a count of GPUs - use all available
 			simpleK3dConfig.Options.Runtime.GPURequest = "all"
 		}
+		log.Infof("Docker GPU request: %s", simpleK3dConfig.Options.Runtime.GPURequest)
 	}
 
 	if params.TLSPort != nil {
