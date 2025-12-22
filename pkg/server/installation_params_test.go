@@ -56,7 +56,7 @@ func TestCalcGpusUsed(t *testing.T) {
 			name:       "Specific GPU devices",
 			gpus:       0,
 			gpuDevices: "0,1,2",
-			expected:   "GPU devices index(s): 0,1,2",
+			expected:   "GPU device(s): 0,1,2",
 		},
 		{
 			name:       "Number of GPUs",
