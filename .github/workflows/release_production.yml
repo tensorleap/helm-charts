@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -133,3 +135,10 @@ jobs:
 
           echo "✅ index branch contains only the charts/ directory at top level."
 
+  release-airgap:
+    name: Release Airgap Pack
+    needs: [release-production, validate-index-branch]
+    uses: ./.github/workflows/release_airgap_pack.yml
+    with:
+      manifest_name: manifest-${{ needs.release-production.outputs.version }}
+    secrets: inherit
