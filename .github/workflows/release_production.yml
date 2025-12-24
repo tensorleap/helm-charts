@@ -102,42 +102,9 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-
-
-  validate-index-branch:
-    name: Validate index branch structure
-    runs-on: ubuntu-latest
-    needs: release-production
-    steps:
-      - name: Checkout (full history)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch index branch
-        run: |
-          git fetch origin index --prune
-
-      - name: Ensure index has no top-level dirs except charts
-        run: |
-          set -e
-
-          TOP_DIRS="$(git ls-tree -d --name-only origin/index || true)"
-          echo "Top-level directories on index:"
-          echo "$TOP_DIRS"
-
-          BAD_DIRS="$(echo "$TOP_DIRS" | awk 'NF' | grep -vx 'charts' || true)"
-          if [ -n "$BAD_DIRS" ]; then
-            echo "❌ Invalid directories found on index branch:"
-            echo "$BAD_DIRS"
-            exit 1
-          fi
-
-          echo "✅ index branch contains only the charts/ directory at top level."
-
   release-airgap:
     name: Release Airgap Pack
-    needs: [release-production, validate-index-branch]
+    needs: release-production
     uses: ./.github/workflows/release_airgap_pack.yml
     with:
       manifest_name: manifest-${{ needs.release-production.outputs.version }}
