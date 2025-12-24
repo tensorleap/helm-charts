@@ -18,7 +18,7 @@ PROJECTS = ["EN"]
 FIX_VERSION_JIRA_FIELD= "fixVersion"
 
 # JQL query for finding done tickets without a fix version
-JQL_TEMPLATE = f'project in ({", ".join(PROJECTS)}) AND status = Done AND {FIX_VERSION_JIRA_FIELD} IS EMPTY ORDER BY issuetype ASC'
+JQL_TEMPLATE = f'project in ({PROJECTS}) AND status = Done AND {FIX_VERSION_JIRA_FIELD} IS EMPTY ORDER BY issuetype ASC'
 
 # Output file path
 OUTPUT_FILE = "RELEASE_NOTES.md"

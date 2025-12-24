@@ -324,7 +324,7 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 	} else if gpuDevices == allGpuDevices {
 		return "all GPUs"
 	} else if gpuDevices != "" {
-		return fmt.Sprintf("GPU device(s): %s", gpuDevices)
+		return fmt.Sprintf("GPU devices index(s): %s", gpuDevices)
 	} else {
 		return "0 GPUs"
 	}
@@ -424,24 +424,24 @@ func selectHowManyGPUs(availableDevices []local.GPU, selectedGpus *uint) error {
 }
 
 func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) error {
-	// Build display names and a lookup map from GPU ID to display name
-	availableGpusNames := make([]string, len(availableDevices))
-	gpuIdToName := make(map[string]string, len(availableDevices))
-	for i, device := range availableDevices {
-		displayName := device.String()
-		availableGpusNames[i] = displayName
-		gpuIdToName[device.ID] = displayName
+	defaultDevices := []string{}
+	availableGpusNames := []string{}
+	for _, device := range availableDevices {
+		availableGpusNames = append(availableGpusNames, device.String())
 	}
 
-	// Determine default selection based on previous settings
-	var defaultDevices []string
 	if *selectedGpuDevices == allGpuDevices {
 		defaultDevices = availableGpusNames
-	} else if *selectedGpuDevices != "" {
-		for _, deviceId := range strings.Split(*selectedGpuDevices, ",") {
-			if name, found := gpuIdToName[strings.TrimSpace(deviceId)]; found {
-				defaultDevices = append(defaultDevices, name)
+	} else {
+		selectedDeviceArray := strings.Split(*selectedGpuDevices, ",")
+		for _, device := range selectedDeviceArray {
+			trimedDevice := strings.TrimSpace(device)
+			asNumber, err := strconv.Atoi(trimedDevice)
+			if err != nil || asNumber >= len(availableDevices) {
+				log.Warnf("Device %s is not available", device)
+				continue
 			}
+			defaultDevices = append(defaultDevices, availableGpusNames[asNumber])
 		}
 	}
 
@@ -466,32 +466,18 @@ func selectGpuDevices(availableDevices []local.GPU, selectedGpuDevices *string) 
 		return err
 	}
 
-	devicesIds := []string{}
+	devicesIndexes := []string{}
 	for _, device := range selected {
 		for i, availableDevice := range availableGpusNames {
 			if device == availableDevice {
-				devicesIds = append(devicesIds, availableDevices[i].ID)
+				devicesIndexes = append(devicesIndexes, fmt.Sprint(i))
 			}
 		}
 	}
 
-	*selectedGpuDevices = strings.Join(devicesIds, ",")
+	*selectedGpuDevices = strings.Join(devicesIndexes, ",")
 
 	return nil
-}
-
-func isGpuDevicesUUIDs(gpuDevices string) bool {
-	if gpuDevices == "" {
-		return false
-	}
-	devices := strings.Split(gpuDevices, ",")
-	for _, device := range devices {
-		trimmed := strings.TrimSpace(device)
-		if !strings.HasPrefix(trimmed, "GPU-") {
-			return false
-		}
-	}
-	return true
 }
 
 func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationParams) error {
@@ -763,25 +749,29 @@ func (params *InstallationParams) GetDatadogEnvs() map[string]string {
 }
 
 func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
-	useGpu := params.IsUseGpu()
-	nvidiaVisibleDevices := ""
 
-	if useGpu {
-		// Calculate NVIDIA_VISIBLE_DEVICES value
-		if params.GpuDevices != "" && params.GpuDevices != allGpuDevices && isGpuDevicesUUIDs(params.GpuDevices) {
-			// User selected specific GPU devices by UUID
-			nvidiaVisibleDevices = params.GpuDevices
+	nvidiaGpuVisibleDevices := ""
+	nvidiaGpuEnable := params.IsUseGpu()
+
+	if nvidiaGpuEnable {
+		if params.GpuDevices == allGpuDevices {
+			nvidiaGpuVisibleDevices = allGpuDevices
+		} else if params.GpuDevices != "" {
+			nvidiaGpuVisibleDevices = params.GpuDevices
+		} else if params.Gpus > 0 {
+			devices := []string{}
+			for i := 0; i < int(params.Gpus); i++ {
+				devices = append(devices, fmt.Sprint(i))
+			}
+			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
 		} else {
-			// For "all", GPU count, or old-style indexes - use all GPUs
-			// Kubernetes resource requests (nvidia.com/gpu: N) control actual GPU allocation
-			nvidiaVisibleDevices = allGpuDevices
+			nvidiaGpuVisibleDevices = allGpuDevices
 		}
-		log.Infof("NVIDIA GPU Operator will be enabled, NVIDIA_VISIBLE_DEVICES: %s", nvidiaVisibleDevices)
 	}
 
 	return &helm.InfraHelmValuesParams{
-		GpuOperatorEnabled:   useGpu,
-		NvidiaVisibleDevices: nvidiaVisibleDevices,
+		NvidiaGpuEnable:         nvidiaGpuEnable,
+		NvidiaGpuVisibleDevices: nvidiaGpuVisibleDevices,
 	}
 }
 
@@ -798,15 +788,8 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		tlsPort = &params.TLSParams.Port
 	}
 
-	// Pass GpuDevices only when user selected specific devices by UUID (not "all", count, or old-style indexes)
-	gpuDevices := ""
-	if useGpu && params.GpuDevices != "" && params.GpuDevices != allGpuDevices && isGpuDevicesUUIDs(params.GpuDevices) {
-		gpuDevices = params.GpuDevices
-	}
-
 	return &k3d.CreateK3sClusterParams{
 		WithGpu:            useGpu,
-		GpuDevices:         gpuDevices,
 		Port:               params.Port,
 		Volumes:            volumes,
 		CpuLimit:           params.CpuLimit,

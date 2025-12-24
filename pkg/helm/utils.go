@@ -42,8 +42,8 @@ type ServerHelmValuesParams struct {
 }
 
 type InfraHelmValuesParams struct {
-	GpuOperatorEnabled   bool   `json:"gpuOperatorEnabled"`
-	NvidiaVisibleDevices string `json:"nvidiaVisibleDevices"`
+	NvidiaGpuEnable         bool   `json:"nvidiaGpuEnable"`
+	NvidiaGpuVisibleDevices string `json:"nvidiaGpuVisibleDevices"`
 }
 
 var ErrNoRelease = fmt.Errorf("no release")
@@ -295,24 +295,12 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 }
 
 func CreateInfraChartValues(params *InfraHelmValuesParams) Record {
-	values := Record{
-		"gpu-operator": Record{
-			"enabled": params.GpuOperatorEnabled,
+	return Record{
+		"nvidiaGpu": Record{
+			"enabled":        params.NvidiaGpuEnable,
+			"visibleDevices": params.NvidiaGpuVisibleDevices,
 		},
 	}
-
-	// Set NVIDIA_VISIBLE_DEVICES in device plugin configuration
-	if params.GpuOperatorEnabled && params.NvidiaVisibleDevices != "" {
-		values["gpu-operator"].(Record)["devicePlugin"] = Record{
-			"enabled": true,
-			"env": []Record{
-				{"name": "FAIL_ON_INIT_ERROR", "value": "false"},
-				{"name": "NVIDIA_VISIBLE_DEVICES", "value": params.NvidiaVisibleDevices},
-			},
-		}
-	}
-
-	return values
 }
 
 func GetValues(config *HelmConfig, releaseName string) (Record, error) {
