@@ -109,3 +109,16 @@ jobs:
     with:
       manifest_name: manifest-${{ needs.release-production.outputs.version }}
     secrets: inherit
+
+  install-server:
+    name: Install Tensorleap Server
+    needs: [release-production, release-airgap]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Server
+        uses: ./.github/actions/install-server
+        with:
+          tag: manifest-${{ needs.release-production.outputs.version }}
