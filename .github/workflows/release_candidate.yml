@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -65,6 +67,13 @@ jobs:
           make update-images
         shell: bash
 
+      - name: Get chart version
+        id: get_version
+        run: |
+          CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
+          echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Commit RC branch state and updated images
         uses: EndBug/add-and-commit@v9
         with:
@@ -83,3 +92,16 @@ jobs:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
           branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
+
+  install-server:
+    name: Install Tensorleap Server
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Server
+        uses: ./.github/actions/install-server
+        with:
+          tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.release.outputs.version) || needs.release.outputs.version }}
