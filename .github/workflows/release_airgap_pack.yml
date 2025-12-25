@@ -1,9 +1,15 @@
 name: Release Airgap Pack
 on:
+  workflow_call:
+    inputs:
+      manifest_name:
+        description: "Name of the manifest (use current branch name if not provided)"
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       manifest_name:
-        description: "Name of the manifest (use curent branch name if not provided)"
+        description: "Name of the manifest (use current branch name if not provided)"
         required: false
 
 jobs:

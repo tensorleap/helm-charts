@@ -1,0 +1,35 @@
+name: Install Server
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Manifest tag to install'
+        required: true
+        type: string
+
+jobs:
+  install-server:
+    name: Install Tensorleap Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install leap-cli
+        run: |
+          curl -s https://raw.githubusercontent.com/tensorleap/leap-cli/master/install.sh | bash
+          if [ $? -ne 0 ]; then
+            echo "❌ leap-cli installation failed"
+            exit 1
+          fi
+          echo "✅ leap-cli installed successfully"
+        shell: bash
+
+      - name: Install Tensorleap server
+        run: |
+          leap server install -t ${{ inputs.tag }}
+          if [ $? -ne 0 ]; then
+            echo "❌ Installation failed"
+            exit 1
+          fi
+          echo "✅ Installation completed successfully"
+        shell: bash

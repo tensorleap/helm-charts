@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,6 +49,10 @@ jobs:
         run: |
           make build-helm
           make update-images
+        shell: bash
+
+      - name: Validate images.txt
+        run: make validate-images
         shell: bash
 
       - name: Commit version changes
@@ -99,3 +105,17 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  release-airgap:
+    name: Release Airgap Pack
+    needs: release-production
+    uses: ./.github/workflows/release_airgap_pack.yml
+    with:
+      manifest_name: manifest-${{ needs.release-production.outputs.version }}
+    secrets: inherit
+
+  install-server:
+    needs: [release-production, release-airgap]
+    uses: ./.github/workflows/_install_server.yml
+    with:
+      tag: manifest-${{ needs.release-production.outputs.version }}

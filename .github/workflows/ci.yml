@@ -1,0 +1,32 @@
+name: CI
+  
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  install-server-local-build:
+    name: Install Tensorleap Server from local build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./go.mod
+
+      # Install Tensorleap Server from local build
+      # Using go command that build from repository images 
+      - name: Install Tensorleap Server from local build
+        run: |
+          go run . install --local
+          if [ $? -ne 0 ]; then
+            echo "❌ Installation failed"
+            exit 1
+          fi
+          echo "✅ Installation completed successfully"
+        shell: bash
