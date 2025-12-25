@@ -51,6 +51,10 @@ jobs:
           make update-images
         shell: bash
 
+      - name: Validate images.txt
+        run: make validate-images
+        shell: bash
+
       - name: Commit version changes
         uses: EndBug/add-and-commit@v9
         with:
