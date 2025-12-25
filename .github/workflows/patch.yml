@@ -79,14 +79,7 @@ jobs:
           branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
 
   install-server:
-    name: Install Tensorleap Server
     needs: patch
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Server
-        uses: ./.github/actions/install-server
-        with:
-          tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.patch.outputs.version) || needs.patch.outputs.version }}
+    uses: ./.github/workflows/_install_server.yml
+    with:
+      tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.patch.outputs.version) || needs.patch.outputs.version }}
