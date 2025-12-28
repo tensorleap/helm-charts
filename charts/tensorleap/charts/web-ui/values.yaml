@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 image_tag: master-936eed94
-=======
-image_tag: master-303cc61c
->>>>>>> parent of ecf273b9 (Update image tags)
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
