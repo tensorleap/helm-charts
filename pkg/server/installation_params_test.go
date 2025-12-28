@@ -6,31 +6,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetCreateK3sClusterParams(t *testing.T) {
-	t.Run("GpuDevices with all", func(t *testing.T) {
+func TestGetInfraHelmValuesParams(t *testing.T) {
+	t.Run("GPU Operator enabled with all GPUs", func(t *testing.T) {
 		params := InstallationParams{
 			GpuDevices: "all",
 		}
 		valueParams := params.GetInfraHelmValuesParams()
-		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "all")
+		assert.True(t, valueParams.GpuOperatorEnabled)
+		assert.Equal(t, "all", valueParams.NvidiaVisibleDevices)
 	})
 
-	t.Run("GpuDevices with gpus count 1", func(t *testing.T) {
+	t.Run("GPU Operator enabled with GPU count uses all", func(t *testing.T) {
 		params := InstallationParams{
 			Gpus: 2,
 		}
 		valueParams := params.GetInfraHelmValuesParams()
-		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
+		assert.True(t, valueParams.GpuOperatorEnabled)
+		assert.Equal(t, "all", valueParams.NvidiaVisibleDevices, "GPU count should use 'all' - k8s resource requests control allocation")
 	})
 
-	t.Run("GpuDevices with 0,1", func(t *testing.T) {
+	t.Run("GPU Operator enabled with specific devices", func(t *testing.T) {
 		params := InstallationParams{
-			GpuDevices: "0,1",
+			GpuDevices: "GPU-xxxx-yyyy,GPU-zzzz-wwww",
 		}
 		valueParams := params.GetInfraHelmValuesParams()
-		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
+		assert.True(t, valueParams.GpuOperatorEnabled)
+		assert.Equal(t, "GPU-xxxx-yyyy,GPU-zzzz-wwww", valueParams.NvidiaVisibleDevices)
 	})
 
+	t.Run("GPU Operator disabled when no GPUs", func(t *testing.T) {
+		params := InstallationParams{
+			Gpus:       0,
+			GpuDevices: "",
+		}
+		valueParams := params.GetInfraHelmValuesParams()
+		assert.False(t, valueParams.GpuOperatorEnabled)
+		assert.Equal(t, "", valueParams.NvidiaVisibleDevices)
+	})
 }
 
 func TestCalcGpusUsed(t *testing.T) {
@@ -56,7 +68,7 @@ func TestCalcGpusUsed(t *testing.T) {
 			name:       "Specific GPU devices",
 			gpus:       0,
 			gpuDevices: "0,1,2",
-			expected:   "GPU devices index(s): 0,1,2",
+			expected:   "GPU device(s): 0,1,2",
 		},
 		{
 			name:       "Number of GPUs",
