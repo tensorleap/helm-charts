@@ -1,4 +1,8 @@
 apiVersion: v2
 name: tensorleap-engine
 type: application
-version: 1.0.542
+<<<<<<< HEAD
+version: 1.0.540
+=======
+version: 1.0.541
+>>>>>>> parent of ecf273b9 (Update image tags)

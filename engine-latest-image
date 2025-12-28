@@ -1,1 +1,5 @@
-public.ecr.aws/tensorleap/engine:master-228b339d
+<<<<<<< HEAD
+public.ecr.aws/tensorleap/engine:master-afc69dad
+=======
+public.ecr.aws/tensorleap/engine:master-80aaef9a
+>>>>>>> parent of ecf273b9 (Update image tags)

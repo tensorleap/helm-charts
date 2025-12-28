@@ -1,4 +1,8 @@
-image_tag: master-3064bccc
+<<<<<<< HEAD
+image_tag: master-fdaf4ea1
+=======
+image_tag: master-a995e3b5
+>>>>>>> parent of ecf273b9 (Update image tags)
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
