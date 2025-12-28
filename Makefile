@@ -53,7 +53,7 @@ test:
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
 .PHONY: update-images
 update-images:
-	(helm template ./charts/tensorleap-infra --set nvidiaGpu.enabled=true && helm template ./charts/tensorleap) \
+	(helm template ./charts/tensorleap-infra --set gpu-operator.enabled=true && helm template ./charts/tensorleap) \
 		| grep 'image: ' \
 		| sed 's/.*: //' \
 		| sed 's/\"//g' \
@@ -67,6 +67,7 @@ build-helm:
 	helm repo add minio https://charts.min.io
 	helm repo add codecentric https://codecentric.github.io/helm-charts
 	helm repo add datadog https://helm.datadoghq.com
+	helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
 	helm dependency build ./charts/tensorleap
 	rm ./charts/tensorleap/Chart.lock
 	helm dependency build ./charts/tensorleap-infra
