@@ -25,6 +25,8 @@ gpu-operator:
     enabled: false
   dcgmExporter:
     enabled: false
+    config:
+      name: ""
   gfd:
     enabled: true
   migManager:
