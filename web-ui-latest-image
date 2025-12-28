@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-public.ecr.aws/tensorleap/web-ui:master-936eed94
-=======
-public.ecr.aws/tensorleap/web-ui:master-303cc61c
->>>>>>> parent of ecf273b9 (Update image tags)
+public.ecr.aws/tensorleap/web-ui:master-dc4b8b3f
