@@ -18,11 +18,11 @@ k8s-kata-manager
 k8s-mig-manager
 kubevirt-gpu-device-plugin
 nvcr.io/nvidia/gpu-operator:v24.9.0
-public.ecr.aws/tensorleap/engine-generic:master-228b339d-py310
-public.ecr.aws/tensorleap/engine-generic:master-228b339d-py312
-public.ecr.aws/tensorleap/engine-generic:master-228b339d-py38
-public.ecr.aws/tensorleap/engine-generic:master-228b339d-py39
-public.ecr.aws/tensorleap/engine:master-228b339d
+public.ecr.aws/tensorleap/engine-generic:master-45b864c2-py310
+public.ecr.aws/tensorleap/engine-generic:master-45b864c2-py312
+public.ecr.aws/tensorleap/engine-generic:master-45b864c2-py38
+public.ecr.aws/tensorleap/engine-generic:master-45b864c2-py39
+public.ecr.aws/tensorleap/engine:master-45b864c2
 public.ecr.aws/tensorleap/node-server:master-3064bccc
 public.ecr.aws/tensorleap/pippin:master-2a8d7971
 public.ecr.aws/tensorleap/web-ui:master-dc4b8b3f
