@@ -763,25 +763,30 @@ func (params *InstallationParams) GetDatadogEnvs() map[string]string {
 }
 
 func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
-	useGpu := params.IsUseGpu()
-	nvidiaVisibleDevices := ""
 
-	if useGpu {
-		// Calculate NVIDIA_VISIBLE_DEVICES value
-		if params.GpuDevices != "" && params.GpuDevices != allGpuDevices && isGpuDevicesUUIDs(params.GpuDevices) {
-			// User selected specific GPU devices by UUID
-			nvidiaVisibleDevices = params.GpuDevices
+	nvidiaGpuVisibleDevices := ""
+	nvidiaGpuEnable := params.IsUseGpu()
+
+	if nvidiaGpuEnable {
+		if params.GpuDevices == allGpuDevices {
+			nvidiaGpuVisibleDevices = allGpuDevices
+		} else if params.GpuDevices != "" {
+			nvidiaGpuVisibleDevices = params.GpuDevices
+		} else if params.Gpus > 0 {
+			devices := []string{}
+			for i := 0; i < int(params.Gpus); i++ {
+				devices = append(devices, fmt.Sprint(i))
+			}
+			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
 		} else {
-			// For "all", GPU count, or old-style indexes - use all GPUs
-			// Kubernetes resource requests (nvidia.com/gpu: N) control actual GPU allocation
-			nvidiaVisibleDevices = allGpuDevices
+			nvidiaGpuVisibleDevices = allGpuDevices
 		}
-		log.Infof("NVIDIA GPU Operator will be enabled, NVIDIA_VISIBLE_DEVICES: %s", nvidiaVisibleDevices)
+		log.Infof("Helm chart NVIDIA_VISIBLE_DEVICES: %s", nvidiaGpuVisibleDevices)
 	}
 
 	return &helm.InfraHelmValuesParams{
-		GpuOperatorEnabled:   useGpu,
-		NvidiaVisibleDevices: nvidiaVisibleDevices,
+		NvidiaGpuEnable:         nvidiaGpuEnable,
+		NvidiaGpuVisibleDevices: nvidiaGpuVisibleDevices,
 	}
 }
 
