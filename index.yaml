@@ -2,6 +2,27 @@ apiVersion: v1
 entries:
   tensorleap:
   - apiVersion: v2
+    created: "2025-12-31T14:40:41.619939961Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.10.0
+    - condition: keycloakx.enabled
+      name: keycloakx
+      repository: https://codecentric.github.io/helm-charts
+      version: 7.1.2
+    - condition: datadog.enabled
+      name: datadog
+      repository: https://helm.datadoghq.com
+      version: 3.59.2
+    digest: 1877d091820366a5d7ba5f1c77a8031f0cc23245a81cece446552449fb62ad1b
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.5.11/tensorleap-1.5.11.tgz
+    version: 1.5.11
+  - apiVersion: v2
     created: "2025-12-31T14:36:38.745505948Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -1073,27 +1094,6 @@ entries:
     - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.4.74-elbitbalancing.0/tensorleap-1.4.74-elbitbalancing.0.tgz
     version: 1.4.74-elbitbalancing.0
   - apiVersion: v2
-    created: "2025-11-30T12:50:58.709271114Z"
-    dependencies:
-    - condition: ingress-nginx.enabled
-      name: ingress-nginx
-      repository: https://kubernetes.github.io/ingress-nginx
-      version: 4.10.0
-    - condition: keycloakx.enabled
-      name: keycloakx
-      repository: https://codecentric.github.io/helm-charts
-      version: 7.1.2
-    - condition: datadog.enabled
-      name: datadog
-      repository: https://helm.datadoghq.com
-      version: 3.59.2
-    digest: 1eaeb9061f02c0024c39a1115e70902ecc0933962e3a2170731a3f19d042f94e
-    name: tensorleap
-    type: application
-    urls:
-    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.4.74-elbit.0/tensorleap-1.4.74-elbit.0.tgz
-    version: 1.4.74-elbit.0
-  - apiVersion: v2
     created: "2025-11-30T14:03:08.570755479Z"
     dependencies:
     - condition: ingress-nginx.enabled
@@ -1109,6 +1109,27 @@ entries:
       repository: https://helm.datadoghq.com
       version: 3.59.2
     digest: 7c5d2d6f1ad0dc1a6f48aa2eac7a959961510b366323ca73fc2ec32eb379c640
+    name: tensorleap
+    type: application
+    urls:
+    - https://github.com/tensorleap/helm-charts/releases/download/tensorleap-1.4.74-elbit.0/tensorleap-1.4.74-elbit.0.tgz
+    version: 1.4.74-elbit.0
+  - apiVersion: v2
+    created: "2025-11-30T12:50:58.709271114Z"
+    dependencies:
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.10.0
+    - condition: keycloakx.enabled
+      name: keycloakx
+      repository: https://codecentric.github.io/helm-charts
+      version: 7.1.2
+    - condition: datadog.enabled
+      name: datadog
+      repository: https://helm.datadoghq.com
+      version: 3.59.2
+    digest: 1eaeb9061f02c0024c39a1115e70902ecc0933962e3a2170731a3f19d042f94e
     name: tensorleap
     type: application
     urls:
