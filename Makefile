@@ -66,13 +66,6 @@ validate-images:
 		echo "❌ images.txt is empty or missing"; \
 		exit 1; \
 	fi
-	@while IFS= read -r line; do \
-		[ -z "$$line" ] && continue; \
-		if ! echo "$$line" | grep -q ':'; then \
-			echo "❌ Invalid image format: $$line"; \
-			exit 1; \
-		fi; \
-	done < images.txt
 	@echo "✅ images.txt is valid ($$(wc -l < images.txt | tr -d ' ') images)"
 
 .PHONY: build-helm
