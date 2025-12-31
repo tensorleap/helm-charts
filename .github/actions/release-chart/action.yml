@@ -41,3 +41,4 @@ runs:
       env:
         CR_TOKEN: ${{ inputs.github_token }}
         CR_PAGES_BRANCH: index
+        charts_dir: charts
