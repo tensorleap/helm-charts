@@ -8,7 +8,7 @@ on:
 jobs:
   install-server-local-build:
     name: Install Tensorleap Server from local build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16-cores
     timeout-minutes: 30
     steps:
       - name: Checkout
