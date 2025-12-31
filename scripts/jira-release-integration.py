@@ -189,7 +189,7 @@ def main():
     max_results = 100
     
     while True:
-        issues = jira.search_issues(
+        issues = jira.enhanced_search_issues(
             jql_query,
             startAt=start_at,
             maxResults=max_results,
