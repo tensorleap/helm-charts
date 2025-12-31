@@ -1,0 +1,22 @@
+*.tgz
+.terraform/
+
+# ci node stuff
+node_modules/
+package-lock.json
+package.json
+
+# Neovim GPT added context file: https://github.com/Robitx/gp.nvim
+.gp.md
+
+Chart.lock
+
+# Environment variables
+.env
+
+# Python virtual environment
+venv/
+
+.idea/
+
+.DS_Store

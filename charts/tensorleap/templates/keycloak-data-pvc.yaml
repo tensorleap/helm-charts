@@ -1,0 +1,36 @@
+{{ if and .Values.keycloakx.enabled .Values.global.create_local_volumes  }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: keycloak-data
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  hostPath:
+    path: /var/lib/tensorleap/standalone/storage/keycloak
+    type: DirectoryOrCreate
+  claimRef:
+    name: keycloak-data
+    namespace: {{ .Release.Namespace }}
+{{ end }}
+---
+{{ if .Values.keycloakx.enabled }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: keycloak-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+{{ if .Values.global.create_local_volumes }}
+  volumeName: keycloak-data
+{{ else if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+{{ end }}
+{{ end }}

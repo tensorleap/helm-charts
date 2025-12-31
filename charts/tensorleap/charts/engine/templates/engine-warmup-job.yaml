@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engine-warmup-job
+data:
+  job: |
+    metadata:
+        name: engine-warmup-job
+        labels:
+            warmup-job: "true"
+            created-by: "node-server"
+    spec:
+        template:
+            spec:
+                containers:
+                - name: engine-placeholder
+                  image: {{ .Values.image_name }}:{{ .Values.image_tag }}
+                  command: ["bash"]
+                  args: ["-c", "sleep $WARMUP_TIMEOUT_SEC"]
+                  resources:
+                    limits:
+                      nvidia.com/gpu: "1"
+                restartPolicy: Never
+                priorityClassName: warmup-priority
+                nodeSelector: warmup-nodeSelector
+                tolerations: warmup-tolerations

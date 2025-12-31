@@ -1,0 +1,45 @@
+eck-operator:
+  managedNamespaces:
+    - tensorleap
+
+# NVIDIA GPU Operator - manages all NVIDIA GPU components
+# Works with: Linux (native), WSL2 + Docker Desktop, k3d/k3s
+gpu-operator:
+  enabled: false
+  operator:
+    defaultRuntime: containerd
+  driver:
+    # Disabled - assumes drivers are pre-installed on host
+    # Required for: WSL2 (uses Windows driver), most bare-metal setups
+    enabled: false
+  toolkit:
+    # Container toolkit for configuring container runtime with NVIDIA support
+    # Set to false if Docker Desktop (WSL2) already has nvidia runtime configured
+    enabled: true
+  devicePlugin:
+    enabled: true
+    env:
+      - name: FAIL_ON_INIT_ERROR
+        value: "false"
+  dcgm:
+    enabled: false
+  dcgmExporter:
+    enabled: false
+    config:
+      name: ""
+  gfd:
+    enabled: true
+  migManager:
+    enabled: false
+  nodeStatusExporter:
+    enabled: false
+  # Validator settings for k3d/k3s/WSL2 environments
+  validator:
+    driver:
+      env:
+        - name: DISABLE_DEV_CHAR_SYMLINK_CREATION
+          value: "true"
+
+global:
+  elasticsearch:
+    enabled: true

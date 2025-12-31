@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorleap-node-server-env-configmap
+data:
+  NODE_ENV: production
+  MONGO_URI: {{ .Values.mongodb.connectionString }}
+  RABBIT_URI: "amqp://guest:guest@rabbitmq"
+  BUCKET_NAME: session
+  STORAGE_MOUNT_PATH: /usr/minio/session
+  ENSURE_BUCKET_EXISTS: "true"
+  SUBSCRIBER_TOPIC: feedback
+  AUTO_ACTIVATE_USER: "true"
+  INSECURE_COOKIE: "true"
+  STORAGE_USE_SSL: "false"
+  STORAGE_PORT: "9000"
+  STORAGE_ENDPOINT: "tensorleap-minio"
+  SIGNED_URL_HOST_REPLACEMENT: "true"
+  SINGLE_USER_MODE: "true"
+  GATEWAY_URL: {{ .Values.global.url | quote }}
+  PROXY_URL: {{ .Values.global.proxyUrl | quote }}
+  KEYCLOAK_CLUSTER_URL: "http://keycloak-http.tensorleap.svc.cluster.local/auth"
+  KEYCLOAK_REALM: "tensorleap"
+  ENABLE_KEYCLOAK_AUTH: {{ .Values.enableKeycloak | quote }}
+  KEYCLOAK_RESOURCE: "tensorleap-client"
+  KEYCLOAK_ADMIN_USER_NAME: "admin"
+  KEYCLOAK_ADMIN_PASSWORD: "admin"
+  DISABLE_DATADOG_METRICS: {{ .Values.disableDatadogMetrics | quote }}
+  ELASTIC_HOST: {{ .Values.global.elasticsearch.url | default "http://tl-elasticsearch-es-master:9200" }}
+  TRIAL_EXTEND_PUBLIC_KEY: |
+    -----BEGIN PUBLIC KEY-----
+    MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwdDbxOmK/5iBGUS+Bdj+
+    dAfEWzwtNwSDXDExHCmbVoOnwYhvaGSVci2lm6V/zbNCIFYfH9DQMfBU96uN4BaT
+    zlyPNuY6Y81shQJRbRcEbdeXQMyL0xGV43dGHU0RbodHk9zKv7iSr4643nLPaVJc
+    O3FkCXtXhU2G6FW6KbrkUCEQa8hfBKituGrUodkp+l9ZUl0cQwWiRw9DYyA/HVk6
+    jRhs+r68n9OADk1Ab8mdUXA9vfZvTXW+G0WfCg0PDKdwKKBKcJfISFnkN4lczO7P
+    EQmzBlZIXeZsjVMTmGhnaMxEYx4fpIlkk0reF4BOHa08ogrPj172I7cfWS1uPWVE
+    peIvIuvzsJqAYOjb/C8FeftAlPNar1amoV0sBTPK5xPbYELjWYcMz+1UH8Ii+Iqe
+    WomqshZJeM8exLHwR1CLGUnDgxsugiJY/KYSptSaqJ8018Q/TvnahALGn/Y7rlvF
+    E4xIaJ5pxeg73LzxoZRjKe7BOcwZzXizz3VROM/X6OJAH5HM86jK7rAi+dmZuW4e
+    AycKvcRLgXfOojiz5Ytf5f/aTc7RKrohjTR/Fl6lp9/K3jIVrVdoOPvj7KKsvVqf
+    CHKIakAHnM/Pe7WIBxixK7TG8qRgrOzzBOu2QVt04DVhVcxqZkpglgce+6LZhYmZ
+    fUdjVwvr9Nq+s5Fc1QN4uQkCAwEAAQ==
+    -----END PUBLIC KEY-----
+{{ if .Values.global.target_namespace }}
+  TARGET_NAMESPACE: {{ .Values.global.target_namespace }}
+{{ end }}

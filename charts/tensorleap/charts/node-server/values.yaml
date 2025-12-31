@@ -1,0 +1,13 @@
+image_tag: master-3064bccc
+image: public.ecr.aws/tensorleap/node-server
+disableDatadogMetrics: false
+enableKeycloak: true
+
+ingress:
+  enabled: true
+
+mongodb:
+  enabled: true
+  connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
+
+mongodb_image: docker.io/library/mongo:6.0.5

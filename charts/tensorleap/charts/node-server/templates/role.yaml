@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ empty .Values.global.target_namespace | ternary "Role" "ClusterRole" }}
+metadata:
+  name: node-server-role
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - list
+      - get
+      - create
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+      - pods/log
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - delete
+      - update
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+    verbs:
+      - get

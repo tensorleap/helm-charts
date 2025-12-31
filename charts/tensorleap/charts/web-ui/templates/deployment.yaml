@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorleap-web-ui
+spec:
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: tensorleap-web-ui
+  template:
+    metadata:
+      labels:
+        app: tensorleap-web-ui
+      annotations:
+        ad.datadoghq.com/web-ui.logs: '[{"source": "nodejs", "service": "web-ui"}]'
+    spec:
+      containers:
+        - name: web-ui
+          image: {{ .Values.image }}:{{ .Values.image_tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: '8080'
