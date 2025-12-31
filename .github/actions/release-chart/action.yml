@@ -36,10 +36,18 @@ runs:
     # 2. Create GitHub releases with the .tgz packages
     # 3. Update ONLY the index.yaml on the index branch (CR_PAGES_BRANCH)
     # This keeps the index branch clean with only Helm repo data
+    # - name: Run chart-releaser
+    #   uses: helm/chart-releaser-action@v1.1.0
+    #   with:
+    #     charts_dir: charts
+    #   env:
+    #     CR_TOKEN: ${{ inputs.github_token }}
+    #     CR_PAGES_BRANCH: index
+
     - name: Run chart-releaser
-      uses: helm/chart-releaser-action@v1.1.0
+      uses: helm/chart-releaser-action@v1.6.0
       with:
         charts_dir: charts
+        pages_branch: index
       env:
         CR_TOKEN: ${{ inputs.github_token }}
-        CR_PAGES_BRANCH: index
