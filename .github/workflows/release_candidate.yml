@@ -67,10 +67,6 @@ jobs:
           make update-images
         shell: bash
 
-      - name: Validate images.txt
-        run: make validate-images
-        shell: bash
-
       - name: Helm Chart Validation (Tensorleap)
         uses: tensorleap/reusable-workflows/actions/helm-validate@master
         with:

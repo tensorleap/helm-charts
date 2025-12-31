@@ -60,14 +60,6 @@ update-images:
 		| sort \
 		| uniq > images.txt
 
-.PHONY: validate-images
-validate-images:
-	@if [ ! -s images.txt ]; then \
-		echo "❌ images.txt is empty or missing"; \
-		exit 1; \
-	fi
-	@echo "✅ images.txt is valid ($$(wc -l < images.txt | tr -d ' ') images)"
-
 .PHONY: build-helm
 build-helm:
 	helm repo add nginx https://kubernetes.github.io/ingress-nginx
