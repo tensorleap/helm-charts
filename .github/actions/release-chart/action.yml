@@ -54,17 +54,9 @@ runs:
 
 
     - name: Run chart-releaser (tensorleap)
-      uses: helm/chart-releaser-action@v1.1.0
+      uses: helm/chart-releaser-action@v1.7.0
       with:
-        charts_dir: charts/tensorleap
-        pages_branch: index
-      env:
-        CR_TOKEN: ${{ inputs.github_token }}
-
-    - name: Run chart-releaser (tensorleap-infra)
-      uses: helm/chart-releaser-action@v1.1.0
-      with:
-        charts_dir: charts/tensorleap-infra
+        charts_dir: charts
         pages_branch: index
       env:
         CR_TOKEN: ${{ inputs.github_token }}
