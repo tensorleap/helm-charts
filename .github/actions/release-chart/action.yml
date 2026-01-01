@@ -18,6 +18,7 @@ runs:
         token: ${{ inputs.github_token }}
         fetch-depth: 0
         persist-credentials: true
+        ref: ${{ inputs.branch }}
 
     - name: Configure Git
       run: |
@@ -25,35 +26,12 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
       shell: bash
 
-    - name: Checkout source branch
-      run: |
-        git fetch origin ${{ inputs.branch }} || true
-        git checkout -B ${{ inputs.branch }} origin/${{ inputs.branch }}
-      shell: bash
-
     # chart-releaser-action will:
     # 1. Package charts from this branch (charts/ folder)
     # 2. Create GitHub releases with the .tgz packages
-    # 3. Update ONLY the index.yaml on the index branch (CR_PAGES_BRANCH)
+    # 3. Update ONLY the index.yaml on the index branch (pages_branch)
     # This keeps the index branch clean with only Helm repo data
-    # - name: Run chart-releaser
-    #   uses: helm/chart-releaser-action@v1.1.0
-    #   with:
-    #     charts_dir: charts
-    #   env:
-    #     CR_TOKEN: ${{ inputs.github_token }}
-    #     CR_PAGES_BRANCH: index
-
-    # - name: Run chart-releaser
-    #   uses: helm/chart-releaser-action@v1.6.0
-    #   with:
-    #     charts_dir: charts
-    #     pages_branch: index
-    #   env:
-    #     CR_TOKEN: ${{ inputs.github_token }}
-
-
-    - name: Run chart-releaser (tensorleap)
+    - name: Run chart-releaser
       uses: helm/chart-releaser-action@v1.7.0
       with:
         charts_dir: charts
