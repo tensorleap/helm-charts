@@ -179,29 +179,14 @@ def main():
         print()
     
     # Build JQL query
-    project_list = ", ".join(PROJECTS)
-    jql_query = JQL_TEMPLATE.format(projects=project_list)
+    jql_query = JQL_TEMPLATE
     print(f"🔍 JQL: {jql_query}\n")
     
-    # Fetch issues (with pagination)
-    all_issues = []
-    start_at = 0
-    max_results = 100
-    
-    while True:
-        issues = jira.enhanced_search_issues(
-            jql_query,
-            startAt=start_at,
-            maxResults=max_results,
-            fields=['summary', 'issuetype', 'project']
-        )
-        
-        all_issues.extend(issues)
-        print(f"  Fetched {len(all_issues)} issues...")
-        
-        if len(issues) < max_results:
-            break
-        start_at += max_results
+    # Fetch issues (enhanced_search_issues handles pagination automatically)
+    all_issues = list(jira.enhanced_search_issues(
+        jql_query,
+        fields=['summary', 'issuetype', 'project']
+    ))
     
     print(f"\n📊 Total issues found: {len(all_issues)}\n")
     
