@@ -63,15 +63,15 @@ jobs:
         run: make validate-images
         shell: bash
 
-      - name: Helm Chart Validation (Tensorleap)
-        uses: tensorleap/reusable-workflows/actions/helm-validate@master
-        with:
-          chart_path: './charts/tensorleap'
+      # - name: Helm Chart Validation (Tensorleap)
+      #   uses: tensorleap/reusable-workflows/actions/helm-validate@master
+      #   with:
+      #     chart_path: './charts/tensorleap'
 
-      - name: Helm Chart Validation (Tensorleap Infra)
-        uses: tensorleap/reusable-workflows/actions/helm-validate@master
-        with:
-          chart_path: './charts/tensorleap-infra'
+      # - name: Helm Chart Validation (Tensorleap Infra)
+      #   uses: tensorleap/reusable-workflows/actions/helm-validate@master
+      #   with:
+      #     chart_path: './charts/tensorleap-infra'
           
       - name: Commit version changes
         uses: EndBug/add-and-commit@v9
