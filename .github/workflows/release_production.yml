@@ -111,7 +111,7 @@ jobs:
           method: chat.postMessage # https://api.slack.com/methods/chat.postMessage
           token: ${{ secrets.SLACK_TOKEN }}
           payload: |
-            channel: "releases",
+            channel: "releases"
             text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }} | View workflow --> ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             
 
