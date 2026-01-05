@@ -31,11 +31,9 @@ func NewCreateManifestCmd() *cobra.Command {
 			fmt.Println("tag:", tag)
 			fmt.Println("output:", output)
 			if fromLocal {
-				fmt.Println("@@ i am in the local block")
 				fileGetter := manifest.BuildLocalFileGetter("")
 				mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
 			} else {
-				fmt.Println("@@@@@@ i am in the remote block")
 				mnf, err = manifest.GenerateManifestFromRemote(serverChartVersion, infraChartVersion)
 			}
 			if err != nil {
