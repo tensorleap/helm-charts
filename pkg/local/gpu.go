@@ -57,6 +57,13 @@ func checkNvidiaOnLinux() ([]GPU, error) {
 	// On Linux we *used* to rely on lspci. Now we just let nvidia-smi
 	// tell us whether there is a usable NVIDIA GPU.
 	log.Info("Using nvidia-smi to detect NVIDIA GPU...")
+
+	// Check if nvidia-smi exists first
+	if _, err := exec.LookPath("nvidia-smi"); err != nil {
+		log.Info("not found nvidia-smi")
+		return nil, nil
+	}
+
 	return queryGPUsViaNvidiaSMI()
 }
 
