@@ -1,6 +1,0 @@
-# VCS
-.git/
-.gitignore
-
-# Go build
-pkg/

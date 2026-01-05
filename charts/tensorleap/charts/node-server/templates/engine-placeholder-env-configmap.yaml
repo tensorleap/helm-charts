@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: engine-placeholder-env-configmap
-data:
-  WARMUP_TIMEOUT_SEC: "3600"
