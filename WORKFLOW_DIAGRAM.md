@@ -7,121 +7,174 @@ This document describes all GitHub Actions workflows and reusable actions in the
 ## Workflows Overview
 
 ### Main Release Workflows
-- **`release_version.yml`** - Main workflow: Update Images → RC release → Tests → Production release
-- **`release_candidate.yml`** - Creates RC branch, releases charts, releases RC manifest
-- **`release_production.yml`** - Removes RC suffix, releases charts, releases production manifest
+- **`release_candidate.yml`** - Creates RC branch, bumps version, releases charts and RC manifest
+- **`release_production.yml`** - Removes RC suffix, releases charts, releases production manifest, generates release notes, notifies Slack
 - **`patch.yml`** - Manual patch workflow: Bumps RC version, releases charts and manifest
 
 ### Supporting Workflows
-- **`_release_candidate_branch.yml`** - Creates RC branch (reusable)
-- **`_release_tests.yml`** - Runs tests on RC branch (reusable)
-- **`_test_and_production.yml`** - Triggered after patch: runs tests then production release
+- **`_install_server.yml`** - Reusable workflow to install Tensorleap server using leap-cli
+- **`release_airgap_pack.yml`** - Builds and uploads airgap pack to S3 (callable + manual)
+- **`update_images.yml`** - Waits for web-ui build, updates image tags in charts
 
-### Other Workflows
-- **`release_airgap_pack.yml`** - Builds and uploads airgap pack to S3
+### CI Workflows
+- **`ci.yml`** - CI on push to master: Installs server from local Go build
 - **`go_ci.yml`** - CI for Go code (format check, build, lint, test)
 
 ### Reusable Actions
-- **`actions/update-images/action.yml`** - Waits for web-ui build, updates image tags, bumps chart versions (used by `release_version.yml`)
 - **`actions/release-chart/action.yml`** - Releases Helm charts using chart-releaser
 - **`actions/release-manifest/action.yml`** - Generates and releases installation manifest
 
 ---
 
-## Main Release Workflow: `release_version.yml`
+## Release Flow Overview
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                  🚀 release_version.yml                       │
-│                  (Manual Trigger)                             │
-└──────────────────────┬────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: Update Images (update-images action)                  │
-│   ├─ Wait for web-ui build                                     │
-│   ├─ Get latest image tags (engine, node-server, web-ui, pippin)│
-│   ├─ Update values.yaml files                                  │
-│   ├─ Bump chart versions                                       │
-│   └─ Commit changes                                            │
-└──────────────────────┬──────────────────────────────────────--──┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 2: Release Candidate (release_candidate.yml)              │
-│   ├─ Checkout RC branch                                        │
-│   ├─ Commit RC branch state                                    │
-│   ├─ Release Charts (release-chart action)                     │
-│   └─ Release RC Manifest (release-manifest action)             │
-│         └─ Output: manifest.rc.yaml                            │
-└──────────────────────┬──────────────────────────────────────--──┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Run Tests (_release_tests.yml)                         │
-│   ├─ Checkout RC branch                                        │
-│   ├─ Run tests (make test)                                     │
-│   └─ Validate results                                           │
-│         ├─ ❌ Fail → handle-test-failure job                   │
-│         └─ ✅ Pass → Continue                                   │
-└──────────────────────┬────────────────────────────────────────--┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 4: Release Production (release_production.yml)            │
-│   ├─ Remove -rc.x suffix from chart versions                   │
-│   ├─ Commit version changes                                    │
-│   ├─ Release Charts (release-chart action)                     │
-│   └─ Release Production Manifest (release-manifest action)     │
-│         └─ Output: manifest.yaml                                │
-└──────────────────────┬───────────────────────────────────────--─┘
-                       │
-                       ▼
-                   ✅ Complete
-```
-
-### Mermaid Diagram: `release_version.yml`
-
-```mermaid
-graph TD
-    Start([🚀 Manual Trigger<br/>workflow_dispatch]) --> Step0[1️⃣ Update Images<br/>update-images action]
-    
-    Step0 --> Step0a[Wait for web-ui build]
-    Step0a --> Step0b[Get latest image tags]
-    Step0b --> Step0c[Update values.yaml files]
-    Step0c --> Step0d[Bump chart versions]
-    Step0d --> Step0e[Commit changes]
-    
-    Step0e --> Step1[2️⃣ Release Candidate<br/>release_candidate.yml]
-    Step1 --> Step1a[Checkout RC branch]
-    Step1a --> Step1b[Commit RC branch state]
-    Step1b --> Step1c[Release Charts]
-    Step1c --> Step1d[Release RC Manifest<br/>manifest.rc.yaml]
-    
-    Step1d --> Step2[3️⃣ Run Tests<br/>_release_tests.yml]
-    Step2 --> |Checkout RC branch| Step2a[make test]
-    Step2a --> Step2b{Tests Pass?}
-    Step2b --> |❌ Fail| FailJob[handle-test-failure<br/>Manual Patch Required]
-    Step2b --> |✅ Pass| Step3
-    
-    Step3[4️⃣ Release Production<br/>release_production.yml]
-    Step3 --> Step3a[Remove -rc.x suffix]
-    Step3a --> Step3b[Commit version changes]
-    Step3b --> Step3c[Release Charts]
-    Step3c --> Step3d[Release Production Manifest<br/>manifest.yaml]
-    Step3d --> End([✅ Production Release Complete])
-    
-    style Start fill:#e1f5ff
-    style End fill:#d4edda
-    style FailJob fill:#f8d7da
-    style Step2b fill:#fff3cd
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RELEASE FLOW OPTIONS                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Option 1: Full RC Flow                                                     │
+│  ─────────────────────                                                      │
+│  update_images.yml → release_candidate.yml → (test) → release_production   │
+│                                                                             │
+│  Option 2: Direct Production (from RC branch)                               │
+│  ────────────────────────────────────────────                               │
+│  release_production.yml (from branch X.X.X with -rc suffix)                 │
+│                                                                             │
+│  Option 3: Direct Production (from master)                                  │
+│  ────────────────────────────────────────────                               │
+│  release_production.yml (from master, no -rc suffix to remove)              │
+│                                                                             │
+│  Option 4: Patch Flow (after failed RC)                                     │
+│  ──────────────────────────────────────                                     │
+│  patch.yml → (test) → release_production.yml                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Patch Workflow: `patch.yml`
+## Workflow: `release_candidate.yml`
 
-The patch workflow allows manual patching of RC releases when tests fail.
+**Purpose:** Create a release candidate with versioned charts and manifest.
+
+**Triggers:**
+- `workflow_call` (called by other workflows)
+- `workflow_dispatch` (manual)
+
+**Inputs:**
+- `custom_tag_prefix` (optional): Custom tag prefix for manifest
+
+**Flow:**
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                  📦 release_candidate.yml                     │
+│                  (Manual or Called)                           │
+└──────────────────────┬────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: release                                                    │
+│   ├─ Checkout repository                                        │
+│   ├─ Configure Git identity                                     │
+│   ├─ Checkout RC branch (make checkout-rc-branch)               │
+│   │   └─ From master: creates branch X.X.X with version X.X.X-rc.0│
+│   │   └─ From branch: bumps RC version (X.X.X-rc.0 → X.X.X-rc.1)│
+│   ├─ Set up Helm                                                │
+│   ├─ Extract image names (make build-helm, make update-images)  │
+│   ├─ Get chart version                                          │
+│   ├─ Commit changes                                             │
+│   ├─ Release Charts (release-chart action)                      │
+│   └─ Release RC Manifest (release-manifest action)              │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: install-server                                             │
+│   └─ Uses _install_server.yml with tag from release job         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Outputs:**
+- RC branch name (e.g., `1.5.9`)
+- Chart version (e.g., `1.5.9-rc.0`)
+- Manifest release with tag (e.g., `1.5.9-rc.0`)
+
+---
+
+## Workflow: `release_production.yml`
+
+**Purpose:** Release production version of charts and manifest.
+
+**Triggers:**
+- `workflow_dispatch` (manual) - Run from RC branch OR master
+
+**Flow:**
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                  🚀 release_production.yml                    │
+│                  (Manual Trigger)                             │
+│                  Run from: RC branch (X.X.X) or master        │
+└──────────────────────┬────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: release-production                                         │
+│   ├─ Checkout repository                                        │
+│   ├─ Configure Git identity                                     │
+│   ├─ Remove -rc.x suffix (make remove-rc-suffix)                │
+│   │   └─ From RC: X.X.X-rc.0 → X.X.X                           │
+│   │   └─ From master: no change (no -rc suffix)                │
+│   ├─ Get chart version                                          │
+│   ├─ Set up Helm                                                │
+│   ├─ Extract image names (make build-helm, make update-images)  │
+│   ├─ Commit version changes                                     │
+│   ├─ Release Charts (release-chart action)                      │
+│   ├─ Release Manifest (release-manifest action)                 │
+│   │   └─ Tag: manifest-X.X.X                                   │
+│   ├─ Set up Python                                              │
+│   ├─ Generate Release Notes & Update Jira fixVersion            │
+│   ├─ Commit Release Notes                                       │
+│   └─ Notify Slack - Release Complete                            │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: release-airgap                                             │
+│   └─ Uses release_airgap_pack.yml                               │
+│       └─ manifest_name: manifest-X.X.X                          │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: install-server                                             │
+│   └─ Uses _install_server.yml                                   │
+│       └─ tag: manifest-X.X.X                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Outputs:**
+- Production manifest release (`manifest-X.X.X`)
+- Airgap pack uploaded to S3
+- Release notes updated
+- Jira fixVersion created/updated
+- Slack notification
+
+---
+
+## Workflow: `patch.yml`
+
+**Purpose:** Bump RC version for patching after test failures.
+
+**Triggers:**
+- `workflow_dispatch` (manual)
+
+**Inputs:**
+- `custom_tag_prefix` (optional): Custom tag prefix for manifest
+
+**Flow:**
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -131,266 +184,54 @@ The patch workflow allows manual patching of RC releases when tests fail.
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Patch Release                                                   │
-│   ├─ Checkout RC branch                                        │
-│   ├─ Bump rc version (e.g., 1.2.3-rc.0 → 1.2.3-rc.1)          │
-│   ├─ Commit version changes                                    │
-│   ├─ Release Charts (release-chart action)                     │
-│   └─ Release RC Manifest (release-manifest action)             │
-│         └─ Output: manifest.rc.yaml                            │
-└──────────────────────┬──────────────────────────────────────--──┘
+│ Job: patch                                                      │
+│   ├─ Checkout repository                                        │
+│   ├─ Configure Git identity                                     │
+│   ├─ Checkout RC branch (make checkout-rc-branch)               │
+│   │   └─ Bumps version: X.X.X-rc.0 → X.X.X-rc.1                │
+│   ├─ Get new version                                            │
+│   ├─ Set up Helm                                                │
+│   ├─ Extract image names                                        │
+│   ├─ Validate images.txt (make validate-images)                 │
+│   ├─ Helm Chart Validation (tensorleap)                         │
+│   ├─ Helm Chart Validation (tensorleap-infra)                   │
+│   ├─ Commit version changes                                     │
+│   ├─ Release Charts (release-chart action)                      │
+│   └─ Release Manifest (release-manifest action)                 │
+└──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Auto-trigger: _test_and_production.yml                         │
-│   ├─ Run Tests (_release_tests.yml)                            │
-│   │    └─ ✅ Pass → Continue                                   │
-│   │    └─ ❌ Fail → handle-test-failure-after-patch            │
-│   └─ Release Production (release_production.yml)                │
-│         └─ Output: manifest.yaml                                │
+│ Job: install-server                                             │
+│   └─ Uses _install_server.yml with new RC tag                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Mermaid Diagram: Patch Flow
+---
 
-```mermaid
-graph TD
-    Start([🔧 Manual Patch Trigger<br/>workflow_dispatch]) --> Patch[Patch Release]
-    
-    Patch --> Patch1[Checkout RC branch]
-    Patch1 --> Patch2[Bump rc version]
-    Patch2 --> Patch3[Commit version changes]
-    Patch3 --> Patch4[Release Charts]
-    Patch4 --> Patch5[Release RC Manifest]
-    
-    Patch5 --> AutoTrigger[Auto-trigger<br/>_test_and_production.yml]
-    AutoTrigger --> Test[Run Tests]
-    Test --> TestCheck{Tests Pass?}
-    TestCheck --> |❌ Fail| FailAfterPatch[handle-test-failure-after-patch<br/>Run Patch Again]
-    TestCheck --> |✅ Pass| Prod[Release Production]
-    Prod --> ProdEnd([✅ Production Release Complete])
-    
-    style Start fill:#fff3cd
-    style AutoTrigger fill:#e1f5ff
-    style ProdEnd fill:#d4edda
-    style FailAfterPatch fill:#f8d7da
-    style TestCheck fill:#fff3cd
+## Workflow: `_install_server.yml`
+
+**Purpose:** Reusable workflow to install Tensorleap server for validation.
+
+**Triggers:**
+- `workflow_call` only (reusable)
+
+**Inputs:**
+- `tag` (required): Manifest tag to install
+
+**Flow:**
+
 ```
-
----
-
-## Detailed Workflow Descriptions
-
-### 1. `release_candidate.yml`
-
-**Triggers:**
-- `workflow_call` (called by `release_version.yml`)
-- `workflow_dispatch` (manual)
-
-**Steps:**
-1. Checkout repository
-2. Configure Git identity
-3. Checkout RC branch (`make checkout-rc-branch`)
-4. Commit RC branch state
-5. Release Charts (using `release-chart` action)
-6. Release Candidate Manifest (using `release-manifest` action with `manifest.rc.yaml` output)
-
-**Outputs:**
-- RC branch name
-- RC manifest release (`manifest.rc.yaml`)
-
----
-
-### 2. `release_production.yml`
-
-**Triggers:**
-- `workflow_call` (called by `release_version.yml` or `_test_and_production.yml`)
-- `workflow_dispatch` (manual)
-
-**Steps:**
-1. Checkout repository
-2. Configure Git identity
-3. Remove `-rc.x` suffix from chart versions
-   - Updates `charts/tensorleap/Chart.yaml`
-   - Updates `charts/tensorleap-infra/Chart.yaml`
-4. Commit version changes
-5. Release Charts (using `release-chart` action)
-6. Release Production Manifest (using `release-manifest` action with default `manifest.yaml` output)
-
-**Outputs:**
-- Production manifest release (`manifest.yaml`)
-
----
-
-### 3. `patch.yml`
-
-**Triggers:**
-- `workflow_dispatch` (manual)
-
-**Steps:**
-1. Checkout repository
-2. Configure Git identity
-3. Checkout RC branch
-4. Bump RC version number (e.g., `1.2.3-rc.0` → `1.2.3-rc.1`)
-   - Updates both tensorleap and infra chart versions
-5. Commit version changes
-6. Release Charts (using `release-chart` action)
-7. Release RC Manifest (using `release-manifest` action with `manifest.rc.yaml` output)
-
-**Auto-triggers:**
-- After completion, triggers `_test_and_production.yml` workflow
-
----
-
-### 4. `_release_tests.yml`
-
-**Triggers:**
-- `workflow_call` (called by `release_version.yml` or `_test_and_production.yml`)
-- `workflow_dispatch` (manual)
-
-**Steps:**
-1. Checkout repository
-2. Get RC branch name (`make checkout-rc-branch`)
-3. Checkout RC branch
-4. Run tests (`make test`)
-5. Validate test results
-   - On failure: exit with error code
-   - On success: continue
-
----
-
-### 5. `_test_and_production.yml`
-
-**Triggers:**
-- `workflow_call` (called by other workflows)
-- `workflow_run` (triggered after `patch.yml` completes)
-
-**Jobs:**
-1. **test** - Runs `_release_tests.yml` (only if patch workflow succeeded)
-2. **release-production** - Runs `release_production.yml` (only if tests pass)
-3. **handle-test-failure-after-patch** - Error handler if tests fail after patch
-
-**Purpose:**
-- Automatically runs tests after patch workflow
-- If tests pass, proceeds to production release
-- If tests fail, provides error message for another patch
-
----
-
-### 6. `_release_candidate_branch.yml`
-
-**Triggers:**
-- `workflow_call` (reusable)
-- `workflow_dispatch` (manual)
-
-**Steps:**
-1. Checkout repository
-2. Configure Git identity
-3. Create Release Candidate branch (`make checkout-rc-branch`)
-4. Commit and push changes
-5. Print created RC branch name
-
-**Purpose:**
-- Standalone workflow for creating RC branches
-- Can be called by other workflows or run manually
-
----
-
-### 7. `release_airgap_pack.yml`
-
-**Triggers:**
-- `workflow_dispatch` (manual)
-
-**Inputs:**
-- `manifest_name` (optional): Name of the manifest (defaults to branch-based name)
-
-**Steps:**
-1. Checkout repository
-2. Configure AWS credentials
-3. Set up Go
-4. Check format (`make check-fmt`)
-5. Get tensorleap chart version
-6. Save manifest version
-7. Build Airgap Pack (`go run . pack`)
-8. Upload Airgap Pack to S3
-9. Checkout to index branch
-10. Update index (`node generate-airgap-versions.js`)
-11. Commit changes
-
-**Purpose:**
-- Builds airgap installation package
-- Uploads to S3 bucket: `s3://tensorleap-assets/airgap-versions/`
-- Updates index branch with version information
-
----
-
-### 8. `go_ci.yml`
-
-**Triggers:**
-- `push` (on changes to Go files: `go.mod`, `go.sum`, `main.go`, `cmd/**`, `pkg/**`)
-
-**Steps:**
-1. Checkout repository
-2. Set up Go
-3. Check format (`make check-fmt`)
-4. Build (`go build .`)
-5. Lint (using `golangci/golangci-lint-action`)
-6. Test (`make test`)
-
-**Purpose:**
-- Continuous integration for Go code
-- Ensures code quality and tests pass before merging
-
----
-
-## Reusable Actions
-
-### 1. `actions/update-images/action.yml`
-
-**Purpose:**
-- Waits for web-ui build to complete
-- Updates image tags in chart values.yaml files
-- Bumps chart versions
-
-**Inputs:**
-- `github_token` (required): GitHub token for authentication
-
-**Steps:**
-1. Wait for web-ui build (`tag-public-ecr-image-as-stable` check)
-2. Checkout repository
-3. Configure Git
-4. Install dependencies (js-yaml)
-5. Update charts:
-   - Get latest image tags from repos: `engine`, `node-server`, `web-ui`, `pippin`
-   - Update `values.yaml` files in charts
-   - Bump chart versions (patch version increment)
-   - Update `*-latest-image` files
-6. Extract image names (`make build-helm`, `make update-images`)
-7. Commit changes
-
-**Used by:**
-- `release_version.yml` (as first step before RC release)
-
----
-
-### 2. `actions/release-chart/action.yml`
-
-**Purpose:**
-- Releases Helm charts using chart-releaser-action
-
-**Inputs:**
-- `github_token` (required): GitHub token for authentication
-
-**Steps:**
-1. Checkout repository
-2. Configure Git
-3. Switch to index branch
-4. Update files from current branch
-5. Commit changes to index branch
-6. Switch back to current branch
-7. Run chart-releaser-action
-   - Updates chart index on `index` branch
-   - Creates GitHub releases for charts
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: install-server (timeout: 30 minutes)                       │
+│   ├─ Install leap-cli                                           │
+│   │   └─ curl install.sh from leap-cli repo                     │
+│   │   └─ Validate success                                       │
+│   └─ Install Tensorleap server                                  │
+│       └─ leap server install -t <tag>                           │
+│       └─ Validate success                                       │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 **Used by:**
 - `release_candidate.yml`
@@ -399,85 +240,269 @@ graph TD
 
 ---
 
-### 3. `actions/release-manifest/action.yml`
+## Workflow: `update_images.yml`
 
-**Purpose:**
-- Generates and releases installation manifest
+**Purpose:** Update image tags in charts when new images are available.
+
+**Triggers:**
+- `workflow_dispatch` (manual)
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: wait-for-stable-images                                     │
+│   └─ Wait for web-ui build (tag-public-ecr-image-as-stable)     │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: update-images                                              │
+│   ├─ Checkout repository                                        │
+│   ├─ Configure Git                                              │
+│   ├─ Install js-yaml                                            │
+│   ├─ Update charts (GitHub Script)                              │
+│   │   ├─ Get latest image tags: engine, node-server, web-ui     │
+│   │   ├─ Update values.yaml files                               │
+│   │   ├─ Bump chart versions                                    │
+│   │   └─ Update *-latest-image files                            │
+│   ├─ Extract image names (make build-helm, make update-images)  │
+│   └─ Commit changes                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Workflow: `release_airgap_pack.yml`
+
+**Purpose:** Build and upload airgap installation package to S3.
+
+**Triggers:**
+- `workflow_call` (called by `release_production.yml`)
+- `workflow_dispatch` (manual)
+
+**Inputs:**
+- `manifest_name` (optional): Name of the manifest
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: build (runs-on: ubuntu-32-cores)                           │
+│   ├─ Checkout repository                                        │
+│   ├─ Configure AWS credentials                                  │
+│   ├─ Set up Go                                                  │
+│   ├─ Check format (make check-fmt)                              │
+│   ├─ Get tensorleap chart version                               │
+│   ├─ Save manifest version                                      │
+│   ├─ Build Airgap Pack (go run . pack)                          │
+│   ├─ Upload to S3                                               │
+│   │   └─ s3://tensorleap-assets/airgap-versions/tl-<manifest>-linux-amd64.tar.gz│
+│   ├─ Checkout to index branch                                   │
+│   ├─ Update index (node generate-airgap-versions.js)            │
+│   └─ Commit changes                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Workflow: `ci.yml`
+
+**Purpose:** CI workflow that installs server from local Go build.
+
+**Triggers:**
+- `push` to `master` branch
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: install-server-local-build (runs-on: ubuntu-16-cores)      │
+│   ├─ Checkout                                                   │
+│   ├─ Set up Go                                                  │
+│   └─ Install Tensorleap Server from local build                 │
+│       └─ go run . install --local                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Workflow: `go_ci.yml`
+
+**Purpose:** CI for Go code quality.
+
+**Triggers:**
+- `push` (on changes to: `go.mod`, `go.sum`, `main.go`, `cmd/**`, `pkg/**`)
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: build                                                      │
+│   ├─ Checkout                                                   │
+│   ├─ Set up Go                                                  │
+│   ├─ Check format (make check-fmt)                              │
+│   ├─ Build (go build .)                                         │
+│   ├─ Lint (golangci-lint)                                       │
+│   └─ Test (make test)                                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Reusable Actions
+
+### 1. `actions/release-chart/action.yml`
+
+**Purpose:** Release Helm charts using chart-releaser-action.
 
 **Inputs:**
 - `github_token` (required): GitHub token for authentication
-- `custom_tag_prefix` (optional): Custom tag prefix (default: "manifest")
-- `manifest_output` (optional): Output filename (default: "manifest.yaml")
+- `branch` (required): Branch to checkout and release from
+
+**Steps:**
+1. Checkout branch with `ref: ${{ inputs.branch }}` (gets latest commits)
+2. Configure Git
+3. Run chart-releaser-action
+   - Packages charts from `charts/` directory
+   - Creates GitHub releases with `.tgz` packages
+   - Updates ONLY `index.yaml` on `index` branch
+
+**Used by:**
+- `release_candidate.yml`
+- `release_production.yml`
+- `patch.yml`
+
+---
+
+### 2. `actions/release-manifest/action.yml`
+
+**Purpose:** Generate and release installation manifest.
+
+**Inputs:**
+- `github_token` (required): GitHub token for authentication
+- `custom_tag_prefix` (optional): Custom tag prefix (default: empty)
+- `manifest_output` (optional): Output filename (default: `manifest.yaml`)
+- `branch` (optional): Branch to checkout
 
 **Steps:**
 1. Checkout repository
 2. Set up Go
 3. Get tensorleap chart version
-4. Get tensorleap infra chart version
+4. Get tensorleap-infra chart version
 5. Set manifest version tag
 6. Create installation manifest (`go run . create-manifest`)
-7. Print chart versions
-8. Print manifest content
-9. Create GitHub release with manifest artifact
+7. Print chart versions and manifest content
+8. Create GitHub release with manifest artifact
 
 **Used by:**
-- `release_candidate.yml` (with `manifest_output: manifest.rc.yaml`)
-- `release_production.yml` (with default `manifest.yaml`)
-- `patch.yml` (with `manifest_output: manifest.rc.yaml`)
+- `release_candidate.yml`
+- `release_production.yml`
+- `patch.yml`
 
 ---
 
 ## Workflow Dependencies
 
 ```
-release_version.yml
-    ├─ actions/update-images
-    ├─ release_candidate.yml
-    │   ├─ actions/release-chart
-    │   └─ actions/release-manifest
-    ├─ _release_tests.yml
-    └─ release_production.yml
-        ├─ actions/release-chart
-        └─ actions/release-manifest
+release_candidate.yml
+    ├─ actions/release-chart
+    ├─ actions/release-manifest
+    └─ _install_server.yml
+
+release_production.yml
+    ├─ actions/release-chart
+    ├─ actions/release-manifest
+    ├─ release_airgap_pack.yml
+    └─ _install_server.yml
 
 patch.yml
     ├─ actions/release-chart
     ├─ actions/release-manifest
-    └─ (auto-triggers) _test_and_production.yml
-        ├─ _release_tests.yml
-        └─ release_production.yml
+    └─ _install_server.yml
 
-release_airgap_pack.yml (standalone)
+update_images.yml (standalone)
 
-go_ci.yml (standalone, triggered on push)
+release_airgap_pack.yml (standalone or called)
+
+ci.yml (standalone, triggered on push to master)
+
+go_ci.yml (standalone, triggered on push to Go files)
+```
+
+---
+
+## Mermaid Diagram: Complete Release Flow
+
+```mermaid
+graph TD
+    subgraph "Option 1: RC Flow"
+        UI[update_images.yml] --> RC[release_candidate.yml]
+        RC --> RC1[Checkout RC branch]
+        RC1 --> RC2[Bump to X.X.X-rc.0]
+        RC2 --> RC3[Release Charts]
+        RC3 --> RC4[Release RC Manifest]
+        RC4 --> RC5[Install Server Test]
+        RC5 --> Test{Manual Test}
+        Test -->|Pass| Prod
+        Test -->|Fail| Patch
+    end
+
+    subgraph "Patch Flow"
+        Patch[patch.yml] --> P1[Bump X.X.X-rc.0 → rc.1]
+        P1 --> P2[Release Charts]
+        P2 --> P3[Release Manifest]
+        P3 --> P4[Install Server Test]
+        P4 --> Test
+    end
+
+    subgraph "Production Release"
+        Prod[release_production.yml] --> Prod1[Remove -rc suffix]
+        Prod1 --> Prod2[Release Charts]
+        Prod2 --> Prod3[Release Manifest]
+        Prod3 --> Prod4[Release Notes + Jira]
+        Prod4 --> Prod5[Slack Notification]
+        Prod5 --> Airgap[release_airgap_pack.yml]
+        Airgap --> Install[Install Server Test]
+        Install --> Done([✅ Release Complete])
+    end
+
+    subgraph "CI Pipelines"
+        Push[Push to master] --> CI[ci.yml]
+        CI --> CI1[Install from local build]
+        
+        GoPush[Push Go files] --> GoCI[go_ci.yml]
+        GoCI --> GoCI1[Build, Lint, Test]
+    end
+
+    style Done fill:#d4edda
+    style Test fill:#fff3cd
 ```
 
 ---
 
 ## Key Points
 
-### Release Flow
-- **Update Images**: Waits for web-ui build, updates image tags, bumps chart versions
-- **RC Release**: Creates RC branch, releases charts, creates RC manifest
-- **Test Gate**: Tests must pass before production release
-- **Patch Mechanism**: If tests fail, use `patch.yml` to bump RC version and retry
-- **Production Release**: Removes RC suffix, releases charts, creates production manifest
+### Branch Naming
+- **RC Branches**: Named as version number (e.g., `1.5.9`)
+- **Version with RC suffix**: `1.5.9-rc.0`, `1.5.9-rc.1`, etc.
+- **Production version**: `1.5.9` (no suffix)
 
 ### Version Handling
-- **RC Versions**: Preserved for candidate releases (e.g., `1.2.3-rc.0`)
-- **Production Versions**: RC suffix removed for production (e.g., `1.2.3-rc.0` → `1.2.3`)
-- **Patch Versions**: RC number incremented in patch workflow (e.g., `1.2.3-rc.0` → `1.2.3-rc.1`)
+- **RC Versions**: Created by `release_candidate.yml` or bumped by `patch.yml`
+- **Production Versions**: RC suffix removed by `release_production.yml`
+- **Both flows work from master**: `remove-rc-suffix` gracefully handles no suffix
 
 ### Charts & Manifests
 - **Charts**: Released using chart-releaser-action, stored in `index` branch
-- **Manifests**: Two types:
-  - `manifest.rc.yaml` - Release candidate manifest
-  - `manifest.yaml` - Production manifest
+- **Index branch**: Contains ONLY `index.yaml` (Helm repo metadata)
+- **Manifests**: Tagged releases (e.g., `manifest-1.5.9`, `1.5.9-rc.0`)
 
-### Error Handling
-- **Test Failures**: Workflow stops, manual patch required
-- **Post-Patch Failures**: Auto-triggered test workflow handles failures gracefully
+### Validation
+- **Install Server**: Validates releases by installing via leap-cli
+- **Helm Validation**: Charts validated in `patch.yml`
+- **Images Validation**: `make validate-images` checks images.txt
 
-### CI/CD
-- **Go CI**: Automatically runs on push to Go files
-- **Airgap Pack**: Manual workflow for building installation packages
+### Notifications
+- **Slack**: Production releases notify `#releases` channel
+- **Jira**: fixVersion created and issues updated automatically
