@@ -16,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
 )
 
@@ -56,6 +57,33 @@ func IsHelmReleaseExists(config *HelmConfig, releaseName string) (bool, error) {
 		return false, nil
 	}
 	return err == nil, err
+}
+
+// IsHelmReleasePendingOrFailed checks if the latest release is stuck in a pending or failed state
+// (e.g., from an interrupted installation). Returns true if reinstall is needed.
+func IsHelmReleasePendingOrFailed(config *HelmConfig, releaseName string) (bool, release.Status, error) {
+	client := action.NewHistory(config.ActionConfig)
+	client.Max = 1 // Only get the latest release
+	history, err := client.Run(releaseName)
+
+	if err == driver.ErrReleaseNotFound {
+		return false, "", nil
+	} else if err != nil || len(history) == 0 {
+		return false, "", err
+	}
+
+	latestRelease := history[len(history)-1]
+	if latestRelease.Info == nil {
+		return false, "", nil
+	}
+
+	status := latestRelease.Info.Status
+	isPendingOrFailed := status == release.StatusPendingInstall ||
+		status == release.StatusPendingUpgrade ||
+		status == release.StatusPendingRollback ||
+		status == release.StatusFailed
+
+	return isPendingOrFailed, status, nil
 }
 
 func GetHelmReleaseVersion(config *HelmConfig, releaseName string) (string, error) {
