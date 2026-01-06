@@ -97,6 +97,18 @@ func IsHelmRequiredReinstall(ctx context.Context, mnf *manifest.InstallationMani
 		return false, err
 	}
 
+	// Check if any release is stuck in pending or failed state from previous interrupted installation
+	for _, releaseName := range []string{mnf.InfraHelmChart.ReleaseName, mnf.ServerHelmChart.ReleaseName} {
+		isPendingOrFailed, status, err := helm.IsHelmReleasePendingOrFailed(helmConfig, releaseName)
+		if err != nil {
+			return false, err
+		}
+		if isPendingOrFailed {
+			log.Warnf("Helm release '%s' is in '%s' state from previous failed/interrupted installation. Reinstalling...", releaseName, status)
+			return true, nil
+		}
+	}
+
 	currentInfraVersion, err := helm.GetHelmReleaseVersion(helmConfig, mnf.InfraHelmChart.ReleaseName)
 	if err == helm.ErrNoRelease {
 		iServerReleaseExists, err := helm.IsHelmReleaseExists(helmConfig, mnf.ServerHelmChart.ReleaseName)
