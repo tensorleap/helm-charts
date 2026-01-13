@@ -1,6 +1,8 @@
 package server
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -14,14 +16,20 @@ type UpgradeFlags struct {
 }
 
 func NewUpgradeCmd() *cobra.Command {
-
 	flags := &UpgradeFlags{}
+	var nonInteractive bool
 
 	cmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: UpgradeCmdDescription,
 		Long:  UpgradeCmdDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Set non-interactive mode via environment variable
+			// This signals to use defaults and skip prompts
+			if nonInteractive {
+				os.Setenv("TL_USE_DEFAULT_OPTION", "true")
+			}
+
 			_, err := server.InitDataDirFunc(cmd.Context(), "")
 			if err != nil {
 				return err
@@ -32,6 +40,7 @@ func NewUpgradeCmd() *cobra.Command {
 	}
 
 	flags.SetFlags(cmd)
+	cmd.Flags().BoolVarP(&nonInteractive, "yes", "y", false, "Run in non-interactive mode (skip prompts)")
 	return cmd
 }
 
