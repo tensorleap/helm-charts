@@ -185,6 +185,11 @@ func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
 }
 
 func AskForReinstall() (bool, error) {
+	if IsUseDefaultPropOption() {
+		// In non-interactive mode, proceed with reinstall
+		log.SendCloudReport("info", "Auto-confirmed reinstall (non-interactive mode)", "Running", nil)
+		return true, nil
+	}
 	prompt := survey.Confirm{
 		Message: "Reinstall is required to complete the upgrade, It will stop all running jobs, are you sure you want to continue?",
 		Default: true,
