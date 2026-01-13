@@ -1,6 +1,8 @@
 package server
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -15,11 +17,19 @@ type ReinstallFlags struct {
 
 func NewReinstallCmd() *cobra.Command {
 	flags := &ReinstallFlags{}
+	var nonInteractive bool
+
 	cmd := &cobra.Command{
 		Use:   "reinstall",
 		Short: "Reinstall tensorleap",
 		Long:  "Reinstall tensorleap",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Set non-interactive mode via environment variable
+			// This signals to use defaults and skip prompts
+			if nonInteractive {
+				os.Setenv("TL_USE_DEFAULT_OPTION", "true")
+			}
+
 			isReinstalled, err := server.InitDataDirFunc(cmd.Context(), flags.DataDir)
 			if err != nil {
 				return err
@@ -29,6 +39,7 @@ func NewReinstallCmd() *cobra.Command {
 	}
 
 	flags.SetFlags(cmd)
+	cmd.Flags().BoolVarP(&nonInteractive, "yes", "y", false, "Run in non-interactive mode (skip prompts)")
 	return cmd
 }
 

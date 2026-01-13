@@ -1,6 +1,8 @@
 package server
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
@@ -18,12 +20,18 @@ type InstallFlags struct {
 
 func NewInstallCmd() *cobra.Command {
 	flags := &InstallFlags{}
+	var nonInteractive bool
 
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: InstallCmdDescription,
 		Long:  InstallCmdDescription,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Set non-interactive mode via environment variable
+			// This signals to use defaults and skip prompts
+			if nonInteractive {
+				os.Setenv("TL_USE_DEFAULT_OPTION", "true")
+			}
 
 			_, err := server.InitDataDirFunc(cmd.Context(), flags.DataDir)
 			if err != nil {
@@ -34,6 +42,7 @@ func NewInstallCmd() *cobra.Command {
 	}
 
 	flags.SetFlags(cmd)
+	cmd.Flags().BoolVarP(&nonInteractive, "yes", "y", false, "Run in non-interactive mode (skip prompts)")
 
 	return cmd
 }

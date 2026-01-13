@@ -331,6 +331,9 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 }
 
 func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, error) {
+	if IsUseDefaultPropOption() {
+		return true, nil // In non-interactive mode, continue without validation
+	}
 	prompt := survey.Confirm{
 		Message: "Do you want to continue without GPU validation?",
 		Default: false,
@@ -339,10 +342,16 @@ func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, er
 	if err := survey.AskOne(&prompt, &continueWithoutValidation); err != nil {
 		return false, err
 	}
-	return true, nil
+	return continueWithoutValidation, nil
 }
 
 func askToContinueWithoutGPU(gpus *uint, gpuDevices *string) error {
+	if IsUseDefaultPropOption() {
+		// In non-interactive mode, continue without GPU
+		*gpus = 0
+		*gpuDevices = ""
+		return nil
+	}
 	prompt := survey.Confirm{
 		Message: "Do you want to continue without GPU?",
 		Default: false,
@@ -360,6 +369,12 @@ func askToContinueWithoutGPU(gpus *uint, gpuDevices *string) error {
 }
 
 func askForGpuSelection(availableDevices []local.GPU, gpus *uint, gpuDevices *string) error {
+	if IsUseDefaultPropOption() {
+		// In non-interactive mode, use all available GPUs
+		*gpuDevices = allGpuDevices
+		*gpus = 0
+		return nil
+	}
 	options := []string{"Use all", "Not use GPU", "Select how many", "Select specific"}
 	prompt := survey.Select{
 		Message: "Select GPU option:",
@@ -580,6 +595,11 @@ Provided Path: %s
 		suggestedPath = fmt.Sprintf("%s:%s", realDataPath, containerPath)
 	}
 
+	if IsUseDefaultPropOption() {
+		// In non-interactive mode, use the suggested path with correct capitalization
+		return validateAndNormalizeDatasetVolumePath(suggestedPath)
+	}
+
 	prompt := survey.Input{
 		Message: "Please Supply a new path or accept the default suggested path with the correct capitalization",
 		Default: suggestedPath,
@@ -592,6 +612,12 @@ Provided Path: %s
 }
 
 func addDatasetVolumes(datasetVolumes *[]string) error {
+	if IsUseDefaultPropOption() {
+		// In non-interactive mode, use default data volume
+		defaultVolume := GetDefaultDataVolume()
+		*datasetVolumes = append(*datasetVolumes, fmt.Sprintf("%s:%s", defaultVolume, defaultVolume))
+		return nil
+	}
 	for {
 		var path string
 		prompt := survey.Input{
