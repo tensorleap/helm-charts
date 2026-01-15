@@ -52,7 +52,15 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
 		return err
 	}
 
+	installationParams, found, err := server.InitInstallationParamsFromPreviousOrAsk()
+	if err != nil {
+		return err
+	}
+
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, nil)
+	if err != nil {
+		return err
+	}
 
 	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
 		return err
@@ -60,27 +68,28 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
 
 	log.SendCloudReport("info", "Starting upgrade", "Starting", &map[string]interface{}{"manifest": mnf})
 
-	if err != nil {
-		return err
-	}
-
-	installationParams, found, err := server.InitInstallationParamsFromPreviousOrAsk()
-	if err != nil {
-		return err
-	}
-
 	reinstall := func() error {
-		return server.SafetyReinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		return server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	}
 
 	if !found {
 		return reinstall()
 	}
 
+	// If params were loaded (found), check once up front if reinstall is needed
+	if found {
+		needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, nil, installationParams, nil)
+		if err != nil {
+			return err
+		}
+		if needsReinstall {
+			log.SendCloudReport("info", "Reinstall required during upgrade", "Running", nil)
+			return reinstall()
+		}
+	}
+
 	err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
-	if err == server.ErrReinstallRequired {
-		return reinstall()
-	} else if err != nil {
+	if err != nil {
 		return err
 	}
 

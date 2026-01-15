@@ -17,11 +17,32 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
-func Load(file io.Reader) (
+// Load loads manifest + resources (images, charts) from the tarball using a seekable reader (e.g., *os.File).
+// It reads the manifest from the tar and then loads resources.
+func Load(file io.ReadSeeker) (
 	installationManifest *manifest.InstallationManifest,
 	infraChart, serverChart *chart.Chart,
 	err error,
 ) {
+	installationManifest, err = LoadManifestOnly(file)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	_, _ = file.Seek(0, io.SeekStart)
+	infraChart, serverChart, err = LoadResources(file, installationManifest)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return installationManifest, infraChart, serverChart, nil
+}
+
+// LoadResources loads images and helm charts from the tar file using an already-known manifest.
+// The reader must be positioned at the start of the tar archive.
+func LoadResources(file io.Reader, installationManifest *manifest.InstallationManifest) (infraChart, serverChart *chart.Chart, err error) {
+	if installationManifest == nil {
+		return nil, nil, fmt.Errorf("installation manifest is required to load resources")
+	}
+
 	tarReader := tar.NewReader(file)
 	var imageLoaded bool
 	var infraChartLoaded bool
@@ -29,7 +50,7 @@ func Load(file io.Reader) (
 
 	dockerClient, err := docker.NewClient()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	for {
@@ -37,74 +58,99 @@ func Load(file io.Reader) (
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 
 		fileName := filepath.Clean(header.Name)
 
 		switch fileName {
 		case MANIFEST_FILE_NAME:
-			installationManifest = &manifest.InstallationManifest{}
-			content, err := io.ReadAll(tarReader)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-
-			err = yaml.Unmarshal(content, installationManifest)
-			if err != nil {
-				return nil, nil, nil, err
-			}
+			// manifest already provided
 		case IMAGES_FILE_NAME:
 			imageLoaded = true
-			if installationManifest != nil {
-				_, notFound, err := docker.GetExistedAndNotExistedImages(dockerClient, installationManifest.GetAllImages())
+			_, notFound, err := docker.GetExistedAndNotExistedImages(dockerClient, installationManifest.GetAllImages())
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(notFound) == 0 {
+				log.Info("All images already exist, skipping loading images from tar file")
+				_, err = io.Copy(io.Discard, tarReader) // Skip the rest of the tarReader
 				if err != nil {
-					return nil, nil, nil, err
+					log.Warnf("Failed to skip loading images from tar file: %v", err)
 				}
-				if len(notFound) == 0 {
-					log.Info("All images already exist, skipping loading images from tar file")
-					_, err = io.Copy(io.Discard, tarReader) // Skip the rest of the tarReader
-					if err != nil {
-						log.Warnf("Failed to skip loading images from tar file: %v", err)
-					}
-					break
-				}
+				break
 			}
 			err = docker.LoadingImages(dockerClient, tarReader)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 		case INFRA_HELM_CHART_FILE_NAME:
 			infraChartLoaded = true
 			infraChart, err = loadChart(tarReader)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 		case SERVER_HELM_CHART_FILE_NAME:
 			serverChartLoaded = true
 			serverChart, err = loadChart(tarReader)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 		}
 	}
 
-	if installationManifest == nil {
-		return nil, nil, nil, fmt.Errorf("not found %s", MANIFEST_FILE_NAME)
-	}
 	if !imageLoaded {
-		return nil, nil, nil, fmt.Errorf("not found %s", IMAGES_FILE_NAME)
+		return nil, nil, fmt.Errorf("not found %s", IMAGES_FILE_NAME)
 	}
 	if !infraChartLoaded {
-		return nil, nil, nil, fmt.Errorf("not found %s", INFRA_HELM_CHART_FILE_NAME)
+		return nil, nil, fmt.Errorf("not found %s", INFRA_HELM_CHART_FILE_NAME)
 	}
 	if !serverChartLoaded {
-		return nil, nil, nil, fmt.Errorf("not found %s", SERVER_HELM_CHART_FILE_NAME)
+		return nil, nil, fmt.Errorf("not found %s", SERVER_HELM_CHART_FILE_NAME)
 	}
 
 	SetupEnvForK3dToolsImage(installationManifest.Images.K3dTools)
 
-	return installationManifest, infraChart, serverChart, nil
+	return infraChart, serverChart, nil
+}
+
+// LoadManifestOnly reads only the manifest from the airgap tar without loading images or charts.
+// The reader will be consumed; reopen or seek before further use.
+func LoadManifestOnly(file io.Reader) (*manifest.InstallationManifest, error) {
+	tarReader := tar.NewReader(file)
+	var installationManifest *manifest.InstallationManifest
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		fileName := filepath.Clean(header.Name)
+
+		switch fileName {
+		case MANIFEST_FILE_NAME:
+			content, err := io.ReadAll(tarReader)
+			if err != nil {
+				return nil, err
+			}
+
+			mnf := &manifest.InstallationManifest{}
+			err = yaml.Unmarshal(content, mnf)
+			if err != nil {
+				return nil, err
+			}
+			installationManifest = mnf
+		}
+	}
+
+	if installationManifest == nil {
+		return nil, fmt.Errorf("not found %s", MANIFEST_FILE_NAME)
+	}
+
+	return installationManifest, nil
 }
 
 func loadChart(tarReader io.Reader) (*chart.Chart, error) {
@@ -126,5 +172,7 @@ func loadChart(tarReader io.Reader) (*chart.Chart, error) {
 
 func SetupEnvForK3dToolsImage(image string) {
 	// k3d take the image from this env variable
-	os.Setenv(types.K3dEnvImageTools, image)
+	if err := os.Setenv(types.K3dEnvImageTools, image); err != nil {
+		log.Warnf("Failed to set %s: %v", types.K3dEnvImageTools, err)
+	}
 }

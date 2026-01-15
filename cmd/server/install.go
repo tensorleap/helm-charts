@@ -53,6 +53,24 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 		return err
 	}
 
+	isAirgap := flags.IsAirGap()
+
+	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
+	if err != nil {
+		return err
+	}
+
+	// Pre-check reinstall before loading heavy assets (airgap images / chart downloads)
+	mnf, _, err := server.LoadManifestOnly(&flags.InstallationSourceFlags, previousMnf)
+	if err != nil {
+		return err
+	}
+	previousParams, _ := server.LoadInstallationParamsFromPrevious() // best effort
+	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, previousMnf, installationParams, previousParams)
+	if err != nil {
+		return err
+	}
+
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
 		return err
@@ -71,19 +89,22 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 		return err
 	}
 
-	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
-	if err != nil {
-		return err
-	}
-
 	log.SendCloudReport("info", "Starting installation", "Starting",
 		&map[string]interface{}{"flags": flags, "manifest": mnf})
 
-	err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
-	if err != nil {
-		log.SendCloudReport("error", "Failed installation", "Failed",
-			&map[string]interface{}{"error": err.Error()})
-		return err
+	if needsReinstall {
+		if err := server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart); err != nil {
+			log.SendCloudReport("error", "Failed reinstall", "Failed",
+				&map[string]interface{}{"error": err.Error()})
+			return err
+		}
+	} else {
+		err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		if err != nil {
+			log.SendCloudReport("error", "Failed installation", "Failed",
+				&map[string]interface{}{"error": err.Error()})
+			return err
+		}
 	}
 
 	baseLink := installationParams.CalcUrl()

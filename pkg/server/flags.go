@@ -20,6 +20,10 @@ func (flags *InstallationSourceFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.Local, "local", false, "Install tensorleap from local helm charts")
 }
 
+func (flags *InstallationSourceFlags) IsAirGap() bool {
+	return flags.AirGapInstallationFilePath != ""
+}
+
 type TLSFlags struct {
 	CertPath  string `json:"certPath,omitempty"`
 	KeyPath   string `json:"keyPath,omitempty"`
