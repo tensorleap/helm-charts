@@ -47,6 +47,13 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 		return err
 	}
 
+	isAirgap := flags.IsAirGap()
+
+	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
+	if err != nil {
+		return err
+	}
+
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
 		return err
@@ -58,10 +65,6 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 
 	log.SendCloudReport("info", "Starting install", "Starting", &map[string]interface{}{"manifest": mnf})
 	ctx := cmd.Context()
-	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
-	if err != nil {
-		return err
-	}
 	if isAlreadyReinstalled {
 		err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	} else {

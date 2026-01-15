@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -19,22 +18,6 @@ func Reinstall(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func SafetyReinstall(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
-	isContinue, err := AskForReinstall()
-	if err != nil {
-		return err
-	}
-	if isContinue {
-		err := Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
-		if err != nil {
-			return err
-		}
-		log.SendCloudReport("info", "Successfully completed reinstall", "Success", nil)
-	} else {
-		return fmt.Errorf("reinstall aborted")
-	}
+	log.SendCloudReport("info", "Successfully completed reinstall", "Success", nil)
 	return nil
 }
