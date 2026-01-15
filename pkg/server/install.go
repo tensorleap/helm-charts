@@ -19,15 +19,6 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return err
 	}
 
-	shouldReinstall, err := IsNeedsToReinstall(ctx, mnf, prvMnf, installationParams, prvInstallationParams)
-	if err != nil {
-		return err
-	}
-
-	if shouldReinstall {
-		return SafetyReinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
-	}
-
 	k3d.FixDockerDns() // Always fix DNS
 
 	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams())

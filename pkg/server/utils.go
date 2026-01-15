@@ -24,7 +24,7 @@ const (
 )
 
 func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manifest.InstallationManifest) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
-	isAirGap = flags.AirGapInstallationFilePath != ""
+	isAirGap = flags.IsAirGap()
 	if isAirGap {
 		log.DisableReporting()
 		var file *os.File
@@ -89,6 +89,83 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 	}
 	airgap.SetupEnvForK3dToolsImage(mnf.Images.K3dTools)
 	return
+}
+
+// LoadManifestOnly loads only the manifest to enable lightweight decisions (e.g. reinstall prompt)
+// before loading heavy assets (images/charts). For airgap installs, it reads the manifest from the
+// tarball; for non-airgap it follows the same tag/local logic as a full install but skips chart loads.
+func LoadManifestOnly(flags *InstallationSourceFlags, previousMnf *manifest.InstallationManifest) (mnf *manifest.InstallationManifest, isAirGap bool, err error) {
+	isAirGap = flags.IsAirGap()
+	if isAirGap {
+		file, openErr := os.Open(flags.AirGapInstallationFilePath)
+		if openErr != nil {
+			return nil, false, openErr
+		}
+		defer file.Close()
+		mnf, err = airgap.LoadManifestOnly(file)
+		if err != nil {
+			return nil, false, err
+		}
+		return mnf, true, nil
+	}
+
+	if flags.Local {
+		fileGetter := manifest.BuildLocalFileGetter("")
+		mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
+	} else {
+		tag := flags.Tag
+		if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
+
+			isInstallLatestVersion, err := AskUserForIsUseLatestVersion(previousMnf.Tag)
+			if err != nil {
+				log.SendCloudReport("error", "Failed to ask for using current version", "Failed",
+					&map[string]interface{}{"error": err.Error()})
+				return nil, false, err
+			}
+			if !isInstallLatestVersion {
+				tag = previousMnf.Tag
+				mnf = previousMnf
+			}
+
+		}
+		if mnf == nil {
+			mnf, err = manifest.GetByTag(tag)
+			if err != nil {
+				log.SendCloudReport("error", "Build manifest failed", "Failed",
+					&map[string]interface{}{"error": err.Error()})
+				return nil, false, err
+			}
+		}
+		log.Info("Using tag: " + mnf.Tag)
+	}
+	if err != nil {
+		log.SendCloudReport("error", "Build manifest failed", "Failed",
+			&map[string]interface{}{"error": err.Error()})
+		return nil, false, err
+	}
+	return mnf, false, nil
+}
+
+// EnsureReinstallConsent checks whether reinstall is needed and, if so, prompts once and marks params
+// to skip subsequent prompts in the flow. Returns true if reinstall is required (and confirmed).
+func EnsureReinstallConsent(ctx context.Context, mnfPreview, previousMnf *manifest.InstallationManifest, installationParams, previousParams *InstallationParams) (bool, error) {
+	shouldReinstall, err := IsNeedsToReinstall(ctx, mnfPreview, previousMnf, installationParams, previousParams)
+	if err != nil {
+		return false, err
+	}
+	if !shouldReinstall {
+		return false, nil
+	}
+
+	isContinue, err := AskForReinstall()
+	if err != nil {
+		return false, err
+	}
+	if !isContinue {
+		return false, fmt.Errorf("reinstall aborted")
+	}
+
+	return true, nil
 }
 
 func GetCurrentInsalledHelmChartVersion(ctx context.Context) (string, error) {
