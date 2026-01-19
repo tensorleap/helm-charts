@@ -10,7 +10,10 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
-const OWNER = "tensorleap"
+const (
+	OWNER               = "tensorleap"
+	removeVolumeTimeout = 5 * time.Minute
+)
 
 // CreateVolume ensures a named local volume exists (idempotent).
 // Use labels so you can find/cleanup it later.
@@ -61,7 +64,7 @@ func CreateVolumeIfNotExists(ctx context.Context, name string, labels map[string
 
 // RemoveVolume removes a named volume. If `force` is true, it removes even if in use.
 func RemoveVolume(ctx context.Context, name string, force bool) error {
-	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, removeVolumeTimeout)
 	defer cancel()
 	log.Infof("Remove volume %q", name)
 
