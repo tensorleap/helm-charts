@@ -37,6 +37,7 @@ type InstallationParams struct {
 	CpuLimit                    string                 `json:"cpuLimit,omitempty"`
 	ClearInstallationImages     bool                   `json:"removeInstallationImages,omitempty"`
 	DisabledAuth                bool                   `json:"disabledAuth,omitempty"`
+	IsAirgap                    bool                   `json:"isAirgap,omitempty"`
 	ImageCachingMethod          k3d.ImageCachingMethod `json:"imageCachingMethod,omitempty"`
 	TLSParams
 }
@@ -173,20 +174,9 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		flags.DisableAuth = new(bool)
 	}
 
-	// Handle image caching method
-	var imageCachingMethod k3d.ImageCachingMethod
-	if hasInstallationParams {
-		imageCachingMethod = previousParams.ImageCachingMethod
-	}
-	if imageCachingMethod == "" {
-		imageCachingMethod = k3d.GetDefaultImageCachingMethod(isAirgap)
-	}
-	if flags.ImageCachingMethod != "" {
-		method := k3d.ImageCachingMethod(flags.ImageCachingMethod)
-		if !k3d.IsImageCachingMethodAvailable(method, isAirgap) {
-			return nil, fmt.Errorf("image caching method '%s' is not available for this environment", method)
-		}
-		imageCachingMethod = method
+	imageCachingMethod, err := initImageCachingMethod(isAirgap, previousParams, flags.ImageCachingMethod)
+	if err != nil {
+		return nil, err
 	}
 
 	return &InstallationParams{
@@ -203,8 +193,41 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
 		DisabledAuth:            *flags.DisableAuth,
+		IsAirgap:                isAirgap,
 		ImageCachingMethod:      imageCachingMethod,
 	}, nil
+}
+
+// initImageCachingMethod determines the image caching method based on:
+// 1. Explicit flag override (highest priority)
+// 2. Previous params (if mode unchanged and method still available)
+// 3. Default for current mode (fallback)
+func initImageCachingMethod(isAirgap bool, previousParams *InstallationParams, flagValue string) (k3d.ImageCachingMethod, error) {
+	// Flag override takes highest priority
+	if flagValue != "" {
+		method := k3d.ImageCachingMethod(flagValue)
+		if !k3d.IsImageCachingMethodAvailable(method, isAirgap) {
+			return "", fmt.Errorf("image caching method '%s' is not available for this environment", method)
+		}
+		return method, nil
+	}
+
+	// Try to use previous method if mode hasn't changed and it's still available
+	if previousParams != nil && previousParams.IsAirgap == isAirgap {
+		if k3d.IsImageCachingMethodAvailable(previousParams.ImageCachingMethod, isAirgap) {
+			return previousParams.ImageCachingMethod, nil
+		}
+	}
+
+	// Default for current mode
+	return k3d.GetDefaultImageCachingMethod(isAirgap), nil
+}
+
+func modeString(isAirgap bool) string {
+	if isAirgap {
+		return "airgap"
+	}
+	return "regular"
 }
 
 func InitInstallationParamsFromPreviousOrAsk() (params *InstallationParams, found bool, err error) {
@@ -251,6 +274,7 @@ func AskInstallationParams(isAirgap bool) (*InstallationParams, error) {
 		return nil, err
 	}
 
+	installationParams.IsAirgap = isAirgap
 	installationParams.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(isAirgap)
 
 	return installationParams, nil
@@ -864,8 +888,9 @@ func backwardCompatibility_datasetDirectory(params *InstallationParams) {
 	params.DatasetDirectory_DEPRECATED = ""
 
 	// Set default image caching method if not set
+	// Use the stored IsAirgap value (defaults to false for old installations without this field)
 	if params.ImageCachingMethod == "" {
-		params.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(false)
+		params.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(params.IsAirgap)
 	}
 }
 

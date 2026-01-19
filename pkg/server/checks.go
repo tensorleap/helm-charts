@@ -77,7 +77,14 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 	isInfraHelmChartParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetInfraHelmValuesParams(), installationParams.GetInfraHelmValuesParams())
 	isCreateClusterParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetCreateK3sClusterParams(), installationParams.GetCreateK3sClusterParams())
 
-	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged
+	// Check if installation mode changed (airgap <-> regular)
+	isInstallationModeChanged := previousInstallationParams.IsAirgap != installationParams.IsAirgap
+	if isInstallationModeChanged {
+		log.Infof("Installation mode changed from %s to %s, reinstall required",
+			modeString(previousInstallationParams.IsAirgap), modeString(installationParams.IsAirgap))
+	}
+
+	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged || isInstallationModeChanged
 	if shouldReinstall {
 		return true, nil
 	}
