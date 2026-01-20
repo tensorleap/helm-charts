@@ -110,11 +110,11 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_TOKEN }}
+          errors: true
           payload: |
-            {
-              "channel": "C0A2J51FBPD",
-              "text": "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }} | View workflow --> ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
+            channel: C0A2J51FBPD
+            text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }} | View workflow --> ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    
             
 
   release-airgap:
