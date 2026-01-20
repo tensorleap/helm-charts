@@ -71,33 +71,24 @@ jobs:
 
       - name: Notify Slack about new RC branches
         if: steps.checkout_rc_branch.outputs.is_new_branch == 'true'
-        run: |
-          BRANCH="${{ steps.checkout_rc_branch.outputs.rc_branch }}"
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.SLACK_TOKEN }}" \
-            -H "Content-type: application/json; charset=utf-8" \
-            --data "{
-              \"channel\": \"C0AAMFVFYM6\",
-              \"blocks\": [
-                {
-                  \"type\": \"header\",
-                  \"text\": {
-                    \"type\": \"plain_text\",
-                    \"text\": \"🚀 New RC Branch Created: ${BRANCH}\",
-                    \"emoji\": true
-                  }
-                },
-                {
-                  \"type\": \"section\",
-                  \"text\": {
-                    \"type\": \"mrkdwn\",
-                    \"text\": \"*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${BRANCH}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${BRANCH}|engine>\n• <https://github.com/tensorleap/node-server/tree/${BRANCH}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${BRANCH}|web-ui>\"
-                  }
-                }
-              ]
-            }" \
-            "https://slack.com/api/chat.postMessage"
-        shell: bash
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          errors: true
+          payload: |
+            channel: C0AAMFVFYM6
+            text: "🚀 New RC Branch Created: ${{ steps.checkout_rc_branch.outputs.rc_branch }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "🚀 New RC Branch Created: ${{ steps.checkout_rc_branch.outputs.rc_branch }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|web-ui>"
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
