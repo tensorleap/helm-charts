@@ -40,9 +40,12 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
+          IS_NEW_BRANCH="false"
           if [ "${{ github.ref_name }}" = "master" ]; then
             echo "Running from master - using checkout-rc-branch"
-            BRANCH="$(make -s checkout-rc-branch)"
+            OUTPUT="$(make -s checkout-rc-branch)"
+            BRANCH="$(echo "$OUTPUT" | head -1)"
+            IS_NEW_BRANCH="$(echo "$OUTPUT" | tail -1)"
             if [ -z "$BRANCH" ]; then
               echo "Error: Failed to get branch name from checkout-rc-branch" >&2
               exit 1
@@ -54,7 +57,17 @@ jobs:
             make bump-rc-version
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "is_new_branch=$IS_NEW_BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
+
+      - name: Create external RC branches
+        if: steps.checkout_rc_branch.outputs.is_new_branch == 'true'
+        run: |
+          make create-external-rc-branches
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
 
       - name: Set up Helm
         uses: azure/setup-helm@v3

@@ -1,4 +1,4 @@
-.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env release-notes
+.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env release-notes create-external-rc-branches
 
 SHELL := /bin/bash
 CLUSTER_NAME ?= tensorleap
@@ -108,6 +108,7 @@ checkout-rc-branch:
 	# Branch name is just the base version (e.g., 1.4.75)
 	BRANCH="$$VERSION"
 	CURRENT_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
+	IS_NEW_BRANCH="false"
 	# Check if we're already on the version branch
 	if [ "$$CURRENT_BRANCH" != "$$BRANCH" ]; then
 	  # Checkout or create the version branch
@@ -117,6 +118,7 @@ checkout-rc-branch:
 	  else
 	    git switch -c "$$BRANCH" origin/master >/dev/null 2>&1
 	    git push -u origin "$$BRANCH" >/dev/null 2>&1
+	    IS_NEW_BRANCH="true"
 	  fi
 	fi
 	# Find the next RC number by checking existing tags (fetch tags first)
@@ -132,8 +134,53 @@ checkout-rc-branch:
 	VERSION_WITH_RC="$${VERSION}-rc.$${NEXT}"
 	sed -i.bak "s/^version: .*/version: $$VERSION_WITH_RC/" charts/tensorleap/Chart.yaml
 	rm -f charts/tensorleap/Chart.yaml.bak
-	# Output only the branch name (for use in workflows)
+	# Output branch name and whether it's new (for use in workflows)
 	echo "$$BRANCH"
+	echo "$$IS_NEW_BRANCH"
+
+# Create version branches in external repositories (engine, node-server, web-ui)
+# Requires: GITHUB_TOKEN and BRANCH_NAME environment variables
+.PHONY: create-external-rc-branches
+.ONESHELL:
+create-external-rc-branches:
+	@set -euo pipefail
+	if [ -z "$${GITHUB_TOKEN:-}" ]; then
+	  echo "❌ GITHUB_TOKEN environment variable is required" >&2
+	  exit 1
+	fi
+	if [ -z "$${BRANCH_NAME:-}" ]; then
+	  echo "❌ BRANCH_NAME environment variable is required" >&2
+	  exit 1
+	fi
+	REPOS="tensorleap/engine tensorleap/node-server tensorleap/web-ui"
+	for REPO in $$REPOS; do
+	  echo "Creating branch $$BRANCH_NAME in $$REPO..."
+	  # Get the SHA of master branch
+	  MASTER_SHA=$$(curl -s -H "Authorization: token $$GITHUB_TOKEN" \
+	    -H "Accept: application/vnd.github.v3+json" \
+	    "https://api.github.com/repos/$$REPO/git/ref/heads/master" | jq -r '.object.sha')
+	  if [ "$$MASTER_SHA" = "null" ] || [ -z "$$MASTER_SHA" ]; then
+	    echo "❌ Failed to get master SHA for $$REPO" >&2
+	    exit 1
+	  fi
+	  # Create the branch
+	  RESPONSE=$$(curl -s -w "\n%{http_code}" -X POST \
+	    -H "Authorization: token $$GITHUB_TOKEN" \
+	    -H "Accept: application/vnd.github.v3+json" \
+	    "https://api.github.com/repos/$$REPO/git/refs" \
+	    -d "{\"ref\":\"refs/heads/$$BRANCH_NAME\",\"sha\":\"$$MASTER_SHA\"}")
+	  HTTP_CODE=$$(echo "$$RESPONSE" | tail -1)
+	  BODY=$$(echo "$$RESPONSE" | sed '$$d')
+	  if [ "$$HTTP_CODE" = "201" ]; then
+	    echo "✅ Branch $$BRANCH_NAME created in $$REPO"
+	  elif [ "$$HTTP_CODE" = "422" ]; then
+	    echo "ℹ️  Branch $$BRANCH_NAME already exists in $$REPO"
+	  else
+	    echo "❌ Failed to create branch in $$REPO (HTTP $$HTTP_CODE): $$BODY" >&2
+	    exit 1
+	  fi
+	done
+	echo "✅ External branches created successfully"
 
 .PHONY: bump-rc-version
 .ONESHELL:
