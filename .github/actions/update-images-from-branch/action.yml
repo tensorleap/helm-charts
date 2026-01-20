@@ -1,0 +1,75 @@
+name: 'Update Images From Branch'
+description: 'Update helm chart image tags from a specific branch (does NOT bump chart versions)'
+inputs:
+  branch:
+    description: 'Branch name to fetch images from'
+    required: true
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install js-yaml
+      run: npm install js-yaml
+      shell: bash
+
+    - name: Update charts with branch images
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+          const branch = '${{ inputs.branch }}';
+          const chartsPath = 'charts/tensorleap/charts';
+
+          async function getImageTag(github, repo, refBranch = branch) {
+            const {
+              data: { sha },
+            } = await github.rest.repos.getCommit({
+              owner: 'tensorleap',
+              repo,
+              ref: refBranch,
+            });
+            return `${refBranch}-${sha.substring(0, 8)}`;
+          }
+
+          // Update engine, node-server, web-ui image tags from version branch
+          for (let repo of ['engine', 'node-server', 'web-ui']) {
+            const imageTag = await getImageTag(github, repo);
+            const valuesPath = `${chartsPath}/${repo}/values.yaml`;
+            const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
+            const { image_tag: currentImageTag } = yaml.load(valuesFile);
+            
+            const updatedValues = valuesFile.replace(
+              `image_tag: ${currentImageTag}`,
+              `image_tag: ${imageTag}`,
+            );
+            fs.writeFileSync(valuesPath, updatedValues);
+
+            fs.writeFileSync(
+              `${repo}-latest-image`,
+              `public.ecr.aws/tensorleap/${repo}:${imageTag}`,
+            );
+            console.log(`Updated ${repo} image tag: ${currentImageTag} -> ${imageTag}`);
+          }
+
+          // Update pippin (dependencies) image tag - always from master
+          const pippinTag = await getImageTag(github, 'pippin', 'master');
+          const valuesPath = `${chartsPath}/engine/values.yaml`;
+          const valuesFile = fs.readFileSync(valuesPath, 'utf-8');
+          const { dependencies_image_tag: currentImageTag } = yaml.load(valuesFile);
+          
+          const updatedValues = valuesFile.replace(
+            `dependencies_image_tag: ${currentImageTag}`,
+            `dependencies_image_tag: ${pippinTag}`,
+          );
+          fs.writeFileSync(valuesPath, updatedValues);
+
+          fs.writeFileSync(
+            `pippin-latest-image`,
+            `public.ecr.aws/tensorleap/pippin:${pippinTag}`,
+          );
+          console.log(`Updated pippin image tag: ${currentImageTag} -> ${pippinTag} (from master)`);
