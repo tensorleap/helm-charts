@@ -179,6 +179,21 @@ create-external-rc-branches:
 	    echo "❌ Failed to create branch in $$REPO (HTTP $$HTTP_CODE): $$BODY" >&2
 	    exit 1
 	  fi
+	  # Add branch protection (disable force push and deletion)
+	  echo "Adding branch protection to $$BRANCH_NAME in $$REPO..."
+	  PROTECT_RESPONSE=$$(curl -s -w "\n%{http_code}" -X PUT \
+	    -H "Authorization: token $$GITHUB_TOKEN" \
+	    -H "Accept: application/vnd.github.v3+json" \
+	    "https://api.github.com/repos/$$REPO/branches/$$BRANCH_NAME/protection" \
+	    -d '{"required_status_checks":null,"enforce_admins":false,"required_pull_request_reviews":null,"restrictions":null,"allow_force_pushes":false,"allow_deletions":false}')
+	  PROTECT_HTTP_CODE=$$(echo "$$PROTECT_RESPONSE" | tail -1)
+	  PROTECT_BODY=$$(echo "$$PROTECT_RESPONSE" | sed '$$d')
+	  if [ "$$PROTECT_HTTP_CODE" = "200" ]; then
+	    echo "✅ Branch protection enabled for $$BRANCH_NAME in $$REPO"
+	  else
+	    echo "⚠️  Failed to add branch protection in $$REPO (HTTP $$PROTECT_HTTP_CODE): $$PROTECT_BODY" >&2
+	    # Don't exit on protection failure - branch was still created
+	  fi
 	done
 	echo "✅ External branches created successfully"
 
