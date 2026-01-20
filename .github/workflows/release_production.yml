@@ -104,6 +104,19 @@ jobs:
           add: 'RELEASE_NOTES.md'
           message: "docs: update release notes for v${{ steps.get_version.outputs.version }}"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Read Release Notes
+        id: release_notes
+        run: |
+          if [ -f RELEASE_NOTES.md ]; then
+            NOTES=$(cat RELEASE_NOTES.md | head -50)
+            echo "notes<<EOF" >> $GITHUB_OUTPUT
+            echo "$NOTES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "notes=No release notes available" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
           
       - name: Notify Slack - Release Complete
         uses: slackapi/slack-github-action@v2.1.1
@@ -113,9 +126,22 @@ jobs:
           errors: true
           payload: |
             channel: C0A2J51FBPD
-            text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }} | View workflow --> ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-    
-            
+            text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "🚀 on-prem version ${{ steps.get_version.outputs.version }} released!"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Released by:* ${{ github.actor }}\n*Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+              - type: divider
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
 
   release-airgap:
     name: Release Airgap Pack
