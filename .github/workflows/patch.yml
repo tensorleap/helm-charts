@@ -48,6 +48,12 @@ jobs:
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
         shell: bash
 
+      - name: Update charts with branch images
+        uses: ./.github/actions/update-images-from-branch
+        with:
+          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
