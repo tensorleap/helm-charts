@@ -1,3 +1,18 @@
+# Release Notes - v1.5.28
+
+**Release Date:** 2026-01-21
+**Total Changes:** 2
+
+---
+
+## 🐛 Bug Fixes
+
+- [EN-2028](https://tensorleap.atlassian.net/browse/EN-2028): Improve sample analysis roller for sparse layers
+- [EN-1881](https://tensorleap.atlassian.net/browse/EN-1881): First name is incorrectly taken from username on registration
+
+
+---
+
 # Release Notes - v1.5.27
 
 **Release Date:** 2026-01-20
