@@ -5,11 +5,11 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:fetch_similar_bug_omri-ab8ab735-py310
-public.ecr.aws/tensorleap/engine-generic:fetch_similar_bug_omri-ab8ab735-py312
-public.ecr.aws/tensorleap/engine-generic:fetch_similar_bug_omri-ab8ab735-py38
-public.ecr.aws/tensorleap/engine-generic:fetch_similar_bug_omri-ab8ab735-py39
-public.ecr.aws/tensorleap/engine:fetch_similar_bug_omri-ab8ab735
+public.ecr.aws/tensorleap/engine-generic:omri-fetch-similar-2-6fa717f1-py310
+public.ecr.aws/tensorleap/engine-generic:omri-fetch-similar-2-6fa717f1-py312
+public.ecr.aws/tensorleap/engine-generic:omri-fetch-similar-2-6fa717f1-py38
+public.ecr.aws/tensorleap/engine-generic:omri-fetch-similar-2-6fa717f1-py39
+public.ecr.aws/tensorleap/engine:omri-fetch-similar-2-6fa717f1
 public.ecr.aws/tensorleap/node-server:master-075e0c61
 public.ecr.aws/tensorleap/pippin:master-75c5fe0a
 public.ecr.aws/tensorleap/web-ui:master-78e9f96c
