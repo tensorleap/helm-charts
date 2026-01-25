@@ -11,24 +11,24 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 )
 
-func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
+func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) (*InstallationResult, error) {
 
 	prvInstallationParams, _ := LoadInstallationParamsFromPrevious()
 	prvMnf, err := LoadPreviousManifest()
 	if err != nil && err != manifest.ErrManifestNotFound {
-		return err
+		return nil, err
 	}
 
 	k3d.FixDockerDns() // Always fix DNS
 
 	registry, err := k3d.CreateLocalRegistry(ctx, mnf.Images.Register, installationParams.GetCreateRegistryParams())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	registryPortStr, err := k3d.GetRegistryPort(ctx, registry)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	imagesToCache := CalcWhichImagesToCache(mnf, installationParams.IsUseGpu(), installationParams.ImageCachingMethod)
@@ -36,7 +36,7 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 	if len(imagesToCache) > 0 {
 		err = k3d.CacheImagesInParallel(ctx, imagesToCache, registryPortStr, isAirgap, string(installationParams.ImageCachingMethod))
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -48,11 +48,11 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		prvInstallationParams,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := InstallCharts(ctx, mnf, installationParams, infraChart, serverChart); err != nil {
-		return err
+		return nil, err
 	}
 
 	_ = SaveInstallation(mnf, installationParams)
@@ -70,7 +70,7 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		}
 	}
 
-	return nil
+	return installationParams.GetInstallationResult(), nil
 }
 
 func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationManifest, installationParams, previousInstallationParams *InstallationParams) (cluster *k3d.Cluster, createNew bool, err error) {

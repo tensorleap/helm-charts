@@ -49,6 +49,63 @@ type TLSParams struct {
 	Port    uint   `json:"port,omitempty"`
 }
 
+// InstallationResult contains information about the server installation
+// that can be used by wrapper commands for post-install actions like login
+type InstallationResult struct {
+	// ServerURL is the full URL to access the server (e.g., "http://localhost:4589" or "https://mydomain.com")
+	ServerURL string `json:"serverUrl"`
+	// Version is the installed version of Tensorleap
+	Version string `json:"version"`
+	// Domain is the configured domain for the server
+	Domain string `json:"domain"`
+	// Port is the HTTP port the server is listening on
+	Port uint `json:"port"`
+	// TLSEnabled indicates if TLS/HTTPS is enabled
+	TLSEnabled bool `json:"tlsEnabled"`
+	// TLSPort is the HTTPS port if TLS is enabled
+	TLSPort uint `json:"tlsPort,omitempty"`
+	// AuthEnabled indicates if authentication (Keycloak) is enabled
+	AuthEnabled bool `json:"authEnabled"`
+	// RegistryPort is the local Docker registry port
+	RegistryPort uint `json:"registryPort"`
+	// RegistryURL is the full URL of the local Docker registry
+	RegistryURL string `json:"registryUrl"`
+	// IsAirgap indicates if this is an airgap installation
+	IsAirgap bool `json:"isAirgap"`
+	// DatasetVolumes contains the configured dataset volume paths
+	DatasetVolumes []string `json:"datasetVolumes"`
+	// GpuEnabled indicates if GPU support is enabled
+	GpuEnabled bool `json:"gpuEnabled"`
+}
+
+// GetInstallationResult creates an InstallationResult from the installation parameters
+func (params *InstallationParams) GetInstallationResult() *InstallationResult {
+	domain := params.Domain
+	if domain == "" {
+		domain = "localhost"
+	}
+
+	result := &InstallationResult{
+		ServerURL:      params.CalcUrl(),
+		Version:        params.Version,
+		Domain:         domain,
+		Port:           params.Port,
+		TLSEnabled:     params.TLSParams.Enabled,
+		AuthEnabled:    !params.DisabledAuth,
+		RegistryPort:   params.RegistryPort,
+		RegistryURL:    fmt.Sprintf("localhost:%d", params.RegistryPort),
+		IsAirgap:       params.IsAirgap,
+		DatasetVolumes: params.DatasetVolumes,
+		GpuEnabled:     params.IsUseGpu(),
+	}
+
+	if params.TLSParams.Enabled {
+		result.TLSPort = params.TLSParams.Port
+	}
+
+	return result
+}
+
 func GetTLSParams(flags TLSFlags) (*TLSParams, error) {
 	if !flags.IsEnabled() {
 		return &TLSParams{

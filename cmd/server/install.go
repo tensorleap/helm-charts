@@ -29,7 +29,8 @@ func NewInstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return RunInstallCmd(cmd, flags)
+			_, err = RunInstallCmd(cmd, flags)
+			return err
 		},
 	}
 
@@ -38,46 +39,48 @@ func NewInstallCmd() *cobra.Command {
 	return cmd
 }
 
-func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
+// RunInstallCmd runs the install command and returns the installation result.
+// Wrapper CLIs can use this to get server info for post-install actions like login.
+func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.InstallationResult, error) {
 	flags.BeforeRun(cmd)
 	ctx := cmd.Context()
 	log.SetCommandName("install")
 	close, err := local.SetupInfra("install")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer close()
 
 	previousMnf, err := manifest.Load(local.GetInstallationManifestPath())
 	if err != nil && err != manifest.ErrManifestNotFound {
-		return err
+		return nil, err
 	}
 
 	isAirgap := flags.IsAirGap()
 
 	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Pre-check reinstall before loading heavy assets (airgap images / chart downloads)
 	mnf, _, err := server.LoadManifestOnly(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	previousParams, _ := server.LoadInstallationParamsFromPrevious() // best effort
 	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, previousMnf, installationParams, previousParams)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
-		return err
+		return nil, err
 	}
 
 	log.SendCloudReport("info", "Starting install", "Starting", &map[string]interface{}{"manifest": mnf})
@@ -86,36 +89,35 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) error {
 	if err != nil {
 		log.SendCloudReport("error", "Docker requirements not met", "Failed",
 			&map[string]interface{}{"error": err.Error()})
-		return err
+		return nil, err
 	}
 
 	log.SendCloudReport("info", "Starting installation", "Starting",
 		&map[string]interface{}{"flags": flags, "manifest": mnf})
 
+	var result *server.InstallationResult
 	if needsReinstall {
-		if err := server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart); err != nil {
+		result, err = server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		if err != nil {
 			log.SendCloudReport("error", "Failed reinstall", "Failed",
 				&map[string]interface{}{"error": err.Error()})
-			return err
+			return nil, err
 		}
 	} else {
-		err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		result, err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 		if err != nil {
 			log.SendCloudReport("error", "Failed installation", "Failed",
 				&map[string]interface{}{"error": err.Error()})
-			return err
+			return nil, err
 		}
 	}
-
-	baseLink := installationParams.CalcUrl()
 
 	log.SendCloudReport("info", "Successfully completed installation", "Success", nil)
 	log.Info("Successfully completed installation")
 
-	_ = local.OpenLink(baseLink)
-	log.Infof("You can now access Tensorleap at %s", baseLink)
+	log.Infof("You can now access Tensorleap at %s", result.ServerURL)
 
-	return nil
+	return result, nil
 }
 
 func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
