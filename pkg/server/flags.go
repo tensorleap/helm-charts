@@ -2,6 +2,7 @@ package server
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -12,16 +13,38 @@ type InstallationSourceFlags struct {
 	Tag                        string `json:"tag,omitempty"`
 	AirGapInstallationFilePath string `json:",omitempty"`
 	Local                      bool   `json:"local,omitempty"`
+	LocalDir                   string `json:"localDir,omitempty"`
 }
 
 func (flags *InstallationSourceFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&flags.Tag, "tag", "t", "", "Tag to be used for tensorleap installation, default is latest")
 	cmd.Flags().StringVar(&flags.AirGapInstallationFilePath, "airgap", "", "Installation file path for air-gap installation")
-	cmd.Flags().BoolVar(&flags.Local, "local", false, "Install tensorleap from local helm charts")
+	cmd.Flags().BoolVar(&flags.Local, "local", false, "Install tensorleap from local helm charts (current directory)")
+	cmd.Flags().StringVar(&flags.LocalDir, "local-dir", "", "Install tensorleap from local helm charts at the specified directory path")
 }
 
 func (flags *InstallationSourceFlags) IsAirGap() bool {
 	return flags.AirGapInstallationFilePath != ""
+}
+
+// IsLocal returns true if installing from local helm charts (either --local or --local-dir)
+func (flags *InstallationSourceFlags) IsLocal() bool {
+	return flags.Local || flags.LocalDir != ""
+}
+
+// GetLocalDir returns the local directory path to use for local installation.
+// Returns empty string for current directory when --local is used, or the specified path when --local-dir is used.
+// If a relative path is provided, it's converted to an absolute path.
+func (flags *InstallationSourceFlags) GetLocalDir() string {
+	if flags.LocalDir != "" {
+		// Convert relative path to absolute for clarity
+		absPath, err := filepath.Abs(flags.LocalDir)
+		if err != nil {
+			return flags.LocalDir
+		}
+		return absPath
+	}
+	return ""
 }
 
 type TLSFlags struct {

@@ -14,6 +14,7 @@ func NewPackInstallationCmd() *cobra.Command {
 	var output string
 	var tag string
 	var local bool
+	var localDir string
 
 	cmd := &cobra.Command{
 		Use:     "pack-installation [installConfigPath]",
@@ -31,9 +32,10 @@ func NewPackInstallationCmd() *cobra.Command {
 				}
 
 			} else {
-				if local {
-					fileGetter := manifest.BuildLocalFileGetter("")
-					mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
+				isLocal := local || localDir != ""
+				if isLocal {
+					fileGetter := manifest.BuildLocalFileGetter(localDir)
+					mnf, err = manifest.GenerateManifestFromLocal(fileGetter, localDir)
 				} else {
 					mnf, err = manifest.GetByTag(tag)
 				}
@@ -63,7 +65,8 @@ func NewPackInstallationCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Build manifest for a specific manifest tag")
 	cmd.Flags().StringVarP(&output, "output", "o", "pack.tar", "Output file path")
-	cmd.Flags().BoolVarP(&local, "local", "l", false, "Build manifest for local installation")
+	cmd.Flags().BoolVarP(&local, "local", "l", false, "Build manifest from local helm charts (current directory)")
+	cmd.Flags().StringVar(&localDir, "local-dir", "", "Build manifest from local helm charts at the specified directory path")
 	return cmd
 }
 

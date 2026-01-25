@@ -2,9 +2,12 @@ package manifest
 
 import (
 	"fmt"
+	"path/filepath"
 )
 
-func GenerateManifestFromLocal(fileGetter FileGetter) (*InstallationManifest, error) {
+// GenerateManifestFromLocal generates a manifest from local helm charts.
+// baseDir is the root directory containing the charts/ folder. If empty, uses current directory.
+func GenerateManifestFromLocal(fileGetter FileGetter, baseDir string) (*InstallationManifest, error) {
 
 	serverImages, err := getTensorleapImages(fileGetter)
 	if err != nil {
@@ -20,7 +23,10 @@ func GenerateManifestFromLocal(fileGetter FileGetter) (*InstallationManifest, er
 		return nil, err
 	}
 
-	return NewManifest(localHelmRepoUrl, serverChartVersion, infraChartVersion, serverImages)
+	// Construct full path to charts directory
+	chartsPath := filepath.Join(baseDir, localHelmRepoUrl)
+
+	return NewManifest(chartsPath, serverChartVersion, infraChartVersion, serverImages)
 }
 
 func GenerateManifestFromRemote(serverChartVersion, infraChartVersion string) (*InstallationManifest, error) {
