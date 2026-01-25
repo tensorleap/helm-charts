@@ -40,9 +40,15 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 		}
 	} else {
 		var err error
-		if flags.Local {
-			fileGetter := manifest.BuildLocalFileGetter("")
-			mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
+		if flags.IsLocal() {
+			localDir := flags.GetLocalDir()
+			if localDir != "" {
+				log.Infof("Using local directory: %s", localDir)
+			} else {
+				log.Info("Using local directory: current working directory")
+			}
+			fileGetter := manifest.BuildLocalFileGetter(localDir)
+			mnf, err = manifest.GenerateManifestFromLocal(fileGetter, localDir)
 		} else {
 			tag := flags.Tag
 			if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
@@ -109,9 +115,15 @@ func LoadManifestOnly(flags *InstallationSourceFlags, previousMnf *manifest.Inst
 		return mnf, true, nil
 	}
 
-	if flags.Local {
-		fileGetter := manifest.BuildLocalFileGetter("")
-		mnf, err = manifest.GenerateManifestFromLocal(fileGetter)
+	if flags.IsLocal() {
+		localDir := flags.GetLocalDir()
+		if localDir != "" {
+			log.Infof("Using local directory: %s", localDir)
+		} else {
+			log.Info("Using local directory: current working directory")
+		}
+		fileGetter := manifest.BuildLocalFileGetter(localDir)
+		mnf, err = manifest.GenerateManifestFromLocal(fileGetter, localDir)
 	} else {
 		tag := flags.Tag
 		if previousMnf != nil && tag == "" && previousMnf.Tag != "" {

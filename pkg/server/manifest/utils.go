@@ -121,7 +121,7 @@ func getLocalChartVersion(chartName string, fileGetter FileGetter) (string, erro
 	path := fmt.Sprintf("charts/%s/Chart.yaml", chartName)
 	b, err := fileGetter(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read %s: %w (expected directory structure: <local-dir>/charts/%s/Chart.yaml)", path, err, chartName)
 	}
 	var chart VersionRecord
 	err = yaml.Unmarshal(b, &chart)

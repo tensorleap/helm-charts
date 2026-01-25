@@ -12,7 +12,7 @@ import (
 func TestBuildManifest(t *testing.T) {
 
 	t.Run("Build manifest from local", func(t *testing.T) {
-		mnf, err := GenerateManifestFromLocal(BuildLocalFileGetter("../../../"))
+		mnf, err := GenerateManifestFromLocal(BuildLocalFileGetter("../../../"), "../../../")
 		if err != nil {
 			t.Fatal(err)
 		}
