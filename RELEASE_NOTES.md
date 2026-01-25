@@ -1,3 +1,26 @@
+# Release Notes - v1.5.29
+
+**Release Date:** 2026-01-25
+**Total Changes:** 7
+
+---
+
+## 🐛 Bug Fixes
+
+- [EN-2026](https://tensorleap.atlassian.net/browse/EN-2026): Fix bug where insights only appear after refresh when adding a filter
+- [EN-2017](https://tensorleap.atlassian.net/browse/EN-2017): Issue with string metadata handling
+- [EN-2012](https://tensorleap.atlassian.net/browse/EN-2012): Min tags values
+- [EN-1876](https://tensorleap.atlassian.net/browse/EN-1876): Fix version control not closing in population exploration
+
+## 📝 Other
+
+- [EN-1986](https://tensorleap.atlassian.net/browse/EN-1986): Synthetic data curation
+- [EN-1838](https://tensorleap.atlassian.net/browse/EN-1838): Simplify the system and Mapping by Code
+- [EN-1688](https://tensorleap.atlassian.net/browse/EN-1688): pippin - dependency builder
+
+
+---
+
 # Release Notes - v1.5.28
 
 **Release Date:** 2026-01-21
