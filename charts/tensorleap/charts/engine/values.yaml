@@ -1,4 +1,4 @@
-image_tag: omri-fetch-similar-2-92892b29
+image_tag: omri-fetch-similar-2-92892b29 
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
