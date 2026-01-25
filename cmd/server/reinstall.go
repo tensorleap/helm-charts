@@ -34,7 +34,8 @@ func NewReinstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return RunReinstallCmd(cmd, flags, isReinstalled)
+			_, err = RunReinstallCmd(cmd, flags, isReinstalled)
+			return err
 		},
 	}
 
@@ -43,49 +44,54 @@ func NewReinstallCmd() *cobra.Command {
 	return cmd
 }
 
-func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinstalled bool) error {
+// RunReinstallCmd runs the reinstall command and returns the installation result.
+// Wrapper CLIs can use this to get server info for post-install actions like login.
+func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinstalled bool) (*server.InstallationResult, error) {
 	flags.BeforeRun(cmd)
 	log.SetCommandName("reinstall")
 
 	close, err := local.SetupInfra("reinstall")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer close()
 
 	previousMnf, err := manifest.Load(local.GetInstallationManifestPath())
 	if err != nil && err != manifest.ErrManifestNotFound {
-		return err
+		return nil, err
 	}
 
 	isAirgap := flags.IsAirGap()
 
 	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
-		return err
+		return nil, err
 	}
 
 	log.SendCloudReport("info", "Starting install", "Starting", &map[string]interface{}{"manifest": mnf})
 	ctx := cmd.Context()
+
+	var result *server.InstallationResult
 	if isAlreadyReinstalled {
-		err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		result, err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	} else {
-		err = server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		result, err = server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
 
+	log.SendCloudReport("info", "Successfully completed reinstall", "Success", nil)
+	return result, nil
 }
 
 func (flags *ReinstallFlags) SetFlags(cmd *cobra.Command) {

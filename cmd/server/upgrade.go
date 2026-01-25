@@ -35,7 +35,8 @@ func NewUpgradeCmd() *cobra.Command {
 				return err
 			}
 
-			return RunUpgradeCmd(cmd, flags)
+			_, err = RunUpgradeCmd(cmd, flags)
+			return err
 		},
 	}
 
@@ -48,62 +49,74 @@ func (flags *UpgradeFlags) SetFlags(cmd *cobra.Command) {
 	flags.InstallationSourceFlags.SetFlags(cmd)
 }
 
-func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) error {
+// RunUpgradeCmd runs the upgrade command and returns the installation result.
+// Wrapper CLIs can use this to get server info for post-install actions like login.
+func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.InstallationResult, error) {
 	log.SetCommandName("upgrade")
 	close, err := local.SetupInfra("upgrade")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer close()
 	ctx := cmd.Context()
 
 	if err := server.ValidateStandaloneDir(); err != nil {
-		return err
+		return nil, err
 	}
 
 	installationParams, found, err := server.InitInstallationParamsFromPreviousOrAsk()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := server.ValidateInstallerVersion(mnf.InstallerVersion); err != nil {
-		return err
+		return nil, err
 	}
 
 	log.SendCloudReport("info", "Starting upgrade", "Starting", &map[string]interface{}{"manifest": mnf})
 
-	reinstall := func() error {
+	var result *server.InstallationResult
+
+	reinstall := func() (*server.InstallationResult, error) {
 		return server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	}
 
 	if !found {
-		return reinstall()
+		result, err = reinstall()
+		if err != nil {
+			return nil, err
+		}
+		log.SendCloudReport("info", "Successfully completed upgrade", "Success", nil)
+		return result, nil
 	}
 
 	// If params were loaded (found), check once up front if reinstall is needed
-	if found {
-		needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, nil, installationParams, nil)
+	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, nil, installationParams, nil)
+	if err != nil {
+		return nil, err
+	}
+	if needsReinstall {
+		log.SendCloudReport("info", "Reinstall required during upgrade", "Running", nil)
+		result, err = reinstall()
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if needsReinstall {
-			log.SendCloudReport("info", "Reinstall required during upgrade", "Running", nil)
-			return reinstall()
-		}
+		log.SendCloudReport("info", "Successfully completed upgrade", "Success", nil)
+		return result, nil
 	}
 
-	err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+	result, err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.SendCloudReport("info", "Successfully completed upgrade", "Success", nil)
-	return nil
+	return result, nil
 }
 
 func init() {

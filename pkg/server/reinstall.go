@@ -8,16 +8,16 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
 
-func Reinstall(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
+func Reinstall(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap bool, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) (*InstallationResult, error) {
 	err := Uninstall(ctx, false, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+	result, err := Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.SendCloudReport("info", "Successfully completed reinstall", "Success", nil)
-	return nil
+	return result, nil
 }
