@@ -7,9 +7,20 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/server"
 )
 
+type UninstallFlags struct {
+	Purge     bool
+	Cleanup   bool
+	ClearData bool
+}
+
+func (flags *UninstallFlags) AddToCommand(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&flags.Purge, "purge", false, "Remove all data and cached files")
+	cmd.Flags().BoolVar(&flags.Cleanup, "cleanup", false, "Cleanup cached data (registry, containerd, helm-cache)")
+	cmd.Flags().BoolVar(&flags.ClearData, "clear-data", false, "Clear application data (storage, manifests) but keep cache")
+}
+
 func NewUninstallCmd() *cobra.Command {
-	var purge bool
-	var cleanup bool
+	flags := &UninstallFlags{}
 	cmd := &cobra.Command{
 		Use:   "uninstall",
 		Short: "Remove local Tensorleap installation",
@@ -19,19 +30,22 @@ func NewUninstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return RunUninstallCmd(cmd, purge, cleanup)
+			return RunUninstallCmd(cmd, flags)
 		},
 	}
 
-	cmd.Flags().BoolVar(&purge, "purge", false, "Remove all data and cached files")
-	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Cleanup cached data")
+	flags.AddToCommand(cmd)
 
 	return cmd
 }
 
-func RunUninstallCmd(cmd *cobra.Command, purge bool, cleanup bool) error {
+func RunUninstallCmd(cmd *cobra.Command, flags *UninstallFlags) error {
 	log.SetCommandName("uninstall")
-	log.SendCloudReport("info", "Starting uninstall", "Starting", &map[string]interface{}{"purge": purge})
+	log.SendCloudReport("info", "Starting uninstall", "Starting", &map[string]interface{}{
+		"purge":     flags.Purge,
+		"cleanup":   flags.Cleanup,
+		"clearData": flags.ClearData,
+	})
 	close, err := local.SetupInfra("uninstall")
 	if err != nil {
 		return err
@@ -39,7 +53,7 @@ func RunUninstallCmd(cmd *cobra.Command, purge bool, cleanup bool) error {
 	defer close()
 
 	ctx := cmd.Context()
-	err = server.Uninstall(ctx, purge, cleanup)
+	err = server.Uninstall(ctx, flags.Purge, flags.Cleanup, flags.ClearData)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to uninstall", "Failed", &map[string]interface{}{"error": err.Error()})
 		return err

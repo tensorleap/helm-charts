@@ -198,6 +198,37 @@ func CleanupCacheData() error {
 	return nil
 }
 
+// ClearAppData removes application data (storage) but keeps cache (registry, containerd, helm-cache)
+func ClearAppData() error {
+	log.Infof("Clearing application data (you may be asked to enter the root user password)")
+	// Remove storage directory (contains keycloak db, elasticsearch data, etc.)
+	storagePath := path.Join(GetServerDataDir(), STORAGE_DIR_NAME)
+	log.Infof("Removing directory: %s", storagePath)
+	err := os.RemoveAll(storagePath)
+	if err != nil {
+		// if failed to remove directory, try to remove it with sudo
+		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", storagePath))
+		if err := rmCmd.Run(); err != nil {
+			log.SendCloudReport("error", "Failed to clear app data", "Failed", &map[string]interface{}{"error": err.Error()})
+			return err
+		}
+	}
+
+	// Remove manifests directory (installation config)
+	manifestsPath := path.Join(GetServerDataDir(), MANIFEST_DIR_NAME)
+	log.Infof("Removing directory: %s", manifestsPath)
+	err = os.RemoveAll(manifestsPath)
+	if err != nil {
+		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", manifestsPath))
+		if err := rmCmd.Run(); err != nil {
+			log.SendCloudReport("error", "Failed to clear manifests", "Failed", &map[string]interface{}{"error": err.Error()})
+			return err
+		}
+	}
+
+	return nil
+}
+
 func GetInstallationManifestPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_MANIFEST_FILE_NAME)
 }

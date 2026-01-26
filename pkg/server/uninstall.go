@@ -7,7 +7,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 )
 
-func Uninstall(ctx context.Context, purge bool, cleanup bool) (err error) {
+func Uninstall(ctx context.Context, purge bool, cleanup bool, clearData bool) (err error) {
 	err = k3d.UninstallCluster(ctx)
 	if err != nil {
 		return err
@@ -24,12 +24,21 @@ func Uninstall(ctx context.Context, purge bool, cleanup bool) (err error) {
 			return err
 		}
 	}
+
 	if purge {
+		// Remove everything: data + cache
 		err = local.PurgeData()
 		if err != nil {
 			return err
 		}
+	} else if clearData {
+		// Remove only application data, keep cache
+		err = local.ClearAppData()
+		if err != nil {
+			return err
+		}
 	} else if cleanup {
+		// Remove only cache, keep data
 		err = local.CleanupCacheData()
 		if err != nil {
 			return err

@@ -65,7 +65,7 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 		}
 	}
 
-	err = Uninstall(ctx, false, false)
+	err = Uninstall(ctx, false, false, false)
 	if err != nil {
 		return false, fmt.Errorf("failed to uninstall: %v", err)
 	}
