@@ -26,7 +26,7 @@ jobs:
 
       - name: Install Tensorleap server
         run: |
-          leap server install -t ${{ inputs.tag }}
+          leap server install -t ${{ inputs.tag }} --yes
           if [ $? -ne 0 ]; then
             echo "❌ Installation failed"
             exit 1

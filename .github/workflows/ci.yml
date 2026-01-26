@@ -23,7 +23,7 @@ jobs:
       # Using go command that build from repository images 
       - name: Install Tensorleap Server from local build
         run: |
-          go run . install --local
+          go run . install --local --yes
           if [ $? -ne 0 ]; then
             echo "❌ Installation failed"
             exit 1
