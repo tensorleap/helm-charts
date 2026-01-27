@@ -118,30 +118,69 @@ jobs:
           fi
         shell: bash
           
+      # - name: Notify Slack - Release Complete
+      #   uses: slackapi/slack-github-action@v2.1.1
+      #   with:
+      #     method: chat.postMessage
+      #     token: ${{ secrets.SLACK_TOKEN }}
+      #     errors: true
+      #     payload: |
+      #       channel: C0A2J51FBPD
+      #       text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}"
+      #       blocks:
+      #         - type: header
+      #           text:
+      #             type: plain_text
+      #             text: "🚀 on-prem version ${{ steps.get_version.outputs.version }} released!"
+      #             emoji: true
+      #         - type: section
+      #           text:
+      #             type: mrkdwn
+      #             text: "*Released by:* ${{ github.actor }}\n*Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+      #         - type: divider
+      #         - type: section
+      #           text:
+      #             type: mrkdwn
+      #             text: "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
+
+
       - name: Notify Slack - Release Complete
         uses: slackapi/slack-github-action@v2.1.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_TOKEN }}
           errors: true
-          payload: |
-            channel: C0A2J51FBPD
-            text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}"
-            blocks:
-              - type: header
-                text:
-                  type: plain_text
-                  text: "🚀 on-prem version ${{ steps.get_version.outputs.version }} released!"
-                  emoji: true
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Released by:* ${{ github.actor }}\n*Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
-              - type: divider
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
+          payload: >
+            {
+              "channel": "C0A2J51FBPD",
+              "text": "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 on-prem version ${{ steps.get_version.outputs.version }} released!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Released by:* ${{ github.actor }}\n*Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                },
+                { "type": "divider" },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
+                  }
+                }
+              ]
+            }
+
 
   release-airgap:
     name: Release Airgap Pack
