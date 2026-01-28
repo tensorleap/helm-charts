@@ -109,8 +109,9 @@ jobs:
         id: release_notes
         run: |
           if [ -f RELEASE_NOTES.md ]; then
-            # Escape for JSON so notes is safe to embed in Slack payload (quotes, newlines, backslashes)
-            NOTES_ESC=$(head -50 RELEASE_NOTES.md | jq -Rs -r '.[1:-1]')
+            # JSON-escape content (newlines -> \n, quotes -> \") so notes is valid inside Slack JSON payload
+            CONTENT=$(head -50 RELEASE_NOTES.md | jq -Rs .)
+            NOTES_ESC="${CONTENT:1:${#CONTENT}-2}"
             echo "notes<<NOTESEND" >> $GITHUB_OUTPUT
             echo "$NOTES_ESC" >> $GITHUB_OUTPUT
             echo "NOTESEND" >> $GITHUB_OUTPUT
