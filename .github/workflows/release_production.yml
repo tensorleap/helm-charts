@@ -109,41 +109,16 @@ jobs:
         id: release_notes
         run: |
           if [ -f RELEASE_NOTES.md ]; then
-            NOTES=$(cat RELEASE_NOTES.md | head -50)
-            echo "notes<<EOF" >> $GITHUB_OUTPUT
-            echo "$NOTES" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            # Escape for JSON so notes is safe to embed in Slack payload (quotes, newlines, backslashes)
+            NOTES_ESC=$(head -50 RELEASE_NOTES.md | jq -Rs -r '.[1:-1]')
+            echo "notes<<NOTESEND" >> $GITHUB_OUTPUT
+            echo "$NOTES_ESC" >> $GITHUB_OUTPUT
+            echo "NOTESEND" >> $GITHUB_OUTPUT
           else
             echo "notes=No release notes available" >> $GITHUB_OUTPUT
           fi
         shell: bash
           
-      # - name: Notify Slack - Release Complete
-      #   uses: slackapi/slack-github-action@v2.1.1
-      #   with:
-      #     method: chat.postMessage
-      #     token: ${{ secrets.SLACK_TOKEN }}
-      #     errors: true
-      #     payload: |
-      #       channel: C0A2J51FBPD
-      #       text: "🚀 *on-prem* version ${{ steps.get_version.outputs.version }} released by ${{ github.actor }}"
-      #       blocks:
-      #         - type: header
-      #           text:
-      #             type: plain_text
-      #             text: "🚀 on-prem version ${{ steps.get_version.outputs.version }} released!"
-      #             emoji: true
-      #         - type: section
-      #           text:
-      #             type: mrkdwn
-      #             text: "*Released by:* ${{ github.actor }}\n*Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
-      #         - type: divider
-      #         - type: section
-      #           text:
-      #             type: mrkdwn
-      #             text: "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
-
-
       - name: Notify Slack - Release Complete
         uses: slackapi/slack-github-action@v2.1.1
         with:
@@ -180,7 +155,6 @@ jobs:
                 }
               ]
             }
-
 
   release-airgap:
     name: Release Airgap Pack
