@@ -14,6 +14,7 @@ jobs:
       contents: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
+      slack_message_ts: ${{ steps.slack_release.outputs.ts }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -121,6 +122,7 @@ jobs:
         shell: bash
           
       - name: Notify Slack - Release Complete
+        id: slack_release
         uses: slackapi/slack-github-action@v2.1.1
         with:
           method: chat.postMessage
@@ -164,6 +166,32 @@ jobs:
     with:
       manifest_name: manifest-${{ needs.release-production.outputs.version }}
     secrets: inherit
+
+  notify-slack-airgap:
+    name: Notify Slack - Airgap Pack Ready
+    needs: [release-production, release-airgap]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post airgap link in thread
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          payload: >
+            {
+              "channel": "C0A2J51FBPD",
+              "thread_ts": "${{ needs.release-production.outputs.slack_message_ts }}",
+              "text": "📦 *Airgap pack ready* – v${{ needs.release-production.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📦 *Airgap pack ready*\n• *Download:* <https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-${{ needs.release-production.outputs.version }}-linux-amd64.tar.gz|tl-manifest-${{ needs.release-production.outputs.version }}-linux-amd64.tar.gz>\n• *All versions:* <https://helm.tensorleap.ai/latest_airgap_versions.html|Latest airgap versions>\n\n_Expected file name: `tl-manifest-VERSION-linux-amd64.tar.gz`_"
+                  }
+                }
+              ]
+            }
 
   install-server:
     needs: [release-production, release-airgap]
