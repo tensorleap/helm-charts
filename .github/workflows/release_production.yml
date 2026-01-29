@@ -108,15 +108,15 @@ jobs:
       - name: Read Release Notes
         id: release_notes
         run: |
-          if [ -f RELEASE_NOTES.md ]; then
-            # JSON-escape content (newlines -> \n, quotes -> \") so notes is valid inside Slack JSON payload
-            CONTENT=$(head -50 RELEASE_NOTES.md | jq -Rs .)
-            NOTES_ESC="${CONTENT:1:${#CONTENT}-2}"
-            echo "notes<<NOTESEND" >> $GITHUB_OUTPUT
-            echo "$NOTES_ESC" >> $GITHUB_OUTPUT
-            echo "NOTESEND" >> $GITHUB_OUTPUT
-          else
+          if [ ! -f RELEASE_NOTES.md ] || [ ! -s RELEASE_NOTES.md ]; then
             echo "notes=No release notes available" >> $GITHUB_OUTPUT
+          else
+            # JSON-escape content (newlines -> \n, " -> \") so notes is valid inside Slack JSON payload.
+            # Pipe jq output directly to avoid bash expanding $ in the .md content.
+            echo "notes<<NOTESEND" >> $GITHUB_OUTPUT
+            head -50 RELEASE_NOTES.md | jq -Rs . | sed 's/^"//;s/"$//' | tr -d '\n' >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "NOTESEND" >> $GITHUB_OUTPUT
           fi
         shell: bash
           
@@ -151,7 +151,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Release Notes:*\n${{ steps.release_notes.outputs.notes }}"
+                    "text": "*Release Notes:*\n<${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/RELEASE_NOTES.md|View full release notes (RELEASE_NOTES.md)>\n\n${{ steps.release_notes.outputs.notes }}"
                   }
                 }
               ]
