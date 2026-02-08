@@ -1,4 +1,4 @@
-image_tag: for-omri-synth-fix-2-ad7013f0
+image_tag: for-omri-synth-fix-2-95d1280b
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
