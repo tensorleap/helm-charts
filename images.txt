@@ -5,11 +5,11 @@ docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-cc118d0e-py310
-public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-cc118d0e-py312
-public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-cc118d0e-py38
-public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-cc118d0e-py39
-public.ecr.aws/tensorleap/engine:for-omri-synth-fix-cc118d0e
+public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-2-ad7013f0-py310
+public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-2-ad7013f0-py312
+public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-2-ad7013f0-py38
+public.ecr.aws/tensorleap/engine-generic:for-omri-synth-fix-2-ad7013f0-py39
+public.ecr.aws/tensorleap/engine:for-omri-synth-fix-2-ad7013f0
 public.ecr.aws/tensorleap/node-server:master-b5ea6a8c
 public.ecr.aws/tensorleap/pippin:master-75c5fe0a
 public.ecr.aws/tensorleap/web-ui:master-d5b59a08
