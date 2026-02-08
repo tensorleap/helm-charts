@@ -328,6 +328,27 @@ func buildEnvVars() []conf.EnvVarWithNodeFilters {
 	return envVars
 }
 
+// buildK3sExtraArgs returns the k3s extra args for the cluster.
+// By default the eviction-hard kubelet arg is set to 50G.
+// Set TL_DISABLE_KUBE_STORAGE_TAINT=true to set eviction thresholds to 0%,
+// preventing the false disk-pressure taint (kubelet inside Docker can report 0 available storage).
+func buildK3sExtraArgs() []conf.K3sArgWithNodeFilters {
+	evictionThreshold := STORAGE_EVICTION_THRESHOLD
+	if os.Getenv("TL_DISABLE_KUBE_STORAGE_TAINT") == "true" {
+		evictionThreshold = "0%"
+	}
+	return []conf.K3sArgWithNodeFilters{
+		{
+			Arg:         "--disable=traefik",
+			NodeFilters: []string{"server:*"},
+		},
+		{
+			Arg:         fmt.Sprintf("--kubelet-arg=eviction-hard=nodefs.available<%s,imagefs.available<%s", evictionThreshold, evictionThreshold),
+			NodeFilters: []string{"server:*"},
+		},
+	}
+}
+
 func createClusterConfig(ctx context.Context, manifest *manifest.InstallationManifest, params *CreateK3sClusterParams, localContainerdDir string) *conf.ClusterConfig {
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
@@ -389,16 +410,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 				DisableLoadbalancer: true,
 			},
 			K3sOptions: conf.SimpleConfigOptionsK3s{
-				ExtraArgs: []conf.K3sArgWithNodeFilters{
-					{
-						Arg:         "--disable=traefik",
-						NodeFilters: []string{"server:*"},
-					},
-					{
-						Arg:         fmt.Sprintf("--kubelet-arg=eviction-hard=nodefs.available<%s,imagefs.available<%s", STORAGE_EVICTION_THRESHOLD, STORAGE_EVICTION_THRESHOLD),
-						NodeFilters: []string{"server:*"},
-					},
-				},
+				ExtraArgs: buildK3sExtraArgs(),
 			},
 			// Just for convenience to use kubectl, on install and upgrade we take the kubeconfig from the cluster
 			KubeconfigOptions: conf.SimpleConfigOptionsKubeconfig{
