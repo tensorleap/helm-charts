@@ -77,6 +77,10 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.Installatio
 	if err != nil {
 		return nil, err
 	}
+	// Persist the resolved tag so InitInstallationProcess won't prompt again
+	if mnf != nil && mnf.Tag != "" {
+		flags.InstallationSourceFlags.Tag = mnf.Tag
+	}
 	previousParams, _ := server.LoadInstallationParamsFromPrevious() // best effort
 	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, previousMnf, installationParams, previousParams)
 	if err != nil {
