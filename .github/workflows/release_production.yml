@@ -100,27 +100,17 @@ jobs:
         run: make release-notes
 
       - name: Commit Release Notes
+        if: hashFiles('RELEASE_NOTES.md') != ''
         uses: EndBug/add-and-commit@v9
         with:
           add: 'RELEASE_NOTES.md'
           message: "docs: update release notes for v${{ steps.get_version.outputs.version }}"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
-      - name: Read Release Notes
-        id: release_notes
-        run: |
-          if [ ! -f RELEASE_NOTES.md ] || [ ! -s RELEASE_NOTES.md ]; then
-            echo "notes=No release notes available" >> $GITHUB_OUTPUT
-          else
-            # JSON-escape content (newlines -> \n, " -> \") so notes is valid inside Slack JSON payload.
-            # Pipe jq output directly to avoid bash expanding $ in the .md content.
-            echo "notes<<NOTESEND" >> $GITHUB_OUTPUT
-            head -50 RELEASE_NOTES.md | jq -Rs . | sed 's/^"//;s/"$//' | tr -d '\n' >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "NOTESEND" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
-          
+      - name: Warn when release notes missing
+        if: hashFiles('RELEASE_NOTES.md') == ''
+        run: echo "::warning::RELEASE_NOTES.md not found. Skipping commit and Slack file upload."
+
       - name: Notify Slack - Release Complete
         id: slack_release
         uses: slackapi/slack-github-action@v2.1.1
@@ -153,11 +143,26 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Release Notes:*\n<${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/RELEASE_NOTES.md|View full release notes (RELEASE_NOTES.md)>\n\n${{ steps.release_notes.outputs.notes }}"
+                    "text": "*Release notes:* attached as file below (when available)."
                   }
                 }
               ]
             }
+
+      - name: Upload release notes file to Slack thread
+        if: hashFiles('RELEASE_NOTES.md') != ''
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+        run: |
+          RESP=$(curl -sS -F file=@RELEASE_NOTES.md \
+            -F "channels=C0A2J51FBPD" \
+            -F "thread_ts=${{ steps.slack_release.outputs.ts }}" \
+            -F "initial_comment=📄 RELEASE_NOTES.md (v${{ steps.get_version.outputs.version }})" \
+            -H "Authorization: Bearer $SLACK_TOKEN" \
+            https://slack.com/api/files.upload)
+          if ! echo "$RESP" | grep -q '"ok":true'; then
+            echo "$RESP" && exit 1
+          fi
 
   release-airgap:
     name: Release Airgap Pack
