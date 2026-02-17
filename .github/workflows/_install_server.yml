@@ -26,10 +26,67 @@ jobs:
 
       - name: Install Tensorleap server
         run: |
-          leap server install -t ${{ inputs.tag }} --yes
-          if [ $? -ne 0 ]; then
-            echo "❌ Installation failed"
-            exit 1
-          fi
-          echo "✅ Installation completed successfully"
+          set -e
+          LOG=$(mktemp)
+          echo "Starting install (output in $LOG)..."
+          leap server install -t ${{ inputs.tag }} --yes 2>&1 | tee "$LOG" &
+          INSTALL_PID=$!
+          disown
+          TIMEOUT=600
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            if grep -q "You can now access Tensorleap at" "$LOG" 2>/dev/null || grep -q "authorization-request" "$LOG" 2>/dev/null; then
+              echo "✅ Server is up and auth URL is ready."
+              echo "Installation reached the authorization step; workflow succeeds (user can complete auth separately)."
+              cat "$LOG"
+              rm -f "$LOG"
+              echo "✅ installation success"
+              exit 0
+            fi
+            if ! kill -0 $INSTALL_PID 2>/dev/null; then
+              echo "Install process exited before auth URL appeared."
+              wait $INSTALL_PID 2>/dev/null || true
+              cat "$LOG"
+              rm -f "$LOG"
+              exit 1
+            fi
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          done
+          echo "❌ Timeout (10 min) waiting for 'You can now access Tensorleap at' or 'authorization-request' in log."
+          kill $INSTALL_PID 2>/dev/null || true
+          cat "$LOG"
+          rm -f "$LOG"
+          exit 1
+        shell: bash
+
+      - name: Validate all pods are up
+        run: |
+          set -e
+          echo "Waiting for all pods in namespace tensorleap to be Running or Succeeded (timeout 10 min)..."
+          TIMEOUT=600
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            if ! leap server tools kubectl get pods -n tensorleap &>/dev/null; then
+              echo "Waiting for namespace/pods to appear..."
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+              continue
+            fi
+            COUNT=$(leap server tools kubectl get pods -n tensorleap --no-headers 2>/dev/null | wc -l)
+            COUNT=${COUNT:-0}
+            NOT_READY=$(leap server tools kubectl get pods -n tensorleap -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.phase}{"\n"}{end}' 2>/dev/null | awk '$2 != "Running" && $2 != "Succeeded" {print $0}' || true)
+            if [ "$COUNT" -gt 0 ] && [ -z "$NOT_READY" ]; then
+              echo "✅ All pods in tensorleap are up."
+              leap server tools kubectl get pods -n tensorleap
+              exit 0
+            fi
+            echo "Pods not yet ready:"
+            leap server tools kubectl get pods -n tensorleap
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "❌ Timeout: not all pods are up."
+          leap server tools kubectl get pods -n tensorleap
+          exit 1
         shell: bash
