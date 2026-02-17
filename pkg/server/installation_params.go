@@ -826,7 +826,7 @@ func (params *InstallationParams) CalcUrl() string {
 	return url
 }
 
-func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmValuesParams {
+func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *helm.ServerHelmValuesParams {
 	dataContainerPaths := []string{}
 	for _, path := range params.DatasetVolumes {
 		dataContainerPaths = append(dataContainerPaths, strings.Split(path, ":")[1])
@@ -837,16 +837,17 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 	datadogEnvs := params.GetDatadogEnvs()
 
 	return &helm.ServerHelmValuesParams{
-		Gpu:                   params.IsUseGpu(),
-		LocalDataDirectories:  dataContainerPaths,
-		DisableDatadogMetrics: params.DisableMetrics,
-		Domain:                params.Domain,
-		BasePath:              params.CalcBestPath(),
-		Url:                   params.CalcUrl(),
-		ProxyUrl:              params.ProxyUrl,
-		Tls:                   *tlsParams,
-		DatadogEnv:            datadogEnvs,
-		KeycloakEnabled:       !params.DisabledAuth,
+		Gpu:                    params.IsUseGpu(),
+		LocalDataDirectories:   dataContainerPaths,
+		DisableDatadogMetrics:  params.DisableMetrics,
+		Domain:                 params.Domain,
+		BasePath:               params.CalcBestPath(),
+		Url:                    params.CalcUrl(),
+		ProxyUrl:               params.ProxyUrl,
+		Tls:                    *tlsParams,
+		DatadogEnv:             datadogEnvs,
+		KeycloakEnabled:        !params.DisabledAuth,
+		InstalledServerVersion: versionTag,
 	}
 }
 

@@ -79,7 +79,7 @@ func TestGetServerHelmValuesParams(t *testing.T) {
 		params := InstallationParams{
 			DisabledAuth: false,
 		}
-		helmParams := params.GetServerHelmValuesParams()
+		helmParams := params.GetServerHelmValuesParams("unknown")
 		assert.True(t, helmParams.KeycloakEnabled, "Keycloak should be enabled when DisabledAuth is false")
 	})
 
@@ -87,7 +87,7 @@ func TestGetServerHelmValuesParams(t *testing.T) {
 		params := InstallationParams{
 			DisabledAuth: true,
 		}
-		helmParams := params.GetServerHelmValuesParams()
+		helmParams := params.GetServerHelmValuesParams("unknown")
 		assert.False(t, helmParams.KeycloakEnabled, "Keycloak should be disabled when DisabledAuth is true")
 	})
 }

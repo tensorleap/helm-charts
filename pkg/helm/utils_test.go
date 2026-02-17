@@ -29,8 +29,9 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"localDataDirectories": params.LocalDataDirectories,
 			},
 			"tensorleap-node-server": Record{
-				"enableKeycloak":        params.KeycloakEnabled,
-				"disableDatadogMetrics": params.DisableDatadogMetrics,
+				"enableKeycloak":         params.KeycloakEnabled,
+				"disableDatadogMetrics":  params.DisableDatadogMetrics,
+				"installedServerVersion": params.InstalledServerVersion,
 			},
 			"global": Record{
 				"domain":               "",

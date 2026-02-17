@@ -141,7 +141,7 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
 		return err
 	}
-	serverValues, err := helm.CreateTensorleapChartValues(installationParams.GetServerHelmValuesParams())
+	serverValues, err := helm.CreateTensorleapChartValues(installationParams.GetServerHelmValuesParams(mnf.Tag))
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
