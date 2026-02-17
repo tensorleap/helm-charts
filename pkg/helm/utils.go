@@ -283,9 +283,6 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		datadogEnvs = append(datadogEnvs, map[string]string{"name": key, "value": value})
 	}
 
-
-	fmt.Println("params.InstalledServerVersion", params.InstalledServerVersion)
-
 	return Record{
 		"tensorleap-engine": Record{
 			"gpu":                  params.Gpu,

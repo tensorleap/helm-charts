@@ -27,7 +27,6 @@ data:
   KEYCLOAK_ADMIN_PASSWORD: "admin"
   DISABLE_DATADOG_METRICS: {{ .Values.disableDatadogMetrics | quote }}
   INSTALLED_SERVER_VERSION: {{ .Values.installedServerVersion | quote }}
-  INSTALLED_SERVER_VERSION_MOSHE: "unknown4"
   ELASTIC_HOST: {{ .Values.global.elasticsearch.url | default "http://tl-elasticsearch-es-master:9200" }}
   TRIAL_EXTEND_PUBLIC_KEY: |
     -----BEGIN PUBLIC KEY-----
