@@ -289,9 +289,9 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"localDataDirectories": params.LocalDataDirectories,
 		},
 		"tensorleap-node-server": Record{
-			"enableKeycloak":          params.KeycloakEnabled,
-			"disableDatadogMetrics":   params.DisableDatadogMetrics,
-			"installedServerVersion":  params.InstalledServerVersion,
+			"enableKeycloak":         params.KeycloakEnabled,
+			"disableDatadogMetrics":  params.DisableDatadogMetrics,
+			"installedServerVersion": params.InstalledServerVersion,
 		},
 		"global": Record{
 			"domain":               params.Domain,

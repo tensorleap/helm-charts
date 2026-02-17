@@ -837,16 +837,16 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 	datadogEnvs := params.GetDatadogEnvs()
 
 	return &helm.ServerHelmValuesParams{
-		Gpu:                   params.IsUseGpu(),
-		LocalDataDirectories:  dataContainerPaths,
-		DisableDatadogMetrics: params.DisableMetrics,
-		Domain:                params.Domain,
-		BasePath:              params.CalcBestPath(),
-		Url:                   params.CalcUrl(),
-		ProxyUrl:              params.ProxyUrl,
-		Tls:                   *tlsParams,
-		DatadogEnv:            datadogEnvs,
-		KeycloakEnabled:       !params.DisabledAuth,
+		Gpu:                    params.IsUseGpu(),
+		LocalDataDirectories:   dataContainerPaths,
+		DisableDatadogMetrics:  params.DisableMetrics,
+		Domain:                 params.Domain,
+		BasePath:               params.CalcBestPath(),
+		Url:                    params.CalcUrl(),
+		ProxyUrl:               params.ProxyUrl,
+		Tls:                    *tlsParams,
+		DatadogEnv:             datadogEnvs,
+		KeycloakEnabled:        !params.DisabledAuth,
 		InstalledServerVersion: versionTag,
 	}
 }
