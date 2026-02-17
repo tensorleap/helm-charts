@@ -29,17 +29,18 @@ type TLSParams struct {
 }
 
 type ServerHelmValuesParams struct {
-	Gpu                   bool              `json:"gpu"`
-	LocalDataDirectories  []string          `json:"localDataDirectories"`
-	DisableDatadogMetrics bool              `json:"disableDatadogMetrics"`
-	Domain                string            `json:"domain"`
-	BasePath              string            `json:"basePath"`
-	Url                   string            `json:"url"`
-	ProxyUrl              string            `json:"proxyUrl"`
-	Tls                   TLSParams         `json:"tls"`
-	HostName              string            `json:"hostname"`
-	DatadogEnv            map[string]string `json:"datadogEnv"`
-	KeycloakEnabled       bool              `json:"keycloakEnabled"`
+	Gpu                    bool              `json:"gpu"`
+	LocalDataDirectories   []string          `json:"localDataDirectories"`
+	DisableDatadogMetrics  bool              `json:"disableDatadogMetrics"`
+	Domain                 string            `json:"domain"`
+	BasePath               string            `json:"basePath"`
+	Url                    string            `json:"url"`
+	ProxyUrl               string            `json:"proxyUrl"`
+	Tls                    TLSParams         `json:"tls"`
+	HostName               string            `json:"hostname"`
+	DatadogEnv             map[string]string `json:"datadogEnv"`
+	KeycloakEnabled        bool              `json:"keycloakEnabled"`
+	InstalledServerVersion string            `json:"installedServerVersion"`
 }
 
 type InfraHelmValuesParams struct {
@@ -282,14 +283,18 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		datadogEnvs = append(datadogEnvs, map[string]string{"name": key, "value": value})
 	}
 
+
+	fmt.Println("params.InstalledServerVersion", params.InstalledServerVersion)
+
 	return Record{
 		"tensorleap-engine": Record{
 			"gpu":                  params.Gpu,
 			"localDataDirectories": params.LocalDataDirectories,
 		},
 		"tensorleap-node-server": Record{
-			"enableKeycloak":        params.KeycloakEnabled,
-			"disableDatadogMetrics": params.DisableDatadogMetrics,
+			"enableKeycloak":          params.KeycloakEnabled,
+			"disableDatadogMetrics":   params.DisableDatadogMetrics,
+			"installedServerVersion":  params.InstalledServerVersion,
 		},
 		"global": Record{
 			"domain":               params.Domain,

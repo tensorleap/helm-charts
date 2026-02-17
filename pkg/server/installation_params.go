@@ -826,7 +826,7 @@ func (params *InstallationParams) CalcUrl() string {
 	return url
 }
 
-func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmValuesParams {
+func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *helm.ServerHelmValuesParams {
 	dataContainerPaths := []string{}
 	for _, path := range params.DatasetVolumes {
 		dataContainerPaths = append(dataContainerPaths, strings.Split(path, ":")[1])
@@ -847,6 +847,7 @@ func (params *InstallationParams) GetServerHelmValuesParams() *helm.ServerHelmVa
 		Tls:                   *tlsParams,
 		DatadogEnv:            datadogEnvs,
 		KeycloakEnabled:       !params.DisabledAuth,
+		InstalledServerVersion: versionTag,
 	}
 }
 
