@@ -10,7 +10,7 @@ public.ecr.aws/tensorleap/engine-generic:master-c24efd17-py312
 public.ecr.aws/tensorleap/engine-generic:master-c24efd17-py38
 public.ecr.aws/tensorleap/engine-generic:master-c24efd17-py39
 public.ecr.aws/tensorleap/engine:master-c24efd17
-public.ecr.aws/tensorleap/node-server:master-9d292247
+public.ecr.aws/tensorleap/node-server:remove-fetch-similar-jobs-d7ddddcd
 public.ecr.aws/tensorleap/pippin:master-0d746c77
 public.ecr.aws/tensorleap/web-ui:master-f3e58767
 quay.io/keycloak/keycloak:26.3.2
