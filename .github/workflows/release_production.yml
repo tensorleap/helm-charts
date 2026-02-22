@@ -91,6 +91,7 @@ jobs:
           python-version: '3.12'
 
       - name: Generate Release Notes & Update Jira fixVersion
+        continue-on-error: true
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_EMAIL: omri.yonatani@tensorleap.ai
@@ -151,17 +152,44 @@ jobs:
 
       - name: Upload release notes file to Slack thread
         if: hashFiles('RELEASE_NOTES.md') != ''
+        continue-on-error: true
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          CHANNEL_ID: C0A2J51FBPD
+          THREAD_TS: ${{ steps.slack_release.outputs.ts }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          RESP=$(curl -sS -F file=@RELEASE_NOTES.md \
-            -F "channels=C0A2J51FBPD" \
-            -F "thread_ts=${{ steps.slack_release.outputs.ts }}" \
-            -F "initial_comment=📄 RELEASE_NOTES.md (v${{ steps.get_version.outputs.version }})" \
+          FILE_PATH="RELEASE_NOTES.md"
+          FILE_NAME="RELEASE_NOTES.md"
+          FILE_SIZE=$(wc -c < "$FILE_PATH")
+          # Step 1: Get upload URL (files.upload is deprecated; use new external upload flow)
+          RESP=$(curl -sS -X POST \
             -H "Authorization: Bearer $SLACK_TOKEN" \
-            https://slack.com/api/files.upload)
+            -H "Content-Type: application/x-www-form-urlencoded; charset=utf-8" \
+            -d "filename=$FILE_NAME" \
+            -d "length=$FILE_SIZE" \
+            https://slack.com/api/files.getUploadURLExternal)
           if ! echo "$RESP" | grep -q '"ok":true'; then
             echo "$RESP" && exit 1
+          fi
+          UPLOAD_URL=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('upload_url',''))")
+          FILE_ID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('file_id',''))")
+          # Step 2: Upload file to the URL
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$FILE_PATH" \
+            "$UPLOAD_URL")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Upload to URL failed with HTTP $HTTP_CODE" && exit 1
+          fi
+          # Step 3: Complete upload and share in thread
+          COMPLETE_RESP=$(curl -sS -X POST \
+            -H "Authorization: Bearer $SLACK_TOKEN" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{"files":[{"id":"'"$FILE_ID"'","title":"'"$FILE_NAME"'"}],"channel_id":"'"$CHANNEL_ID"'","thread_ts":"'"$THREAD_TS"'","initial_comment":"📄 RELEASE_NOTES.md (v'"$VERSION"')"}' \
+            https://slack.com/api/files.completeUploadExternal)
+          if ! echo "$COMPLETE_RESP" | grep -q '"ok":true'; then
+            echo "$COMPLETE_RESP" && exit 1
           fi
 
   release-airgap:
