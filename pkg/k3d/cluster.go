@@ -156,6 +156,9 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {
+	if cluster == nil {
+		return "", nil, fmt.Errorf("cluster is nil, cannot get kubeconfig")
+	}
 	kubeConfig, err := k3dCluster.KubeconfigGet(ctx, runtimes.SelectedRuntime, cluster)
 
 	if err != nil {

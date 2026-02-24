@@ -183,22 +183,28 @@ func EnsureReinstallConsent(ctx context.Context, mnfPreview, previousMnf *manife
 func GetCurrentInsalledHelmChartVersion(ctx context.Context) (string, error) {
 	cluster, err := k3d.GetCluster(ctx)
 	if err != nil {
-		return "", err
+		return "", nil
+	}
+	if cluster == nil {
+		return "", nil
 	}
 
 	kubeConfigPath, clean, err := k3d.CreateTmpClusterKubeConfig(ctx, cluster)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 	defer clean()
 
 	helmConfig, err := helm.CreateHelmConfig(kubeConfigPath, KUBE_CONTEXT, KUBE_NAMESPACE)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
 	currentInfraVersion, err := helm.GetHelmReleaseVersion(helmConfig, KUBE_NAMESPACE)
-	return currentInfraVersion, err
+	if err != nil {
+		return "", nil
+	}
+	return currentInfraVersion, nil
 }
 
 func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *InstallationParams) error {
