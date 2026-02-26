@@ -4,8 +4,9 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Manifest tag to install'
-        required: true
+        description: 'Manifest tag to install (omit or leave empty to install without tag)'
+        required: false
+        default: ''
         type: string
 
 jobs:
@@ -25,11 +26,17 @@ jobs:
         shell: bash
 
       - name: Install Tensorleap server
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           set -e
           LOG=$(mktemp)
           echo "Starting install (output in $LOG)..."
-          leap server install -t ${{ inputs.tag }} --yes 2>&1 | tee "$LOG" &
+          if [ -n "$TAG" ]; then
+            leap server install -t "$TAG" --yes 2>&1 | tee "$LOG" &
+          else
+            leap server install --yes 2>&1 | tee "$LOG" &
+          fi
           INSTALL_PID=$!
           disown
           TIMEOUT=600
