@@ -186,7 +186,7 @@ jobs:
           COMPLETE_RESP=$(curl -sS -X POST \
             -H "Authorization: Bearer $SLACK_TOKEN" \
             -H "Content-Type: application/json; charset=utf-8" \
-            -d '{"files":[{"id":"'"$FILE_ID"'","title":"'"$FILE_NAME"'"}],"channel_id":"'"$CHANNEL_ID"'","thread_ts":"'"$THREAD_TS"'","initial_comment":"📄 RELEASE_NOTES.md (v'"$VERSION"')"}' \
+            -d '{"files":[{"id":"'"$FILE_ID"'","title":"'"$FILE_NAME"'"}],"channel_id":"'"$CHANNEL_ID"'","thread_ts":"'"$THREAD_TS"'","initial_comment":"📄 RELEASE_NOTES.md (v'"$VERSION"')\nhttps://github.com/tensorleap/helm-charts/blob/'"$VERSION"'/RELEASE_NOTES.md"}' \
             https://slack.com/api/files.completeUploadExternal)
           if ! echo "$COMPLETE_RESP" | grep -q '"ok":true'; then
             echo "$COMPLETE_RESP" && exit 1
