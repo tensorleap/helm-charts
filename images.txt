@@ -4,6 +4,7 @@ docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
 docker.io/library/redis:latest
 gcr.io/datadoghq/agent:7.52.0
+moby/buildkit:buildx-stable-1
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
 public.ecr.aws/tensorleap/engine-generic:master-eeaa7b66-py310
 public.ecr.aws/tensorleap/engine-generic:master-eeaa7b66-py312
