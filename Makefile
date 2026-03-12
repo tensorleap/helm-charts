@@ -53,12 +53,13 @@ test:
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
 .PHONY: update-images
 update-images:
-	(helm template ./charts/tensorleap-infra --set nvidiaGpu.enabled=true && helm template ./charts/tensorleap) \
-		| grep 'image: ' \
-		| sed 's/.*: //' \
-		| sed 's/\"//g' \
-		| sort \
-		| uniq > images.txt
+	{ \
+		(helm template ./charts/tensorleap-infra --set nvidiaGpu.enabled=true && helm template ./charts/tensorleap) \
+			| grep 'image: ' \
+			| sed 's/.*: //' \
+			| sed 's/\"//g'; \
+		grep -v '^\s*#' external-images.txt | grep -v '^\s*$$' | sed 's/\s*#.*//'; \
+	} | sort | uniq > images.txt
 
 .PHONY: validate-images
 validate-images:
