@@ -248,14 +248,15 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 	extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HTTP_ENABLED", Value: "true"})
 
 	if params.Domain != "" && params.Domain != "localhost" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: params.Domain})
 		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT", Value: "true"})
 		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_PROXY_HEADERS", Value: "xforwarded"})
 
 		if params.ProxyUrl != "" {
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
 		} else if params.Url != "" {
+			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: fmt.Sprintf("%s/auth", params.Url)})
 			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
 			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
 		}
