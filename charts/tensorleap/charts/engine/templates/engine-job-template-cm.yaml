@@ -39,6 +39,8 @@ data:
                   value: /shared/logs
                 - name: IS_K3D
                   value: "true"
+                - name: BUILDKIT_IMAGE
+                  value: {{ .Values.target_repo }}/moby/buildkit:buildx-stable-1
               volumeMounts:
                 - name: shared-logs
                   mountPath: /shared/logs
