@@ -28,6 +28,9 @@ spec:
           command:
             - /scripts/entrypoint.sh
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "500Mi"
           ports:
             - name: mongodb
               containerPort: 27017
