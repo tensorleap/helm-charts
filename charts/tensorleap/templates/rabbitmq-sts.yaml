@@ -21,6 +21,9 @@ spec:
         - name: rabbitmq
           image: docker.io/library/rabbitmq:3.9.22
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "500Mi"
           lifecycle:
             preStop:
               exec:
