@@ -19,11 +19,34 @@ spec:
         - name: db-migration-files
           image: {{ .Values.image }}:{{ .Values.image_tag }}
           command:
-            [
-              "sh",
-              "-c",
-              "mkdir -p /mnt/shared/migrations && cp -r migrations/* /mnt/shared/migrations",
-            ]
+            - sh
+            - -c
+            - |
+              mkdir -p /mnt/shared/migrations
+              cp -r migrations/* /mnt/shared/migrations
+
+              LATEST_VERSION=$(ls migrations/*.js | sed 's|.*/||' | sed 's/-.*$//' | sort -r | head -1 | sed 's/^0*//')
+
+              CURRENT_VERSION=$(node -e "
+                const { MongoClient } = require('mongodb');
+                MongoClient.connect(process.env.MONGO_URI).then(async client => {
+                  const doc = await client.db().collection('db_metadata').findOne({ _id: 1 });
+                  console.log((doc && doc.schemaVersion) || 0);
+                  await client.close();
+                }).catch(() => console.log('0'));
+              ")
+
+              echo "Current: $CURRENT_VERSION, Latest: $LATEST_VERSION"
+              if [ "$CURRENT_VERSION" -lt "$LATEST_VERSION" ]; then
+                echo "Migration needed, copying node_modules..."
+                mkdir -p /mnt/shared/node_modules
+                cp -r node_modules/* /mnt/shared/node_modules
+              else
+                echo "Schema up to date, skipping node_modules copy"
+              fi
+          envFrom:
+            - configMapRef:
+                name: tensorleap-node-server-env-configmap
           volumeMounts:
             - mountPath: /mnt/shared
               name: shared
