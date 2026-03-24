@@ -77,6 +77,7 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		return
 	}
 
+	log.Infof("Starting k3d cluster creation ...")
 	if err := k3dCluster.ClusterRun(ctx, runtimes.SelectedRuntime, clusterConfig); err != nil {
 		log.Println(err)
 		log.Println("Failed to create cluster >>> Rolling Back")
