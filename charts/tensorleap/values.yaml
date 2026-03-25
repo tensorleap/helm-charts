@@ -69,30 +69,15 @@ keycloakx:
 
   health:
     enabled: true
-  http:
-    relativePath: "/"
 
   startupProbe: |
     httpGet:
-      path: /health/started
-      port: http-management
+      path: '{{ tpl .Values.http.relativePath $ | trimSuffix "/" }}/health/started'
+      port: '{{ .Values.http.internalPort }}'
+      scheme: '{{ .Values.http.internalScheme }}'
     initialDelaySeconds: 30
     periodSeconds: 10
     failureThreshold: 30
-  readinessProbe: |
-    httpGet:
-      path: /health/ready
-      port: http-management
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    failureThreshold: 3
-  livenessProbe: |
-    httpGet:
-      path: /health/live
-      port: http-management
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    failureThreshold: 3
 
 datadog:
   enabled: true
