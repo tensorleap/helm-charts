@@ -13,6 +13,7 @@ const UpgradeCmdDescription = "Upgrade an existing local tensorleap installation
 
 type UpgradeFlags struct {
 	server.InstallationSourceFlags `json:",inline"`
+	HelmOnly                bool `json:"helmUpgradeOnly,omitempty"`
 }
 
 func NewUpgradeCmd() *cobra.Command {
@@ -47,6 +48,7 @@ func NewUpgradeCmd() *cobra.Command {
 
 func (flags *UpgradeFlags) SetFlags(cmd *cobra.Command) {
 	flags.InstallationSourceFlags.SetFlags(cmd)
+	cmd.Flags().BoolVar(&flags.HelmOnly, "helm-only", false, "Skip reinstall and only run helm upgrade on the existing cluster")
 }
 
 // RunUpgradeCmd runs the upgrade command and returns the installation result.
@@ -81,6 +83,17 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.Installatio
 	log.SendCloudReport("info", "Starting upgrade", "Starting", &map[string]interface{}{"manifest": mnf})
 
 	var result *server.InstallationResult
+
+	if flags.HelmOnly {
+		log.SendCloudReport("info", "Helm upgrade only mode, skipping reinstall", "Running", nil)
+		log.Info("Helm upgrade only mode: skipping reinstall, running helm upgrade on existing cluster")
+		result, err = server.Install(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
+		if err != nil {
+			return nil, err
+		}
+		log.SendCloudReport("info", "Successfully completed helm upgrade", "Success", nil)
+		return result, nil
+	}
 
 	reinstall := func() (*server.InstallationResult, error) {
 		return server.Reinstall(ctx, mnf, isAirgap, installationParams, infraChart, serverChart)
