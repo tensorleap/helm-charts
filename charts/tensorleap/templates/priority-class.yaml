@@ -21,6 +21,16 @@ description: "This priority class should be used for engine jobs"
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
+  name: low-medium-priority
+value: -750
+globalDefault: false
+description: "This priority class is between low and medium, used for dataset parse generic deployments"
+
+---
+
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
   name: low-priority
 value: -1000
 globalDefault: false
