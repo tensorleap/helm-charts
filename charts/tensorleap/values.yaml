@@ -66,6 +66,34 @@ keycloakx:
   extraVolumeMounts: |
     - name: keycloak-data
       mountPath: /opt/keycloak/data
+
+  health:
+    enabled: true
+  http:
+    relativePath: "/"
+
+  startupProbe: |
+    httpGet:
+      path: /health/started
+      port: http-management
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+  readinessProbe: |
+    httpGet:
+      path: /health/ready
+      port: http-management
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3
+  livenessProbe: |
+    httpGet:
+      path: /health/live
+      port: http-management
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3
+
 datadog:
   enabled: true
   clusterAgent:
