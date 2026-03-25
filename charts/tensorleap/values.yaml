@@ -66,6 +66,19 @@ keycloakx:
   extraVolumeMounts: |
     - name: keycloak-data
       mountPath: /opt/keycloak/data
+
+  health:
+    enabled: true
+
+  startupProbe: |
+    httpGet:
+      path: '{{ tpl .Values.http.relativePath $ | trimSuffix "/" }}/health/started'
+      port: '{{ .Values.http.internalPort }}'
+      scheme: '{{ .Values.http.internalScheme }}'
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+
 datadog:
   enabled: true
   clusterAgent:
