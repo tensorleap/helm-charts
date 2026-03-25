@@ -16,6 +16,12 @@ ingress-nginx:
       patch:
         image:
           digest: ""
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        cpu: "300m"
 
 global:
   target_namespace: ""
@@ -57,6 +63,13 @@ keycloakx:
     runAsUser: 1000
     runAsGroup: 1000
     runAsNonRoot: true
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      cpu: "300m"
 
   extraVolumes: |
     - name: keycloak-data
