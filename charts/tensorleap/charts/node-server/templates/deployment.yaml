@@ -116,6 +116,12 @@ spec:
         - name: tensorleap-node-server
           image: {{ .Values.image }}:{{ .Values.image_tag }}
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              cpu: "500m"
           ports:
             - name: http
               containerPort: 4000
