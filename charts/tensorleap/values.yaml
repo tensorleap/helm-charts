@@ -20,8 +20,6 @@ ingress-nginx:
       requests:
         memory: "128Mi"
         cpu: "100m"
-      limits:
-        cpu: "300m"
 
 global:
   target_namespace: ""
@@ -68,8 +66,6 @@ keycloakx:
     requests:
       memory: "256Mi"
       cpu: "100m"
-    limits:
-      cpu: "300m"
 
   extraVolumes: |
     - name: keycloak-data
