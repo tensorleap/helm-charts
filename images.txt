@@ -6,11 +6,11 @@ docker.io/library/redis:latest
 docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:master-9f3879de-py310
-public.ecr.aws/tensorleap/engine-generic:master-9f3879de-py312
-public.ecr.aws/tensorleap/engine-generic:master-9f3879de-py38
-public.ecr.aws/tensorleap/engine-generic:master-9f3879de-py39
-public.ecr.aws/tensorleap/engine:master-9f3879de
+public.ecr.aws/tensorleap/engine-generic:master-7e321fcc-py310
+public.ecr.aws/tensorleap/engine-generic:master-7e321fcc-py312
+public.ecr.aws/tensorleap/engine-generic:master-7e321fcc-py38
+public.ecr.aws/tensorleap/engine-generic:master-7e321fcc-py39
+public.ecr.aws/tensorleap/engine:master-7e321fcc
 public.ecr.aws/tensorleap/node-server:master-abd133c8
 public.ecr.aws/tensorleap/pippin:master-90110035
 public.ecr.aws/tensorleap/web-ui:master-fa138e99
