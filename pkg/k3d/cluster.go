@@ -27,6 +27,11 @@ const CLUSTER_NAME = "tensorleap"
 const CONTAINERD_VOLUME_NAME = "tensorleap-containerd-volume"
 const STORAGE_EVICTION_THRESHOLD = "30G"
 
+// ZotInternalPort is the Zot registry's container/hostPort inside the k3s node.
+// containerd uses this via 127.0.0.1 to reach the registry. This is distinct from
+// the Docker-host-mapped port (RegistryPort, default 5699) used for external access.
+const ZotInternalPort = 5000
+
 func GetCluster(ctx context.Context) (*Cluster, error) {
 	clusters, err := k3dCluster.ClusterList(ctx, runtimes.SelectedRuntime)
 	if err != nil {
@@ -46,10 +51,12 @@ type CreateK3sClusterParams struct {
 	WithGpu            bool               `json:"gpu"`
 	GpuDevices         string             `json:"gpuDevices,omitempty"`
 	Port               uint               `json:"port"`
+	RegistryPort       uint               `json:"registryPort"`
 	Volumes            []string           `json:"volumes"`
 	ImageCachingMethod ImageCachingMethod `json:"imageCachingMethod"`
 	CpuLimit           string             `json:"cpuLimit,omitempty"`
 	TLSPort            *uint              `json:"tlsPort,omitempty"`
+	IsAirgap           bool               `json:"isAirgap"`
 }
 
 func RemoveImageCachingVolume(ctx context.Context) error {
@@ -112,6 +119,7 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		log.Infof("CPU limit applied to all k3d containers: %d\n", cpuLimit)
 	}
 
+	cluster, err = GetCluster(ctx)
 	return
 }
 
@@ -289,7 +297,6 @@ var NO_PROXY_ADDITIONAL_ENTRIES = []string{
 	"172.16.0.0/12",
 	"192.168.0.0/16",
 	"172.18.0.0/16",
-	"k3d-tensorleap-registry", // local registry
 }
 
 func buildEnvVars() []conf.EnvVarWithNodeFilters {
@@ -364,7 +371,11 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		image = manifest.Images.K3sGpu
 	}
 
-	mirrorConfig, err := CreateMirrorFromManifest(manifest, fmt.Sprintf("http://%s", REGISTRY_DOMAIN))
+	registryPort := params.RegistryPort
+	if registryPort == 0 {
+		registryPort = ZotInternalPort
+	}
+	mirrorConfig, err := CreateMirrorFromManifest(manifest, ZotInternalPort, params.IsAirgap)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -402,10 +413,13 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 				Port:        fmt.Sprintf("%v:80", params.Port),
 				NodeFilters: []string{"server:*:direct"},
 			},
+			{
+				Port:        fmt.Sprintf("%v:5000", registryPort),
+				NodeFilters: []string{"server:*:direct"},
+			},
 		},
 		Env: buildEnvVars(),
 		Registries: conf.SimpleConfigRegistries{
-			Use:    []string{"tensorleap-registry"},
 			Config: mirrorConfig,
 		},
 		Options: conf.SimpleConfigOptions{
@@ -519,6 +533,17 @@ func DeleteCluster(ctx context.Context, cluster *Cluster) (err error) {
 
 func FixDockerDns() {
 	os.Setenv(k3d.K3dEnvFixDNS, "true")
+}
+
+// ImportImagesIntoCluster imports images from the host Docker daemon into the
+// k3s containerd store. Used during airgap bootstrap to load the Zot registry
+// image and k3s system images before any in-cluster registry is available.
+func ImportImagesIntoCluster(ctx context.Context, cluster *Cluster, images []string) error {
+	if len(images) == 0 {
+		return nil
+	}
+	log.Infof("Importing %d images into cluster containerd...", len(images))
+	return k3dCluster.ImageImportIntoClusterMulti(ctx, runtimes.SelectedRuntime, images, cluster, k3d.ImageImportOpts{})
 }
 
 // isGpuDevicesUUIDs checks if gpuDevices contains GPU UUIDs (vs old-style indexes).

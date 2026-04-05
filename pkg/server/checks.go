@@ -74,7 +74,12 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 	}
 	IsK3sImageChange := currentK3sImage != newK3sImage
 	isAppVersionChanged := mnf.AppVersion != previousMnf.AppVersion
-	isInfraHelmChartParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetInfraHelmValuesParams(), installationParams.GetInfraHelmValuesParams())
+	newSyncRegistries := k3d.BuildZotSyncRegistries(mnf)
+	prevSyncRegistries := k3d.BuildZotSyncRegistries(previousMnf)
+	isInfraHelmChartParamsChanged := !reflect.DeepEqual(
+		previousInstallationParams.GetInfraHelmValuesParams(prevSyncRegistries, previousMnf.Images.Zot),
+		installationParams.GetInfraHelmValuesParams(newSyncRegistries, mnf.Images.Zot),
+	)
 	isCreateClusterParamsChanged := !reflect.DeepEqual(previousInstallationParams.GetCreateK3sClusterParams(), installationParams.GetCreateK3sClusterParams())
 
 	// Check if installation mode changed (airgap <-> regular)
