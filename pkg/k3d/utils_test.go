@@ -1,7 +1,7 @@
 package k3d
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
@@ -10,7 +10,6 @@ import (
 func TestCreateMirrorFromManifest(t *testing.T) {
 	mfs := manifest.InstallationManifest{
 		Images: manifest.ManifestImages{
-
 			ServerImages: []string{
 				"docker.elastic.co/elasticsearch/elasticsearch:7.10.2",
 				"docker.io/library/rabbitmq:3.9.22",
@@ -24,29 +23,36 @@ func TestCreateMirrorFromManifest(t *testing.T) {
 			K3sImages: []string{
 				"docker.io/rancher/klipper-helm:v0.7.7-build20230403",
 				"docker.io/rancher/klipper-lb:v0.4.3",
-				"docker.io/rancher/local-path-provisioner:v0.0.24",
-				"docker.io/rancher/mirrored-coredns-coredns:1.10.1",
-				"docker.io/rancher/mirrored-library-busybox:1.34.1",
-				"docker.io/rancher/mirrored-library-traefik:2.9.4",
-				"docker.io/rancher/mirrored-metrics-server:v0.6.2",
-				"docker.io/rancher/mirrored-pause:3.6",
-			},
-			K3sGpuImages: []string{
-				"docker.io/rancher/klipper-helm:v0.7.7-build20230403",
-				"docker.io/rancher/klipper-lb:v0.4.3",
-				"docker.io/rancher/local-path-provisioner:v0.0.24",
-				"docker.io/rancher/mirrored-coredns-coredns:1.10.1",
-				"docker.io/rancher/mirrored-library-busybox:1.34.1",
-				"docker.io/rancher/mirrored-library-traefik:2.9.4",
-				"docker.io/rancher/mirrored-metrics-server:v0.6.2",
-				"docker.io/rancher/mirrored-pause:3.6",
 			},
 		},
 	}
 
-	mirrorConfig, err := CreateMirrorFromManifest(&mfs, "some url")
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println(mirrorConfig)
+	t.Run("airgap mirrors all registries", func(t *testing.T) {
+		mirrorConfig, err := CreateMirrorFromManifest(&mfs, 5000, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, host := range []string{"docker.io", "docker.elastic.co", "quay.io", "registry.k8s.io", "public.ecr.aws", "tensorleap-registry:5000"} {
+			if !strings.Contains(mirrorConfig, host) {
+				t.Errorf("airgap mirrorConfig missing mirror for %s", host)
+			}
+		}
+	})
+
+	t.Run("online mirrors tensorleap-registry and public.ecr.aws", func(t *testing.T) {
+		mirrorConfig, err := CreateMirrorFromManifest(&mfs, 5000, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, host := range []string{"tensorleap-registry:5000", "public.ecr.aws"} {
+			if !strings.Contains(mirrorConfig, host) {
+				t.Errorf("online mirrorConfig missing mirror for %s", host)
+			}
+		}
+		for _, host := range []string{"docker.elastic.co", "quay.io", "registry.k8s.io"} {
+			if strings.Contains(mirrorConfig, host+":") {
+				t.Errorf("online mirrorConfig should NOT mirror %s", host)
+			}
+		}
+	})
 }
