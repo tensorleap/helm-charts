@@ -39,7 +39,7 @@ func PruneContainerdExceptImageList(ctx context.Context, dockerName, namespace s
 		}
 	}
 
-	tagsByImageUrl := buildKeepSets(keepImages)
+	keepSet := buildKeepSets(keepImages)
 	deleteDigests := make([]string, 0)
 	keepImageDigests := make(map[string]bool, 0)
 	for _, r := range rows {
@@ -47,12 +47,11 @@ func PruneContainerdExceptImageList(ctx context.Context, dockerName, namespace s
 			continue
 		}
 		imageAndTag := strings.Split(r.Name, ":")
-
-		tag, ok := tagsByImageUrl[imageAndTag[0]]
-
-		if ok && tag == imageAndTag[1] {
-			keepImageDigests[r.Digest] = true
-			continue
+		if len(imageAndTag) == 2 {
+			if tags, ok := keepSet[imageAndTag[0]]; ok && tags[imageAndTag[1]] {
+				keepImageDigests[r.Digest] = true
+				continue
+			}
 		}
 	}
 	for _, r := range rows {
@@ -204,14 +203,17 @@ func digestsInUse(ctx context.Context, dockerName, ns string, dgs []string) (map
 	return set, nil
 }
 
-func buildKeepSets(imageTags []string) map[string]string {
-	keepByName := make(map[string]string)
+func buildKeepSets(imageTags []string) map[string]map[string]bool {
+	keepByName := make(map[string]map[string]bool)
 	for _, imageTag := range imageTags {
 		imageAndTag := strings.Split(imageTag, ":")
 		if len(imageAndTag) != 2 {
 			continue
 		}
-		keepByName[imageAndTag[0]] = imageAndTag[1]
+		if keepByName[imageAndTag[0]] == nil {
+			keepByName[imageAndTag[0]] = make(map[string]bool)
+		}
+		keepByName[imageAndTag[0]][imageAndTag[1]] = true
 	}
 	return keepByName
 }

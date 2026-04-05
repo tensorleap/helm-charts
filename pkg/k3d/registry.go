@@ -13,19 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	dockerimage "github.com/docker/docker/api/types/image"
-	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
-	"github.com/k3d-io/k3d/v5/pkg/client"
-	"github.com/k3d-io/k3d/v5/pkg/runtimes"
-
-	k3d "github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/utils"
 )
-
-type Registry = k3d.Registry
 
 var (
 	REQUIRED_MEMORY         int64 = 6227000000
@@ -35,10 +27,7 @@ var (
 )
 
 const (
-	REGISTRY_NAME   = "k3d-tensorleap-registry"
-	CONTAINER_NAME  = "k3d-tensorleap-server-0"
-	REGISTRY_DOMAIN = "k3d-tensorleap-registry:5000"
-	// the registry is limited so we can't push too many images in parallel
+	CONTAINER_NAME             = "k3d-tensorleap-server-0"
 	MAX_CONCURRENT_CACHE_IMAGE = 2
 	PUSH_IMAGE_RETRY           = 3
 )
@@ -48,113 +37,22 @@ type RegistryTagListResponse struct {
 	Tags []string
 }
 
-func GetLocalRegistryPort(ctx context.Context) (string, error) {
-	reg, err := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME)
-	if err != nil {
-		log.SendCloudReport("error", "Failed getting local registry port", "Failed",
-			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "error": err.Error()})
-		return "", err
-	}
-
-	return GetRegistryPort(ctx, reg)
-}
-
-func GetRegistryPort(ctx context.Context, reg *Registry) (string, error) {
-	registryNode, err := runtimes.SelectedRuntime.GetNode(ctx, &k3d.Node{Name: reg.Host})
-	if err != nil {
-		return "", err
-	}
-
-	regPort := registryNode.Ports["5000/tcp"][0].HostPort
-	return regPort, nil
-}
-
-type CreateRegistryParams struct {
-	Port    uint     `json:"port"`
-	Volumes []string `json:"volumes"`
-}
-
-func CreateLocalRegistry(ctx context.Context, imageName string, params *CreateRegistryParams) (*Registry, error) {
-	if existingRegistry, _ := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME); existingRegistry != nil {
-		log.Println("Found existing registry!")
-		log.SendCloudReport("info", "Found existing registry", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME, "existingRegistry": existingRegistry})
-
-		return existingRegistry, nil
-	}
-
-	reg := createRegistryConfig(imageName, params)
-	_, err := client.RegistryRun(ctx, runtimes.SelectedRuntime, reg)
-	if err != nil {
-		log.SendCloudReport("error", "Failed running k3d registry", "Failed",
-			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "port": params.Port, "volumes": params.Volumes, "error": err.Error()})
-		return nil, err
-	}
-
-	err = utils.WaitForCondition(func() (bool, error) {
-		port := strconv.FormatUint(uint64(params.Port), 10)
-		return IsRegistryReady(ctx, port)
-	}, 5*time.Second, 2*time.Minute)
-	if err != nil {
-		log.SendCloudReport("error", "Failed waiting for registry to be ready", "Failed",
-			&map[string]interface{}{"registryName": REGISTRY_NAME, "selectedRuntime": runtimes.SelectedRuntime, "port": params.Port, "volumes": params.Volumes, "error": err.Error()})
-		return nil, err
-	}
-
-	log.SendCloudReport("info", "Successfully created k3d regisrty", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME})
-	return reg, nil
-}
-
-func createRegistryConfig(imageName string, params *CreateRegistryParams) *Registry {
-	exposePort, err := cliutil.ParsePortExposureSpec(strconv.FormatUint(uint64(params.Port), 10), k3d.DefaultRegistryPort)
-	if err != nil {
-		log.SendCloudReport("error", "Failed creating k3d registry config", "Failed",
-			&map[string]interface{}{"defaultRegistry": k3d.DefaultRegistryPort, "port": params.Port, "exposedPort": exposePort, "error": err.Error()})
-		log.Fatalln(err)
-	}
-
-	reg := &Registry{
-		Host:         REGISTRY_NAME,
-		Image:        imageName,
-		ExposureOpts: *exposePort,
-		Network:      k3d.DefaultRuntimeNetwork,
-		Volumes:      params.Volumes,
-	}
-
-	return reg
-}
-
-func UninstallRegister() error {
-	ctx := context.Background()
-	existingRegistry, _ := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME)
-	if existingRegistry == nil {
-		log.Infof("Registry '%s' not found", REGISTRY_NAME)
-		log.SendCloudReport("info", "Not found registry", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME})
-
-		return nil
-	}
-	log.Infof("Deleting registry %s", REGISTRY_NAME)
-
-	node, err := client.NodeGet(ctx, runtimes.SelectedRuntime, &k3d.Node{Name: REGISTRY_NAME})
-	if err != nil {
-		return fmt.Errorf("failed to get node: %w", err)
-	}
-
-	err = client.NodeDelete(ctx, runtimes.SelectedRuntime, node, k3d.NodeDeleteOpts{SkipLBUpdate: true})
-	if err != nil {
-		return fmt.Errorf("error removing the registry container: %v", err)
-	}
-	log.SendCloudReport("info", "Registry removed successfully", "Running", &map[string]interface{}{"registryName": REGISTRY_NAME})
-	return nil
-}
-
+// IsRegistryReady checks if the Zot registry is reachable at the given port
 func IsRegistryReady(ctx context.Context, regPort string) (bool, error) {
-	_, err := client.RegistryGet(ctx, runtimes.SelectedRuntime, REGISTRY_NAME)
+	url := fmt.Sprintf("http://127.0.0.1:%s/v2/", regPort)
+	resp, err := http.Get(url)
 	if err != nil {
-		return false, fmt.Errorf("failed to check is registry ready: %s", err)
+		return false, nil
 	}
-	url := fmt.Sprintf("http://127.0.0.1:%s/v2/_catalog", regPort)
-	_, err = http.Get(url)
-	return err == nil, nil
+	defer resp.Body.Close()
+	return resp.StatusCode == 200, nil
+}
+
+// WaitForRegistry waits for the in-cluster Zot registry to become reachable
+func WaitForRegistry(ctx context.Context, regPort string) error {
+	return utils.WaitForCondition(func() (bool, error) {
+		return IsRegistryReady(ctx, regPort)
+	}, 5*time.Second, 3*time.Minute)
 }
 
 func isImageInRegistry(ctx context.Context, image string, regPort string) (bool, error) {
@@ -330,48 +228,6 @@ func CacheImagesInParallel(ctx context.Context, images []string, regPort string,
 	tm.Wait()
 	log.SendCloudReport("info", "Successfully cached images in parallel", "Running", nil)
 	return nil
-}
-
-func CacheImageInTheBackground(ctx context.Context, image string) error {
-	regPort, err := GetLocalRegistryPort(ctx)
-	if err != nil {
-		return err
-	}
-	imageAlreadyInRegistry, err := isImageInRegistry(ctx, image, regPort)
-	if err != nil {
-		return err
-	}
-
-	dockerClient, err := docker.NewClient()
-	if err != nil {
-		log.SendCloudReport("error", "Failed fetching docker client", "Failed", &map[string]interface{}{"error": err.Error()})
-		return err
-	}
-
-	urlLength := strings.IndexRune(image, '/')
-	targetImage := REGISTRY_DOMAIN + image[urlLength:]
-
-	shellScript := fmt.Sprintf("crictl pull %s", image)
-	if !imageAlreadyInRegistry {
-		shellScript = strings.Join([]string{
-			shellScript,
-			fmt.Sprintf("ctr image convert %s %s", image, targetImage),
-			fmt.Sprintf("ctr image push --plain-http %s", targetImage),
-		}, " && ")
-	}
-	exec, err := dockerClient.ContainerExecCreate(ctx, CONTAINER_NAME, container.ExecOptions{
-		Privileged: true,
-		Detach:     true,
-		Cmd:        []string{"sh", "-c", shellScript},
-	})
-	if err != nil {
-		log.SendCloudReport("error", "Failed creating exec config for node", "Failed",
-			&map[string]interface{}{"containerName": CONTAINER_NAME, "error": err.Error()})
-		return fmt.Errorf("docker failed to create exec config for node '%s': %w", CONTAINER_NAME, err)
-	}
-
-	log.SendCloudReport("info", "Successfully cached images in background", "Running", nil)
-	return dockerClient.ContainerExecStart(ctx, exec.ID, container.ExecStartOptions{})
 }
 
 func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) error {

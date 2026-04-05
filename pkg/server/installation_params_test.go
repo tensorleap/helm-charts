@@ -11,7 +11,7 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 		params := InstallationParams{
 			GpuDevices: "all",
 		}
-		valueParams := params.GetInfraHelmValuesParams()
+		valueParams := params.GetInfraHelmValuesParams(nil, "")
 		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "all")
 	})
 
@@ -19,7 +19,7 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 		params := InstallationParams{
 			Gpus: 2,
 		}
-		valueParams := params.GetInfraHelmValuesParams()
+		valueParams := params.GetInfraHelmValuesParams(nil, "")
 		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
 	})
 
@@ -27,7 +27,7 @@ func TestGetCreateK3sClusterParams(t *testing.T) {
 		params := InstallationParams{
 			GpuDevices: "0,1",
 		}
-		valueParams := params.GetInfraHelmValuesParams()
+		valueParams := params.GetInfraHelmValuesParams(nil, "")
 		assert.Equal(t, valueParams.NvidiaGpuVisibleDevices, "0,1")
 	})
 

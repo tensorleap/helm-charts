@@ -24,6 +24,7 @@ const (
 
 	k3dUtilsImage          = "ghcr.io/k3d-io/k3d-tools:5.5.2"
 	registerImage          = "docker.io/library/registry:2"
+	zotImage               = "ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
 	checkDockerRequirement = "alpine:3.18.3"
 )
 
@@ -161,6 +162,7 @@ func NewManifest(helmRepoUrl, serverHelmVersion, infraHelmVersion string, server
 		K3s:                    k3sImage,
 		K3sGpu:                 k3sGpuImage,
 		Register:               registerImage,
+		Zot:                    zotImage,
 		CheckDockerRequirement: checkDockerRequirement,
 	}
 

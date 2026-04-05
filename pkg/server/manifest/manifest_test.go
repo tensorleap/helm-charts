@@ -66,6 +66,7 @@ type InstallationImagesV2 struct {
 	K3sGpu                 string `yaml:"k3sGpu"`
 	K3dTools               string `yaml:"k3dTools"`
 	Register               string `yaml:"register"`
+	Zot                    string `yaml:"zot"`
 	CheckDockerRequirement string `yaml:"checkDockerRequirement"`
 }
 
