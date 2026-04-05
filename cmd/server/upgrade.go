@@ -7,6 +7,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server"
+	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
 
 const UpgradeCmdDescription = "Upgrade an existing local tensorleap installation to the latest version"
@@ -69,7 +70,12 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.Installatio
 		return nil, err
 	}
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, nil)
+	previousMnf, err := manifest.Load(local.GetInstallationManifestPath())
+	if err != nil && err != manifest.ErrManifestNotFound {
+		return nil, err
+	}
+
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +101,8 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.Installatio
 		return result, nil
 	}
 
-	// If params were loaded (found), check once up front if reinstall is needed
-	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, nil, installationParams, nil)
+	previousParams, _ := server.LoadInstallationParamsFromPrevious()
+	needsReinstall, err := server.EnsureReinstallConsent(ctx, mnf, previousMnf, installationParams, previousParams)
 	if err != nil {
 		return nil, err
 	}
