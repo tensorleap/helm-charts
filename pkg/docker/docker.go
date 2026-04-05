@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/spf13/pflag"
@@ -227,6 +228,23 @@ func EnsureImagesExists(dockerCli client.APIClient, imageNames []string) error {
 	}
 	if len(notFoundImages) > 0 {
 		return fmt.Errorf("images not found: %v", notFoundImages)
+	}
+	return nil
+}
+
+// TryRemoveContainer stops and removes a Docker container by name. Best-effort:
+// returns nil if the container doesn't exist or removal fails gracefully.
+func TryRemoveContainer(ctx context.Context, containerName string) error {
+	dockerClient, err := NewClient()
+	if err != nil {
+		return nil
+	}
+
+	timeout := 10
+	_ = dockerClient.ContainerStop(ctx, containerName, container.StopOptions{Timeout: &timeout})
+	err = dockerClient.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true})
+	if err != nil && !client.IsErrNotFound(err) {
+		return fmt.Errorf("failed to remove container %s: %w", containerName, err)
 	}
 	return nil
 }

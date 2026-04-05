@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 
@@ -870,7 +869,7 @@ func (params *InstallationParams) GetDatadogEnvs() map[string]string {
 	return data
 }
 
-func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValuesParams {
+func (params *InstallationParams) GetInfraHelmValuesParams(syncRegistries []helm.ZotSyncRegistry, registryImage string) *helm.InfraHelmValuesParams {
 
 	nvidiaGpuVisibleDevices := ""
 	nvidiaGpuEnable := params.IsUseGpu()
@@ -895,6 +894,10 @@ func (params *InstallationParams) GetInfraHelmValuesParams() *helm.InfraHelmValu
 	return &helm.InfraHelmValuesParams{
 		NvidiaGpuEnable:         nvidiaGpuEnable,
 		NvidiaGpuVisibleDevices: nvidiaGpuVisibleDevices,
+		RegistryEnabled:         true,
+		RegistryImage:           registryImage,
+		RegistrySyncEnabled:     params.IsAirgap,
+		RegistrySyncRegistries:  syncRegistries,
 	}
 }
 
@@ -921,21 +924,12 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 		WithGpu:            useGpu,
 		GpuDevices:         gpuDevices,
 		Port:               params.Port,
+		RegistryPort:       params.RegistryPort,
 		Volumes:            volumes,
 		CpuLimit:           params.CpuLimit,
 		TLSPort:            tlsPort,
 		ImageCachingMethod: params.ImageCachingMethod,
-	}
-}
-
-func (params *InstallationParams) GetCreateRegistryParams() *k3d.CreateRegistryParams {
-	volumes := []string{
-		fmt.Sprintf("%v:%v", path.Join(local.GetServerDataDir(), "registry"), "/var/lib/registry"),
-	}
-
-	return &k3d.CreateRegistryParams{
-		Port:    params.RegistryPort,
-		Volumes: volumes,
+		IsAirgap:           params.IsAirgap,
 	}
 }
 
@@ -971,9 +965,9 @@ func backwardCompatibility_datasetDirectory(params *InstallationParams) {
 	}
 	params.DatasetDirectory_DEPRECATED = ""
 
-	// Set default image caching method if not set
-	// Use the stored IsAirgap value (defaults to false for old installations without this field)
-	if params.ImageCachingMethod == "" {
+	// Migrate deprecated or unrecognized image caching methods to the current default.
+	// "registry" was the old sidecar registry method, now replaced by in-cluster Zot.
+	if params.ImageCachingMethod == "" || !k3d.IsImageCachingMethodAvailable(params.ImageCachingMethod, params.IsAirgap) {
 		params.ImageCachingMethod = k3d.GetDefaultImageCachingMethod(params.IsAirgap)
 	}
 }

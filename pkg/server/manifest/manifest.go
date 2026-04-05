@@ -11,13 +11,14 @@ import (
 )
 
 const CurrentManifestVersion = "1.0.0"
-const CurrentAppVersion = "0.1.0"
+const CurrentAppVersion = "0.2.0"
 
 type InstallationImages struct {
 	K3s                    string `yaml:"k3s"`
 	K3sGpu                 string `yaml:"k3sGpu"`
 	K3dTools               string `yaml:"k3dTools"`
 	Register               string `yaml:"register"`
+	Zot                    string `yaml:"zot"`
 	CheckDockerRequirement string `yaml:"checkDockerRequirement"`
 }
 
@@ -145,6 +146,7 @@ func (mnf *InstallationManifest) GetRunningOnMachineImages() []string {
 	images = append(images, mnf.Images.K3sGpu)
 	images = append(images, mnf.Images.Register)
 	images = append(images, mnf.Images.K3dTools)
+	images = append(images, mnf.Images.Zot)
 	images = append(images, mnf.Images.CheckDockerRequirement)
 	return images
 }

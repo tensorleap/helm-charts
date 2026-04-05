@@ -2,27 +2,22 @@ package k3d
 
 import "runtime"
 
-// ImageCachingMethod represents the method used for image caching
+// ImageCachingMethod represents the method used for containerd volume caching.
+// With the Zot in-cluster registry, containerd volumes are always mounted for
+// image persistence. The method determines whether the volume is a Docker volume
+// or a local host directory.
 type ImageCachingMethod string
 
 const (
-	// ImageCachingDockerVolume uses Docker volume to containerd for image caching
+	// ImageCachingDockerVolume uses a Docker named volume for containerd storage
 	ImageCachingDockerVolume ImageCachingMethod = "docker-volume"
-	// ImageCachingLocalVolume uses volume from local computer to containerd for image caching
+	// ImageCachingLocalVolume uses a local host directory for containerd storage
 	ImageCachingLocalVolume ImageCachingMethod = "local-volume"
-	// ImageCachingRegistry uses registry cached images for image caching
-	ImageCachingRegistry ImageCachingMethod = "registry"
 )
 
-// GetDefaultImageCachingMethod returns the default image caching method based on environment
+// GetDefaultImageCachingMethod returns the default containerd volume method based on OS.
 func GetDefaultImageCachingMethod(isAirgap bool) ImageCachingMethod {
-	if isAirgap {
-		return ImageCachingRegistry
-	}
-
 	switch runtime.GOOS {
-	case "darwin":
-		return ImageCachingDockerVolume
 	case "linux":
 		return ImageCachingLocalVolume
 	default:
@@ -33,12 +28,10 @@ func GetDefaultImageCachingMethod(isAirgap bool) ImageCachingMethod {
 // IsImageCachingMethodAvailable checks if the specified caching method is available for the current environment
 func IsImageCachingMethodAvailable(method ImageCachingMethod, isAirgap bool) bool {
 	switch method {
-	case ImageCachingRegistry:
-		return true
 	case ImageCachingDockerVolume:
-		return !isAirgap
+		return true
 	case ImageCachingLocalVolume:
-		return !isAirgap && runtime.GOOS == "linux"
+		return runtime.GOOS == "linux"
 	default:
 		return false
 	}
