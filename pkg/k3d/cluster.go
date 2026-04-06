@@ -25,7 +25,7 @@ type Cluster = k3d.Cluster
 
 const CLUSTER_NAME = "tensorleap"
 const CONTAINERD_VOLUME_NAME = "tensorleap-containerd-volume"
-const STORAGE_EVICTION_THRESHOLD = "30G"
+const STORAGE_EVICTION_THRESHOLD_GB int64 = 30
 
 func GetCluster(ctx context.Context) (*Cluster, error) {
 	clusters, err := k3dCluster.ClusterList(ctx, runtimes.SelectedRuntime)
@@ -337,7 +337,7 @@ func buildEnvVars() []conf.EnvVarWithNodeFilters {
 // Set TL_DISABLE_KUBE_STORAGE_TAINT=true to set eviction thresholds to 0%,
 // preventing the false disk-pressure taint (kubelet inside Docker can report 0 available storage).
 func buildK3sExtraArgs() []conf.K3sArgWithNodeFilters {
-	evictionThreshold := STORAGE_EVICTION_THRESHOLD
+	evictionThreshold := fmt.Sprintf("%dG", STORAGE_EVICTION_THRESHOLD_GB)
 	if os.Getenv("TL_DISABLE_KUBE_STORAGE_TAINT") == "true" {
 		evictionThreshold = "0%"
 	}
