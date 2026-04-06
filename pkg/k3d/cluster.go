@@ -26,6 +26,9 @@ type Cluster = k3d.Cluster
 const CLUSTER_NAME = "tensorleap"
 const CONTAINERD_VOLUME_NAME = "tensorleap-containerd-volume"
 const STORAGE_EVICTION_THRESHOLD_GB int64 = 30
+const ESTIMATED_INSTALLATION_SIZE_GB int64 = 30
+const INSTALLATION_STORAGE_BUFFER_GB int64 = 5
+const INSTALLATION_STORAGE_REQUIRED_GB = ESTIMATED_INSTALLATION_SIZE_GB + STORAGE_EVICTION_THRESHOLD_GB + INSTALLATION_STORAGE_BUFFER_GB
 
 func GetCluster(ctx context.Context) (*Cluster, error) {
 	clusters, err := k3dCluster.ClusterList(ctx, runtimes.SelectedRuntime)

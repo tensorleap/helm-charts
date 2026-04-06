@@ -112,6 +112,14 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 			&map[string]interface{}{"kubeContext": KUBE_CONTEXT, "kubeNamespace": KUBE_NAMESPACE, "error": err.Error()})
 		return err
 	}
+
+	monitor, monitorErr := k3d.StartDiskPressureMonitor(kubeConfigPath, KUBE_CONTEXT)
+	if monitorErr != nil {
+		log.Warnf("Could not start disk-pressure monitor: %v", monitorErr)
+	} else {
+		defer monitor.Stop()
+	}
+
 	infraChartMeta := mnf.InfraHelmChart
 	isInfraReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, infraChartMeta.ReleaseName)
 	if err != nil {
