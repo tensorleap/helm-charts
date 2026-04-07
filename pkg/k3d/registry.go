@@ -28,15 +28,17 @@ import (
 type Registry = k3d.Registry
 
 var (
-	REQUIRED_MEMORY         int64 = 6227000000
-	REQUIRED_MEMORY_PRETTY        = "6Gb"
-	REQUIRED_STORAGE_KB     int64
-	REQUIRED_STORAGE_PRETTY string
+	REQUIRED_MEMORY            int64 = 6227000000
+	REQUIRED_MEMORY_PRETTY           = "6Gb"
+	REQUIRED_STORAGE_KB        int64
+	REQUIRED_STORAGE_PRETTY    string
+	RECOMMENDED_STORAGE_PRETTY string
 )
 
 func init() {
 	REQUIRED_STORAGE_KB = STORAGE_EVICTION_THRESHOLD_GB * 1024 * 1024
 	REQUIRED_STORAGE_PRETTY = fmt.Sprintf("%dGb", STORAGE_EVICTION_THRESHOLD_GB)
+	RECOMMENDED_STORAGE_PRETTY = fmt.Sprintf("%dGb", STORAGE_EVICTION_THRESHOLD_GB+INSTALLATION_STORAGE_REQUIRED_GB)
 }
 
 const (
@@ -442,7 +444,7 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	}
 
 	if int64(dockerFreeStorageKB) < REQUIRED_STORAGE_KB {
-		log.Printf("Please increase docker storage limit, tensorleap required at least %s free storage\n", REQUIRED_STORAGE_PRETTY)
+		log.Printf("Please increase docker storage limit, tensorleap requires at least %s free storage\n", REQUIRED_STORAGE_PRETTY)
 		noResources = true
 	}
 

@@ -98,8 +98,8 @@ func hasDiskPressure(ctx context.Context, clientset kubernetes.Interface) bool {
 }
 
 func emitDiskPressureWarning() {
-	log.Warn("Disk pressure detected on the k3d node!")
-	log.Warn("The node is running low on disk space, which causes pod evictions and may stall the installation.")
-	log.Warnf("Please increase the disk space available to docker, then retry.")
+	log.Warn("Disk pressure detected.")
+	log.Warn("This may stall the installation.")
+	log.Warnf("If installation does not complete within a few minutes, consider increasing the disk space available to docker so that it has at least %s free storage, and then retrying the installation.", RECOMMENDED_STORAGE_PRETTY)
 	log.SendCloudReport("warning", "Disk pressure detected during installation", "Running", nil)
 }
