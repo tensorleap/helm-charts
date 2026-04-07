@@ -92,7 +92,7 @@ func DownloadIfNotCached(repo, chartName, version string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	chartFile, err := os.OpenFile(cachedPath, os.O_CREATE|os.O_WRONLY, 0644)
+	chartFile, err := os.OpenFile(cachedPath, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return "", err
 	}

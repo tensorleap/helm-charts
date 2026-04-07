@@ -10,7 +10,7 @@ import (
 
 func ConnectFileToVerboseLogOutput(filePath string) (close func(), err error) {
 
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
 		err = fmt.Errorf("Error opening log file: %s", err)
 		return

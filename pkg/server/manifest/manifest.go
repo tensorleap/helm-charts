@@ -124,7 +124,7 @@ func (mnf *InstallationManifest) Save(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal installation manifest: %w", err)
 	}
-	err = os.WriteFile(path, b, 0644)
+	err = os.WriteFile(path, b, 0777)
 	if err != nil {
 		return fmt.Errorf("failed to write installation manifest: %w", err)
 	}

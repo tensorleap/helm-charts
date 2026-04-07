@@ -944,7 +944,7 @@ func (params *InstallationParams) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(local.GetInstallationParamsPath(), b, 0644)
+	return os.WriteFile(local.GetInstallationParamsPath(), b, 0777)
 }
 
 var ErrNoInstallationParams = fmt.Errorf("no installation params")
