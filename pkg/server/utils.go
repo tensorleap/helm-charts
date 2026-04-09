@@ -338,5 +338,6 @@ func cleanImagesFromContainerd(ctx context.Context, currentMnf *manifest.Install
 
 func cleanImagesFromZot(registryPort uint, currentMnf *manifest.InstallationManifest) error {
 	registryURL := fmt.Sprintf("http://localhost:%d", registryPort)
-	return zot.PruneExceptImageList(registryURL, currentMnf.GetAllImages())
+	preserveRepos := zot.DnDPreserveRepos(currentMnf.GetAllImages())
+	return zot.PruneExceptImageList(registryURL, currentMnf.GetAllImages(), preserveRepos)
 }
