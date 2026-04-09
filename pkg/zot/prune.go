@@ -20,13 +20,19 @@ type tagsResponse struct {
 }
 
 // PruneExceptImageList removes all image tags from the Zot registry that are
-// NOT in the keepImages list. Zot's built-in GC will reclaim orphaned blobs.
+// NOT in the keepImages list. Repos listed in preserveRepos are skipped
+// entirely (used to protect DnD-pushed images like custom engine-generic builds).
+// Zot's built-in GC will reclaim orphaned blobs.
 //
 // Deletion is digest-safe: since multiple tags can share a manifest digest,
 // we first resolve keep-tag digests, then only delete digests that no
 // keep-tag points to.
-func PruneExceptImageList(registryURL string, keepImages []string) error {
+func PruneExceptImageList(registryURL string, keepImages []string, preserveRepos []string) error {
 	keepSet := buildKeepSet(keepImages)
+	preserveSet := make(map[string]bool, len(preserveRepos))
+	for _, r := range preserveRepos {
+		preserveSet[r] = true
+	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
@@ -37,6 +43,11 @@ func PruneExceptImageList(registryURL string, keepImages []string) error {
 
 	totalDeleted := 0
 	for _, repo := range repos {
+		if preserveSet[repo] {
+			log.Infof("Preserving Zot repo %s (DnD images)", repo)
+			continue
+		}
+
 		tags, err := listTags(client, registryURL, repo)
 		if err != nil {
 			log.Warnf("Failed to list tags for %s: %v", repo, err)
@@ -169,6 +180,23 @@ func getManifestDigest(client *http.Client, registryURL, repo, tag string) (stri
 		return "", fmt.Errorf("no Docker-Content-Digest header for %s:%s", repo, tag)
 	}
 	return digest, nil
+}
+
+// DnDPreserveRepos returns the Zot repo paths that should be preserved during
+// pruning because they may contain DnD-pushed custom images (e.g. engine-generic
+// builds with user-specific dependencies). The repos are identified by the
+// "engine-generic" convention in the manifest image list.
+func DnDPreserveRepos(manifestImages []string) []string {
+	seen := make(map[string]bool)
+	var repos []string
+	for _, img := range manifestImages {
+		repo, _ := imageToZotRef(img)
+		if repo != "" && strings.Contains(repo, "engine-generic") && !seen[repo] {
+			seen[repo] = true
+			repos = append(repos, repo)
+		}
+	}
+	return repos
 }
 
 // buildKeepSet converts manifest image references (e.g. "docker.io/library/mongo:6.0.5")

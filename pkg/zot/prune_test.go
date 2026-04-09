@@ -57,3 +57,34 @@ func TestBuildKeepSet(t *testing.T) {
 		t.Error("library/nginx:1.25-alpine should not be in keep set")
 	}
 }
+
+func TestDnDPreserveRepos(t *testing.T) {
+	images := []string{
+		"docker.io/library/mongo:6.0.5",
+		"public.ecr.aws/tensorleap/engine:master-xxx",
+		"public.ecr.aws/tensorleap/engine-generic:master-xxx-py38",
+		"public.ecr.aws/tensorleap/engine-generic:master-xxx-py310",
+		"public.ecr.aws/tensorleap/engine-generic:master-xxx-py312",
+		"docker.io/library/redis:latest",
+	}
+	repos := DnDPreserveRepos(images)
+
+	if len(repos) != 1 {
+		t.Fatalf("expected 1 preserve repo, got %d: %v", len(repos), repos)
+	}
+	if repos[0] != "tensorleap/engine-generic" {
+		t.Errorf("expected tensorleap/engine-generic, got %s", repos[0])
+	}
+}
+
+func TestDnDPreserveReposEmpty(t *testing.T) {
+	images := []string{
+		"docker.io/library/mongo:6.0.5",
+		"public.ecr.aws/tensorleap/engine:master-xxx",
+	}
+	repos := DnDPreserveRepos(images)
+
+	if len(repos) != 0 {
+		t.Errorf("expected 0 preserve repos, got %d: %v", len(repos), repos)
+	}
+}
