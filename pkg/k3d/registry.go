@@ -38,7 +38,7 @@ var (
 func init() {
 	REQUIRED_STORAGE_KB = STORAGE_EVICTION_THRESHOLD_GB * 1024 * 1024
 	REQUIRED_STORAGE_PRETTY = fmt.Sprintf("%dGb", STORAGE_EVICTION_THRESHOLD_GB)
-	RECOMMENDED_STORAGE_PRETTY = fmt.Sprintf("%dGb", STORAGE_EVICTION_THRESHOLD_GB+INSTALLATION_STORAGE_REQUIRED_GB)
+	RECOMMENDED_STORAGE_PRETTY = REQUIRED_STORAGE_PRETTY
 }
 
 const (
@@ -381,7 +381,7 @@ func CacheImageInTheBackground(ctx context.Context, image string) error {
 	return dockerClient.ContainerExecStart(ctx, exec.ID, container.ExecStartOptions{})
 }
 
-func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) error {
+func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool, allImages []string) error {
 	if os.Getenv("DISABLE_DOCKER_CHECKS") == "true" {
 		return nil
 	}
@@ -436,6 +436,27 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	dockerFreeStorageKB, _ := strconv.Atoi(dfOutputWords[3])
 	dockerFreeStoragePretty := fmt.Sprintf("%dGb", dockerFreeStorageKB/(1024*1024))
 	log.Printf("Docker has %s free storage available (%s total).\n", dockerFreeStoragePretty, dockerTotalStoragePretty)
+
+	if !isAirgap && len(allImages) > 0 {
+		log.Println("Estimating installation size from image manifests...")
+		estimateStart := time.Now()
+		estimatedBytes, err := EstimateInstallSize(allImages)
+		log.Printf("Image size estimation took %s", time.Since(estimateStart).Round(time.Millisecond))
+		if err != nil {
+			log.Warnf("Could not estimate installation size: %v; using static threshold", err)
+		} else {
+			estimatedGB := estimatedBytes / (1024 * 1024 * 1024)
+			requiredGB := estimatedGB + STORAGE_EVICTION_THRESHOLD_GB + storageBufferGB
+			log.Printf("Estimated installation size: ~%dGb (from compressed manifests x%d)", estimatedGB, compressionMultiplier)
+			log.Printf("Required free storage: %dGb (install %dGb + eviction threshold %dGb + buffer %dGb)",
+				requiredGB, estimatedGB, STORAGE_EVICTION_THRESHOLD_GB, storageBufferGB)
+
+			REQUIRED_STORAGE_KB = requiredGB * 1024 * 1024
+			REQUIRED_STORAGE_PRETTY = fmt.Sprintf("%dGb", requiredGB)
+			RECOMMENDED_STORAGE_PRETTY = REQUIRED_STORAGE_PRETTY
+		}
+	}
+
 	var noResources bool
 
 	if dockerInfo.MemTotal < REQUIRED_MEMORY {
