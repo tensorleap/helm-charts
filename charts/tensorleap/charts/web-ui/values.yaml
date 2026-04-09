@@ -1,4 +1,4 @@
-image_tag: master-45dc248d
+image_tag: refactor-storage-7cd343d6
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
