@@ -35,7 +35,7 @@ var (
 	RECOMMENDED_STORAGE_PRETTY string
 )
 
-const staticRequiredStorageGB int64 = 60
+const staticRequiredStorageGB int64 = 30
 
 func init() {
 	REQUIRED_STORAGE_KB = staticRequiredStorageGB * 1024 * 1024
