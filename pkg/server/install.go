@@ -113,7 +113,7 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		return err
 	}
 
-	monitor, monitorErr := k3d.StartDiskPressureMonitor(kubeConfigPath, KUBE_CONTEXT)
+	monitor, monitorErr := k3d.StartDiskPressureMonitor(kubeConfigPath, KUBE_CONTEXT, mnf.GetAllImages())
 	if monitorErr != nil {
 		log.Warnf("Could not start disk-pressure monitor: %v", monitorErr)
 	} else {

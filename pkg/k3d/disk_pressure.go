@@ -24,10 +24,11 @@ type DiskPressureMonitor struct {
 }
 
 // StartDiskPressureMonitor begins a background goroutine that periodically
-// checks the k3d node for the DiskPressure condition. When detected, it warns
-// the user with actionable guidance. The monitor should be stopped by calling
+// checks the k3d node for the DiskPressure condition. When detected, it
+// estimates the required storage from image manifests (once), then warns the
+// user with actionable guidance. The monitor should be stopped by calling
 // Stop() when helm operations complete.
-func StartDiskPressureMonitor(kubeConfigPath, kubeContext string) (*DiskPressureMonitor, error) {
+func StartDiskPressureMonitor(kubeConfigPath, kubeContext string, allImages []string) (*DiskPressureMonitor, error) {
 	restConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeConfigPath},
 		&clientcmd.ConfigOverrides{CurrentContext: kubeContext},
@@ -44,7 +45,7 @@ func StartDiskPressureMonitor(kubeConfigPath, kubeContext string) (*DiskPressure
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 
-	go monitorDiskPressure(ctx, clientset, done)
+	go monitorDiskPressure(ctx, clientset, allImages, done)
 
 	return &DiskPressureMonitor{cancel: cancel, done: done}, nil
 }
@@ -54,13 +55,15 @@ func (m *DiskPressureMonitor) Stop() {
 	<-m.done
 }
 
-func monitorDiskPressure(ctx context.Context, clientset kubernetes.Interface, done chan struct{}) {
+func monitorDiskPressure(ctx context.Context, clientset kubernetes.Interface, allImages []string, done chan struct{}) {
 	defer close(done)
 
 	ticker := time.NewTicker(diskPressureCheckInterval)
 	defer ticker.Stop()
 
 	var lastWarnedAt time.Time
+	var recommendedStorage string
+	estimated := false
 
 	for {
 		select {
@@ -71,13 +74,40 @@ func monitorDiskPressure(ctx context.Context, clientset kubernetes.Interface, do
 				continue
 			}
 
+			if !estimated {
+				recommendedStorage = computeRecommendedStorage(allImages)
+				estimated = true
+			}
+
 			now := time.Now()
 			if lastWarnedAt.IsZero() || now.Sub(lastWarnedAt) >= diskPressureRepeatInterval {
 				lastWarnedAt = now
-				emitDiskPressureWarning()
+				emitDiskPressureWarning(recommendedStorage)
 			}
 		}
 	}
+}
+
+// computeRecommendedStorage queries image registries to estimate the required
+// Docker storage. Falls back to the static RECOMMENDED_STORAGE_PRETTY if
+// estimation fails.
+func computeRecommendedStorage(allImages []string) string {
+	if len(allImages) == 0 {
+		return RECOMMENDED_STORAGE_PRETTY
+	}
+
+	log.Println("Estimating installation size from image manifests...")
+	estimateStart := time.Now()
+	estimatedBytes, err := EstimateInstallSize(allImages)
+	log.Printf("Image size estimation took %s", time.Since(estimateStart).Round(time.Millisecond))
+	if err != nil {
+		log.Warnf("Could not estimate installation size: %v; using static recommendation", err)
+		return RECOMMENDED_STORAGE_PRETTY
+	}
+
+	estimatedGB := estimatedBytes / (1024 * 1024 * 1024)
+	requiredGB := estimatedGB + STORAGE_EVICTION_THRESHOLD_GB + storageBufferGB
+	return fmt.Sprintf("%dGb", requiredGB)
 }
 
 func hasDiskPressure(ctx context.Context, clientset kubernetes.Interface) bool {
@@ -97,9 +127,9 @@ func hasDiskPressure(ctx context.Context, clientset kubernetes.Interface) bool {
 	return false
 }
 
-func emitDiskPressureWarning() {
+func emitDiskPressureWarning(recommendedStorage string) {
 	log.Warn("Disk pressure detected.")
 	log.Warn("This may stall the installation.")
-	log.Warnf("If installation does not complete within a few minutes, consider increasing the disk space available to docker so that it has at least %s free storage, and then retrying the installation.", RECOMMENDED_STORAGE_PRETTY)
+	log.Warnf("If installation does not complete within a few minutes, consider increasing the disk space available to docker so that it has at least %s free storage, and then retrying the installation.", recommendedStorage)
 	log.SendCloudReport("warning", "Disk pressure detected during installation", "Running", nil)
 }

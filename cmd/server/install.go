@@ -98,7 +98,7 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.Installatio
 
 	log.SendCloudReport("info", "Starting install", "Starting", &map[string]interface{}{"manifest": mnf})
 
-	err = k3d.CheckDockerRequirements(mnf.Images.CheckDockerRequirement, isAirgap, mnf.GetAllImages())
+	err = k3d.CheckDockerRequirements(mnf.Images.CheckDockerRequirement, isAirgap)
 	if err != nil {
 		log.SendCloudReport("error", "Docker requirements not met", "Failed",
 			&map[string]interface{}{"error": err.Error()})
