@@ -1,4 +1,4 @@
-image_tag: master-4c84c806
+image_tag: refactor-storage-46cc698d
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true

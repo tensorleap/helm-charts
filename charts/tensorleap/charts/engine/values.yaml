@@ -1,4 +1,4 @@
-image_tag: master-4260f2c0
+image_tag: refactor-storage-7d3a26a6
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
