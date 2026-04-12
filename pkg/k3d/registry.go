@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/docker/docker/api/types/container"
 	dockerimage "github.com/docker/docker/api/types/image"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
@@ -408,6 +409,7 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	log.Printf("Docker has %s memory available.\n", dockerMemoryPretty)
 
 	log.Println("Checking docker storage limits...")
+	log.Printf("Docker data root: %s\n", dockerInfo.DockerRootDir)
 
 	if !isAirgap {
 		_, err = dockerClient.ImagePull(context.Background(), checkDockerRequirementImage, dockerimage.PullOptions{})
@@ -416,12 +418,15 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 		}
 	}
 
-	runCmdStr := fmt.Sprintf("docker run --rm %s df -t overlay -P", checkDockerRequirementImage)
+	runCmdStr := fmt.Sprintf("docker run --rm %s df -P /", checkDockerRequirementImage)
 	cmd = exec.Command("sh", "-c", runCmdStr)
 	dfOutputBytes, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("Failed pulling %s, %s", checkDockerRequirementImage, err)
-		return err
+		log.Warnf("Failed checking docker storage: %s", err)
+		if err := askToContinueWithStorageIssue("Unable to check docker storage. Do you want to continue anyway?"); err != nil {
+			return err
+		}
+		return nil
 	}
 	// the output looks like this:
 	// Filesystem           1024-blocks    Used Available Capacity Mounted on
@@ -447,9 +452,29 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	}
 
 	if noResources {
-		log.Println("Please retry installation after updating your docker config.")
-		return errors.New("not enough resources")
+		if err := askToContinueWithStorageIssue("Docker resources are below recommended levels. Do you want to continue anyway?"); err != nil {
+			return err
+		}
 	}
 
+	return nil
+}
+
+func askToContinueWithStorageIssue(message string) error {
+	if os.Getenv("TL_USE_DEFAULT_OPTION") == "true" {
+		log.Warnf("%s (auto-continuing in non-interactive mode)", message)
+		return nil
+	}
+	prompt := survey.Confirm{
+		Message: message,
+		Default: false,
+	}
+	var continueAnyway bool
+	if err := survey.AskOne(&prompt, &continueAnyway); err != nil {
+		return err
+	}
+	if !continueAnyway {
+		return errors.New("not enough resources")
+	}
 	return nil
 }
