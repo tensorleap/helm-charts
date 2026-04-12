@@ -408,6 +408,7 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 	log.Printf("Docker has %s memory available.\n", dockerMemoryPretty)
 
 	log.Println("Checking docker storage limits...")
+	log.Printf("Docker data root: %s\n", dockerInfo.DockerRootDir)
 
 	if !isAirgap {
 		_, err = dockerClient.ImagePull(context.Background(), checkDockerRequirementImage, dockerimage.PullOptions{})
@@ -416,11 +417,11 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 		}
 	}
 
-	runCmdStr := fmt.Sprintf("docker run --rm %s df -t overlay -P", checkDockerRequirementImage)
+	runCmdStr := fmt.Sprintf("docker run --rm %s df -P /", checkDockerRequirementImage)
 	cmd = exec.Command("sh", "-c", runCmdStr)
 	dfOutputBytes, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("Failed pulling %s, %s", checkDockerRequirementImage, err)
+		log.Fatalf("Failed checking docker storage: %s", err)
 		return err
 	}
 	// the output looks like this:
