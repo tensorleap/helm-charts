@@ -1,0 +1,61 @@
+{{- if .Values.registry.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorleap-registry
+  labels:
+    app: tensorleap-registry
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: tensorleap-registry
+  template:
+    metadata:
+      labels:
+        app: tensorleap-registry
+    spec:
+      containers:
+        - name: zot
+          image: {{ .Values.registry.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: registry
+              containerPort: 5000
+              hostPort: 5000
+              protocol: TCP
+          volumeMounts:
+            - name: zot-config
+              mountPath: /etc/zot
+            - name: registry-data
+              mountPath: /var/lib/registry
+          args:
+            - serve
+            - /etc/zot/config.json
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+      volumes:
+        - name: zot-config
+          configMap:
+            name: zot-config
+        - name: registry-data
+          hostPath:
+            path: /var/lib/tensorleap/standalone/registry
+            type: DirectoryOrCreate
+{{- end }}

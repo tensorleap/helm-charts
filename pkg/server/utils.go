@@ -7,7 +7,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/containerd"
-	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
@@ -15,7 +14,7 @@ import (
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/airgap"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
-	"k8s.io/kubectl/pkg/util/slice"
+	"github.com/tensorleap/helm-charts/pkg/zot"
 )
 
 const (
@@ -215,19 +214,25 @@ func SaveInstallation(mnf *manifest.InstallationManifest, installationParams *In
 	return installationParams.Save()
 }
 
-func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu bool, imageCachingMethod k3d.ImageCachingMethod) (necessaryImages []string) {
-
-	if imageCachingMethod != k3d.ImageCachingRegistry {
+// CalcWhichImagesToCache determines which images should be pushed into the
+// in-cluster Zot registry.
+//
+// For airgap installs: returns ALL images (k3s system + server) because they
+// must be pre-loaded into Zot before pods can start.
+//
+// For online installs: returns an empty list. Zot's sync extension handles
+// on-demand pulling from upstream registries, so no pre-warming is needed.
+func CalcWhichImagesToCache(mnf *manifest.InstallationManifest, useGpu bool, isAirgap bool) (necessaryImages []string) {
+	if !isAirgap {
 		return []string{}
 	}
 
 	allImages := []string{}
-
-	allImages = append(allImages, manifest.Images.ServerImages...)
+	allImages = append(allImages, mnf.Images.ServerImages...)
 	if useGpu {
-		allImages = append(allImages, manifest.Images.K3sGpuImages...)
+		allImages = append(allImages, mnf.Images.K3sGpuImages...)
 	} else {
-		allImages = append(allImages, manifest.Images.K3sImages...)
+		allImages = append(allImages, mnf.Images.K3sImages...)
 	}
 
 	necessaryImages = []string{}
@@ -236,7 +241,6 @@ func CalcWhichImagesToCache(manifest *manifest.InstallationManifest, useGpu bool
 			necessaryImages = append(necessaryImages, img)
 		}
 	}
-
 	return
 }
 
@@ -332,49 +336,8 @@ func cleanImagesFromContainerd(ctx context.Context, currentMnf *manifest.Install
 	return nil
 }
 
-func cleanImages(currentMnf *manifest.InstallationManifest, previousMnf *manifest.InstallationManifest, isCleanCurrentImages bool) error {
-	imagesToClean := []string{}
-	imageToKeep := []string{}
-	if isCleanCurrentImages {
-		imagesToClean = append(imagesToClean, currentMnf.GetRegisterImages()...)
-		imageToKeep = append(imageToKeep, currentMnf.GetRunningOnMachineImages()...)
-	} else {
-		imageToKeep = append(imageToKeep, currentMnf.GetAllImages()...)
-	}
-	if previousMnf != nil {
-		previousImages := previousMnf.GetAllImages()
-		for _, img := range previousImages {
-			if !slice.ContainsString(imageToKeep, img, nil) {
-				imagesToClean = append(imagesToClean, img)
-			}
-		}
-	}
-	imagesToClean = uniqueStrings(imagesToClean)
-	if len(imagesToClean) == 0 {
-		return nil
-	}
-	if isCleanCurrentImages {
-		log.Info("Cleaning images")
-	} else {
-		log.Info("Cleaning old images")
-	}
-	dockerClient, err := docker.NewClient()
-	if err != nil {
-		return err
-	}
-	err = docker.RemoveImages(dockerClient, imagesToClean)
-	return err
-}
-
-func uniqueStrings(arr []string) []string {
-	seen := make(map[string]struct{})
-	result := arr[:0] // Reuse the input slice for efficiency
-
-	for _, v := range arr {
-		if _, exists := seen[v]; !exists {
-			seen[v] = struct{}{}
-			result = append(result, v)
-		}
-	}
-	return result
+func cleanImagesFromZot(registryPort uint, currentMnf *manifest.InstallationManifest) error {
+	registryURL := fmt.Sprintf("http://localhost:%d", registryPort)
+	preserveRepos := zot.DnDPreserveRepos(currentMnf.GetAllImages())
+	return zot.PruneExceptImageList(registryURL, currentMnf.GetAllImages(), preserveRepos)
 }

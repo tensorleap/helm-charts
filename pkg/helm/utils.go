@@ -43,9 +43,24 @@ type ServerHelmValuesParams struct {
 	InstalledServerVersion string            `json:"installedServerVersion"`
 }
 
+type ZotSyncRegistry struct {
+	URLs      []string         `json:"urls" yaml:"urls"`
+	Content   []ZotSyncContent `json:"content" yaml:"content"`
+	OnDemand  bool             `json:"onDemand" yaml:"onDemand"`
+	TLSVerify bool             `json:"tlsVerify" yaml:"tlsVerify"`
+}
+
+type ZotSyncContent struct {
+	Prefix string `json:"prefix" yaml:"prefix"`
+}
+
 type InfraHelmValuesParams struct {
-	NvidiaGpuEnable         bool   `json:"nvidiaGpuEnable"`
-	NvidiaGpuVisibleDevices string `json:"nvidiaGpuVisibleDevices"`
+	NvidiaGpuEnable         bool              `json:"nvidiaGpuEnable"`
+	NvidiaGpuVisibleDevices string            `json:"nvidiaGpuVisibleDevices"`
+	RegistryEnabled         bool              `json:"registryEnabled"`
+	RegistryImage           string            `json:"registryImage"`
+	RegistrySyncEnabled     bool              `json:"registrySyncEnabled"`
+	RegistrySyncRegistries  []ZotSyncRegistry `json:"registrySyncRegistries"`
 }
 
 var ErrNoRelease = fmt.Errorf("no release")
@@ -326,12 +341,25 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 }
 
 func CreateInfraChartValues(params *InfraHelmValuesParams) Record {
-	return Record{
+	values := Record{
 		"nvidiaGpu": Record{
 			"enabled":        params.NvidiaGpuEnable,
 			"visibleDevices": params.NvidiaGpuVisibleDevices,
 		},
 	}
+
+	if params.RegistryEnabled {
+		values["registry"] = Record{
+			"enabled": true,
+			"image":   params.RegistryImage,
+			"sync": Record{
+				"enabled":    params.RegistrySyncEnabled,
+				"registries": params.RegistrySyncRegistries,
+			},
+		}
+	}
+
+	return values
 }
 
 func GetValues(config *HelmConfig, releaseName string) (Record, error) {

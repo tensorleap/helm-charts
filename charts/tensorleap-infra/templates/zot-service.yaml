@@ -1,0 +1,17 @@
+{{- if .Values.registry.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensorleap-registry
+  labels:
+    app: tensorleap-registry
+spec:
+  type: ClusterIP
+  ports:
+    - name: registry
+      port: 5000
+      targetPort: registry
+      protocol: TCP
+  selector:
+    app: tensorleap-registry
+{{- end }}
