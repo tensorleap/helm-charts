@@ -32,6 +32,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"enableKeycloak":         params.KeycloakEnabled,
 				"disableDatadogMetrics":  params.DisableDatadogMetrics,
 				"installedServerVersion": params.InstalledServerVersion,
+				"localBucketPath":        params.LocalBucketPath,
 			},
 			"global": Record{
 				"domain":               "",
