@@ -90,6 +90,12 @@ jobs:
                   type: mrkdwn
                   text: "*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|web-ui>"
 
+      - name: Sync tensorleap-infra chart from master
+        run: |
+          git fetch origin master
+          git checkout origin/master -- charts/tensorleap-infra/
+        shell: bash
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:

@@ -29,6 +29,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
+      - name: Sync tensorleap-infra chart from master
+        run: |
+          git fetch origin master
+          git checkout origin/master -- charts/tensorleap-infra/
+        shell: bash
+
       - name: Remove -rc.x suffix from chart versions
         run: make remove-rc-suffix
         shell: bash
