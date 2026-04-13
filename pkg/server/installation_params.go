@@ -836,6 +836,8 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 
 	datadogEnvs := params.GetDatadogEnvs()
 
+	localBucketPath := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME, "minio", "session")
+
 	return &helm.ServerHelmValuesParams{
 		Gpu:                    params.IsUseGpu(),
 		LocalDataDirectories:   dataContainerPaths,
@@ -848,6 +850,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		DatadogEnv:             datadogEnvs,
 		KeycloakEnabled:        !params.DisabledAuth,
 		InstalledServerVersion: versionTag,
+		LocalBucketPath:        localBucketPath,
 	}
 }
 

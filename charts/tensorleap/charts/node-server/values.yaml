@@ -11,4 +11,6 @@ mongodb:
   enabled: true
   connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
 
+localBucketPath: ""
+
 mongodb_image: docker.io/library/mongo:6.0.5
