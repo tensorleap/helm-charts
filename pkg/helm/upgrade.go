@@ -21,7 +21,7 @@ func UpgradeChart(
 	client := action.NewUpgrade(config.ActionConfig)
 	client.Namespace = config.Namespace
 	client.Wait = true
-	client.Timeout = 20 * time.Minute
+	client.Timeout = 4 * time.Hour
 
 	_, err := client.RunWithContext(config.Context, releaseName, chart, values)
 	if err != nil {

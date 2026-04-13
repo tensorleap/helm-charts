@@ -22,7 +22,7 @@ func InstallChart(
 	client.CreateNamespace = true
 	client.Wait = true
 	client.ReleaseName = releaseName
-	client.Timeout = 60 * time.Minute
+	client.Timeout = 4 * time.Hour
 
 	_, err := client.RunWithContext(config.Context, chart, values)
 	if err != nil {
