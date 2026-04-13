@@ -41,6 +41,7 @@ type ServerHelmValuesParams struct {
 	DatadogEnv             map[string]string `json:"datadogEnv"`
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
+	LocalBucketPath        string            `json:"localBucketPath"`
 }
 
 type ZotSyncRegistry struct {
@@ -308,6 +309,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"enableKeycloak":         params.KeycloakEnabled,
 			"disableDatadogMetrics":  params.DisableDatadogMetrics,
 			"installedServerVersion": params.InstalledServerVersion,
+			"localBucketPath":        params.LocalBucketPath,
 		},
 		"global": Record{
 			"domain":               params.Domain,
