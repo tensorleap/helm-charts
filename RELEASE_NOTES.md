@@ -1,3 +1,25 @@
+# Release Notes - v1.5.78
+
+**Release Date:** 2026-04-14
+**Total Changes:** 6
+
+---
+
+## ✨ New Features & Improvements
+
+- [EN-2193](https://tensorleap.atlassian.net/browse/EN-2193): Add target population info to Previously Compiled Lists and CSV
+- [EN-2170](https://tensorleap.atlassian.net/browse/EN-2170): Support multi-select for metadata in synthetic data
+- [EN-2114](https://tensorleap.atlassian.net/browse/EN-2114): allow add samples to collection from filter bar
+- [EN-1960](https://tensorleap.atlassian.net/browse/EN-1960): Restyle and resizing version control
+
+## 🐛 Bug Fixes
+
+- [EN-2206](https://tensorleap.atlassian.net/browse/EN-2206): Investigate Mixedpanel event pruning discrepancy
+- [EN-2176](https://tensorleap.atlassian.net/browse/EN-2176): Investigate visibility issues with older synthetic recommendations runs
+
+
+---
+
 # Release Notes - v1.5.76
 
 **Release Date:** 2026-04-13
