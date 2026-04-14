@@ -1,4 +1,4 @@
-image_tag: master-4c84c806
+image_tag: add-local-bucket-path-v0.9.11-d2b7c304
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
