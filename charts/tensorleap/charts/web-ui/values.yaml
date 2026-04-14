@@ -1,4 +1,4 @@
-image_tag: master-47f72773
+image_tag: add-local-bucket-path-1.5.76-1dfcb586
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
