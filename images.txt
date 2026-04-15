@@ -6,11 +6,11 @@ docker.io/library/redis:latest
 docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v3-1fe70dc8-py310
-public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v3-1fe70dc8-py312
-public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v3-1fe70dc8-py38
-public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v3-1fe70dc8-py39
-public.ecr.aws/tensorleap/engine:patch-to-1.5.74-v3-1fe70dc8
+public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v5-e6d044d8-py310
+public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v5-e6d044d8-py312
+public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v5-e6d044d8-py38
+public.ecr.aws/tensorleap/engine-generic:patch-to-1.5.74-v5-e6d044d8-py39
+public.ecr.aws/tensorleap/engine:patch-to-1.5.74-v5-e6d044d8
 public.ecr.aws/tensorleap/node-server:add-local-bucket-path-v0.9.11-d2b7c304
 public.ecr.aws/tensorleap/pippin:master-90110035
 public.ecr.aws/tensorleap/web-ui:add-local-bucket-path-1.5.76-1ede4d60
