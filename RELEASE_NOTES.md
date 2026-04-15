@@ -1,3 +1,25 @@
+# Release Notes - v1.5.82
+
+**Release Date:** 2026-04-15
+**Total Changes:** 6
+
+---
+
+## ✨ New Features & Improvements
+
+- [EN-2173](https://tensorleap.atlassian.net/browse/EN-2173): Add warning dialogue for recompute insights button
+- [EN-2172](https://tensorleap.atlassian.net/browse/EN-2172): Investigate technical limitation on max collection size of 50k samples
+
+## 🐛 Bug Fixes
+
+- [EN-2212](https://tensorleap.atlassian.net/browse/EN-2212): Model version stuck at 'Waiting for version to be ready' with ERR_DATA_TOO_LARGE in version 1.5.74
+- [EN-2204](https://tensorleap.atlassian.net/browse/EN-2204): CLI installation fails due to incorrect Docker root directory validation on Azure
+- [EN-2199](https://tensorleap.atlassian.net/browse/EN-2199): Test filters fail to apply after closing popup
+- [EN-2167](https://tensorleap.atlassian.net/browse/EN-2167): Flip- Show settings per sample <--> Show shared settings 
+
+
+---
+
 # Release Notes - v1.5.78
 
 **Release Date:** 2026-04-14
