@@ -48,7 +48,16 @@ keycloakx:
   cache:
     stack: custom # <— IMPORTANT
 
-  command: ["/opt/keycloak/bin/kc.sh", "start", "--proxy-headers=xforwarded"]
+  command: ["/opt/keycloak/bin/kc.sh", "start"]
+
+  # Disable the subchart's built-in KC_PROXY_HEADERS env var so our extraEnv
+  # template (which sets it conditionally based on global.domain) is the sole
+  # source.  Without this, the subchart emits KC_PROXY_HEADERS=forwarded first
+  # and glibc's getenv() returns the first match, ignoring our override.
+  proxy:
+    enabled: false
+    http:
+      enabled: true
 
   fullnameOverride: keycloak
   ingress:
@@ -66,6 +75,52 @@ keycloakx:
     requests:
       memory: "256Mi"
       cpu: "100m"
+
+  extraEnv: |
+    - name: KEYCLOAK_ADMIN
+      value: "admin"
+    - name: KEYCLOAK_ADMIN_PASSWORD
+      value: "admin"
+    - name: KC_DB
+      value: "dev-file"
+    - name: KC_CACHE
+      value: "local"
+    - name: KC_PROXY
+      value: "edge"
+    - name: KC_CACHE_STACK
+      value: ""
+    {{- if and .Values.global.domain (ne .Values.global.domain "localhost") }}
+    - name: KC_HOSTNAME_STRICT
+      value: "true"
+    - name: KC_PROXY_HEADERS
+      value: "xforwarded"
+    {{- if .Values.global.proxyUrl }}
+    - name: KC_HOSTNAME
+      value: "{{ .Values.global.proxyUrl }}/auth"
+    - name: KC_HOSTNAME_URL
+      value: "{{ .Values.global.proxyUrl }}/auth"
+    - name: KC_FRONTEND_URL
+      value: "{{ .Values.global.proxyUrl }}/auth"
+    {{- else if .Values.global.url }}
+    - name: KC_HOSTNAME
+      value: "{{ .Values.global.url }}/auth"
+    - name: KC_HOSTNAME_URL
+      value: "{{ .Values.global.url }}/auth"
+    - name: KC_FRONTEND_URL
+      value: "{{ .Values.global.url }}/auth"
+    {{- end }}
+    {{- else }}
+    - name: KC_HOSTNAME_STRICT
+      value: "false"
+    - name: KC_PROXY_HEADERS
+      value: "forwarded"
+    {{- end }}
+    - name: KC_HOSTNAME_STRICT_HTTPS
+      value: "{{ .Values.global.tls.enabled }}"
+    {{- if and .Values.global.tls.enabled .Values.global.url }}
+    - name: KC_HOSTNAME_ADMIN_URL
+      value: "{{ .Values.global.url }}/auth"
+    {{- end }}
 
   extraVolumes: |
     - name: keycloak-data
