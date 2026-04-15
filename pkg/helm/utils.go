@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
-	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
@@ -245,54 +243,6 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		}
 	}
 
-	type ExtraEnv struct {
-		Name  string `yaml:"name"`
-		Value string `yaml:"value"`
-	}
-
-	extraEnvSlice := []ExtraEnv{
-		{Name: "KEYCLOAK_ADMIN", Value: "admin"},
-		{Name: "KEYCLOAK_ADMIN_PASSWORD", Value: "admin"},
-		{Name: "KC_DB", Value: "dev-file"},
-		{Name: "KC_CACHE", Value: "local"},
-		{Name: "KC_HTTP_RELATIVE_PATH", Value: "/auth"},
-		{Name: "KC_PROXY", Value: "edge"},
-		{Name: "KC_PROXY_HEADERS", Value: "forwarded"},
-		{Name: "KC_CACHE_STACK", Value: ""},
-	}
-
-	extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HTTP_ENABLED", Value: "true"})
-
-	if params.Domain != "" && params.Domain != "localhost" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT", Value: "true"})
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_PROXY_HEADERS", Value: "xforwarded"})
-
-		if params.ProxyUrl != "" {
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.ProxyUrl)})
-		} else if params.Url != "" {
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME", Value: fmt.Sprintf("%s/auth", params.Url)})
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
-			extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_FRONTEND_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
-		}
-	} else {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT", Value: "false"})
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_PROXY_HEADERS", Value: "forwarded"})
-	}
-
-	extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_STRICT_HTTPS", Value: strconv.FormatBool(params.Tls.Enabled)})
-
-	if params.Tls.Enabled && params.Url != "" {
-		extraEnvSlice = append(extraEnvSlice, ExtraEnv{Name: "KC_HOSTNAME_ADMIN_URL", Value: fmt.Sprintf("%s/auth", params.Url)})
-	}
-	formatExtraEnv := func(extraEnv []ExtraEnv) string {
-		result, _ := yaml.Marshal(extraEnv)
-		resultString := "\n" + string(result)
-		return resultString
-	}
-	extraEnvStringYaml := formatExtraEnv(extraEnvSlice)
-
 	datadogEnvs := []map[string]string{}
 	datadogEnvs = append(datadogEnvs, map[string]string{"name": "DD_HOSTNAME", "value": hostname})
 
@@ -328,10 +278,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			},
 		},
 		"keycloakx": map[string]interface{}{
-			"enabled":  params.KeycloakEnabled,
-			"replicas": 1,
-			"command":  []interface{}{"/opt/keycloak/bin/kc.sh", "start"},
-			"extraEnv": extraEnvStringYaml,
+			"enabled": params.KeycloakEnabled,
 		},
 		"datadog": map[string]interface{}{
 			"enabled": !params.DisableDatadogMetrics,
