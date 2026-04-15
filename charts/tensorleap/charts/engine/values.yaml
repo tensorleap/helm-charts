@@ -1,4 +1,4 @@
-image_tag: patch-to-1.5.74-v3-1fe70dc8
+image_tag: patch-to-1.5.74-v5-e6d044d8
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
