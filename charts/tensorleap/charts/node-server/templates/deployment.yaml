@@ -13,6 +13,8 @@ spec:
         app: tensorleap-node-server
       annotations:
         ad.datadoghq.com/tensorleap-node-server.logs: '[{"source": "nodejs", "service": "node-server"}]'
+        ad.datadoghq.com/db-migration.logs: '[{"source": "mongodb", "service": "node-server-db-migration"}]'
+        ad.datadoghq.com/migrate-sessions-to-versions.logs: '[{"source": "nodejs", "service": "node-server-migrate-sessions"}]'
     spec:
       serviceAccountName: node-server-sa
       initContainers:
