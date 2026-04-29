@@ -42,17 +42,46 @@ Typically, updates are made to the images by executing the `Update images` workf
 
 ## Updating the Installer (Go Package)
 
-To update the Go code for the installer, follow these steps:
+The Go module `github.com/tensorleap/helm-charts` is published purely via Git
+tags on this repository — the Go module proxy picks up any semver tag, making
+it available to downstream consumers (primarily `leap-cli`). There is no
+separate publish step or registry push.
 
-1. **Update the Installer Version**: Modify the version information in the `pkg/version/version.go` file to reflect the new version of the installer.
-2. **Tag the Version on GitHub**: Create a new tag in the GitHub repository that matches the updated version name from `version.go`. This helps in tracking versions and changes.
-3. **Version Number Increment**: If the update necessitates users to upgrade their CLI, increment the minor version number of the installer. This indicates a non-breaking but significant change.
-4. **Update the `leap-cli` Repository**:
-   - Increment the version in the `leap-cli` repository to match the new version of the installer.
-   - Run `go mod tidy` to clean the module by adding missing and removing unused modules.
-5. **Create a New `leap-cli` Version**: After merging the updated code into the main branch, finalize the update by creating a new tag in the `leap-cli` repository. This new tag should reflect the updated version, signaling a new release of the CLI.
+### Release steps
 
-These steps ensure that the Go package is correctly updated and that the corresponding CLI tool reflects these changes, maintaining consistency across your development ecosystem.
+1. **Bump the installer version** in `pkg/version/version.go`. The exported
+   `Version` constant is the single source of truth and must match the Git tag.
+2. **Decide the version bump**:
+   - Patch bump for bug fixes and non-breaking changes.
+   - Minor bump when the update requires users to upgrade their CLI (e.g.
+     changes to exported APIs consumed by `leap-cli`, or behavior changes that
+     require a new installer). See `.cursor/rules/go-code.mdc` for the
+     external-stability contract around `pkg/server.RunInstallCmd` and similar
+     entry points.
+3. **Open a PR and merge to `master`**. The `Go CI` workflow
+   (`.github/workflows/go_ci.yml`) runs `make check-fmt`, `go build`,
+   `golangci-lint`, and `make test` on any change under `go.mod`, `go.sum`,
+   `main.go`, `cmd/**`, or `pkg/**`.
+4. **Tag and push from `master`**. A `Makefile` helper derives the tag from the
+   compiled binary so it always matches `pkg/version/version.go`:
+
+   ```bash
+   git checkout master && git pull
+   make create_go_tag                        # creates annotated tag, e.g. v0.10.4
+   git push origin "$(go run . --version)"   # publishes the tag
+   ```
+
+   Once the tag is pushed, `go get github.com/tensorleap/helm-charts@<tag>`
+   will resolve to it via `proxy.golang.org`.
+5. **Update `leap-cli`** to consume the new version:
+   - Bump the `github.com/tensorleap/helm-charts` requirement in `leap-cli`'s
+     `go.mod`.
+   - Run `go mod tidy`.
+   - Open a PR, merge to `master`, then tag `leap-cli` with a matching
+     version to cut a new CLI release.
+
+These steps keep the installer module, the tag, and the `leap-cli` release in
+lockstep.
 
 # Installer Upgrade Mechanism
 Upgrades can involve:
