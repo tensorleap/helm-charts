@@ -1,0 +1,80 @@
+# Example values file for installing Tensorleap into an existing Kubernetes
+# cluster as a namespace-scoped application.
+#
+# Usage:
+#   # 1. Install infra chart (ECK operator, Zot registry) - only if not already
+#   #    present in your cluster. Most of its components are optional.
+#   helm install tensorleap-infra ./charts/tensorleap-infra \
+#     -n tensorleap --create-namespace \
+#     --set nvidiaGpu.enabled=false \
+#     --set registry.enabled=false
+#
+#   # 2. Install main tensorleap chart with this values file
+#   helm install tensorleap ./charts/tensorleap \
+#     -n tensorleap --create-namespace \
+#     -f values-existing-cluster.yaml
+#
+# Upgrade:
+#   helm upgrade tensorleap ./charts/tensorleap -n tensorleap \
+#     -f values-existing-cluster.yaml
+#
+# Uninstall (preserves PVCs / data):
+#   helm uninstall tensorleap -n tensorleap
+#   helm uninstall tensorleap-infra -n tensorleap
+
+global:
+  # Ensures all resources are namespace-scoped (no ClusterRole). Required for
+  # installing into a shared Kubernetes cluster.
+  namespacedInstall: true
+
+  # Use dynamic PVC provisioning with the cluster's storage class instead of
+  # static hostPath PersistentVolumes (which only work on k3d).
+  create_local_volumes: false
+  storageClassName: "gp3"  # change to your cluster's storage class
+
+  # Public-facing domain/URL. Keycloak and ingress rely on these for correct
+  # redirect URLs and TLS hostname validation.
+  domain: "tensorleap.example.com"
+  url: "https://tensorleap.example.com"
+  proxyUrl: ""
+
+  tls:
+    enabled: true
+    # Paste your PEM cert and key (or use --set-file for helm install):
+    #   helm install tensorleap ./charts/tensorleap \
+    #     --set-file global.tls.cert=./tls.crt \
+    #     --set-file global.tls.key=./tls.key
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      REPLACE_WITH_YOUR_CERTIFICATE
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      REPLACE_WITH_YOUR_PRIVATE_KEY
+      -----END RSA PRIVATE KEY-----
+
+  elasticsearch:
+    # Elasticsearch inside the chart requires the ECK operator from the infra
+    # chart. If you already have an external Elasticsearch, disable this and
+    # set the URL instead.
+    enabled: true
+    url: ""
+  keycloakx:
+    enabled: true
+
+# Disable the bundled ingress-nginx; existing clusters usually already run one.
+# If your cluster has a different ingress class, adjust the ingress annotations
+# in the chart templates or override them here.
+ingress-nginx:
+  enabled: false
+
+# Disable Datadog when using your own observability stack.
+datadog:
+  enabled: false
+
+# If you keep ingress-nginx enabled but install into a namespace other than
+# "tensorleap", override the default-ssl-certificate reference here:
+# ingress-nginx:
+#   controller:
+#     extraArgs:
+#       default-ssl-certificate: "<your-namespace>/tls-secret"

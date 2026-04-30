@@ -38,6 +38,9 @@ spec:
           resources:
             requests:
               storage: 60Gi
+          {{- if and (not .Values.global.create_local_volumes) .Values.global.storageClassName }}
+          storageClassName: {{ .Values.global.storageClassName }}
+          {{- end }}
       podTemplate:
         metadata:
           labels:

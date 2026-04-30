@@ -1,0 +1,46 @@
+---
+description: Project overview and where things live in the helm-charts repo
+alwaysApply: true
+---
+
+# helm-charts — project overview
+
+This repo ships two things:
+
+1. A Go CLI (`leap server ...`) that installs Tensorleap into a local k3d-based Kubernetes cluster. Entry: `main.go` → `cmd/server/root.go`.
+2. Helm charts under `charts/` that define the Tensorleap app.
+
+## Layout
+
+- `cmd/server/` — cobra subcommands (`install`, `upgrade`, `reinstall`, `uninstall`, `check`, `pack`, `run`, `stop`, `create-manifest`, `tools`).
+- `pkg/` — implementation, grouped by concern:
+  - `helm/` (Helm v3 SDK wrappers), `k3d/` (cluster lifecycle), `k8s/`, `docker/`, `containerd/`, `zot/` (local registry), `server/` (install flow, manifest, airgap), `local/`, `log/`, `utils/`, `version/`, `github/`.
+- `charts/tensorleap/` — umbrella app chart. Subcharts: `engine`, `node-server`, `web-ui`. External deps: `ingress-nginx`, `keycloakx`, `datadog`.
+- `charts/tensorleap-infra/` — installed **before** `tensorleap`. Carries CRDs via `eck-operator` subchart and cluster-scoped resources (nvidia device plugin, zot registry).
+- `images.txt` — generated list of every image referenced by the charts. Regenerated with `make update-images`.
+
+## Install ordering
+
+`tensorleap-infra` (CRDs, ECK operator) → `tensorleap` (app that uses `Elasticsearch` CR). Do not merge these charts.
+
+## Versioning
+
+- Bump `charts/tensorleap/Chart.yaml` `version:` on every chart-affecting change. Minor version bumps indicate cluster reinstall is required (see `DEVELOPER-GUIDE.md`).
+- Bump `charts/tensorleap-infra/Chart.yaml` when infra changes.
+- Bump `pkg/version/version.go` for installer (Go CLI) changes, then tag the repo.
+
+## Common commands
+
+```
+make build-helm       # pull helm deps into charts/ (required before --local)
+make update-images    # regenerate images.txt
+make test             # go test ./...
+make lint             # golangci-lint
+go run . install --local   # run installer against local charts
+```
+
+## Conventions
+
+- Go: see `.cursor/rules/go-code.mdc`.
+- Helm/K8s manifests: see `.cursor/rules/helm-charts.mdc`.
+- Commits: imperative mood, capitalized first letter; branches kebab-case.

@@ -19,7 +19,7 @@ data:
   SINGLE_USER_MODE: "true"
   GATEWAY_URL: {{ .Values.global.url | quote }}
   PROXY_URL: {{ .Values.global.proxyUrl | quote }}
-  KEYCLOAK_CLUSTER_URL: "http://keycloak-http.tensorleap.svc.cluster.local/auth"
+  KEYCLOAK_CLUSTER_URL: "http://keycloak-http.{{ .Release.Namespace }}.svc.cluster.local/auth"
   KEYCLOAK_REALM: "tensorleap"
   ENABLE_KEYCLOAK_AUTH: {{ .Values.enableKeycloak | quote }}
   KEYCLOAK_RESOURCE: "tensorleap-client"
@@ -44,6 +44,8 @@ data:
     CHKIakAHnM/Pe7WIBxixK7TG8qRgrOzzBOu2QVt04DVhVcxqZkpglgce+6LZhYmZ
     fUdjVwvr9Nq+s5Fc1QN4uQkCAwEAAQ==
     -----END PUBLIC KEY-----
-{{ if .Values.global.target_namespace }}
+{{- if .Values.global.target_namespace }}
   TARGET_NAMESPACE: {{ .Values.global.target_namespace }}
-{{ end }}
+{{- else if .Values.global.namespacedInstall }}
+  TARGET_NAMESPACE: {{ .Release.Namespace }}
+{{- end }}

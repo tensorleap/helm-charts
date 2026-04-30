@@ -2,9 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: engine-cm
-{{ if .Values.global.target_namespace }}
+{{- if .Values.global.target_namespace }}
   namespace: {{ .Values.global.target_namespace }}
-{{ end }}
+{{- else if .Values.global.namespacedInstall }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
 data:
   PY_CONFIG: /app/config/config.yaml
 {{ if .Values.global.elasticsearch.url }}
@@ -33,5 +35,5 @@ data:
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
 
 
-  REDIS_HOST: redis.tensorleap.svc.cluster.local
+  REDIS_HOST: redis.{{ .Release.Namespace }}.svc.cluster.local
   REDIS_PORT: "6379"

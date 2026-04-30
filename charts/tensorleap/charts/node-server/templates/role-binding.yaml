@@ -4,14 +4,14 @@ metadata:
   name: node-server-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: {{ empty .Values.global.target_namespace | ternary "Role" "ClusterRole" }}
+  kind: {{ if or (empty .Values.global.target_namespace) .Values.global.namespacedInstall }}Role{{ else }}ClusterRole{{ end }}
   name: node-server-role
 subjects:
   - kind: ServiceAccount
     name: node-server-sa
     namespace: {{ .Release.Namespace }}
 ---
-{{ if and .Values.global.target_namespace (ne .Values.global.target_namespace .Release.Namespace) }}
+{{ if and .Values.global.target_namespace (ne .Values.global.target_namespace .Release.Namespace) (not .Values.global.namespacedInstall) }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

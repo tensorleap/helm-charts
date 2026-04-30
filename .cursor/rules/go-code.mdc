@@ -1,0 +1,65 @@
+---
+description: Go conventions for this repo (installer CLI, helm/k3d/docker wrappers)
+globs: **/*.go
+alwaysApply: false
+---
+
+# Go rules (this repo)
+
+## Structure
+
+- CLI entrypoints in `cmd/server/`, one subcommand per file. Business logic MUST live in `pkg/`.
+- `pkg/` packages are grouped by concern (`helm`, `k3d`, `docker`, `server`, `local`, `log`, `version`, etc.). Don't add a "utils" dumping ground — pick the right package.
+- Tests next to code (`foo_test.go`). Use table-driven tests with `t.Run` subtests.
+
+## Errors
+
+- Wrap with `fmt.Errorf("...: %w", err)` carrying the inputs that identify the call. Don't swallow.
+- Branch on errors via `errors.Is` / `errors.As`, not string matching.
+- At the cobra `RunE` boundary, return the error — the command runner logs and sets exit code.
+
+## Context
+
+- Every call that does I/O or crosses a goroutine takes `ctx context.Context` as the first argument.
+- In cobra handlers, use `cmd.Context()`. Propagate it through to helm/k3d/docker calls.
+- Do not store `ctx` in structs. Do not pass `nil` — use `context.TODO()` temporarily or `context.Background()` only at `main`.
+
+## Logging
+
+- Use `pkg/log` helpers (`log.Printf`, `log.Info`, `log.SendCloudReport`). Do not call `fmt.Printf` for runtime output or `logrus` directly outside the `log` package.
+- Keep user-facing messages short and actionable. Technical details go to debug-level logs.
+
+## Helm SDK wrappers
+
+- Call into `pkg/helm` (never import `helm.sh/helm/v3` directly from `cmd/` or other `pkg/` subpackages).
+- All helm operations require `ctx` and a prepared `HelmConfig`. Honor `client.Wait = true` for installs/upgrades that users wait on; set explicit `Timeout` (hours, not minutes, for large clusters).
+
+## k3d / Docker wrappers
+
+- `pkg/k3d` is the single gateway to `github.com/k3d-io/k3d/v5`. `pkg/docker` is the single gateway to docker. Don't bypass them.
+- Constants for names and limits live at the top of the package file (`CLUSTER_NAME`, `STORAGE_EVICTION_THRESHOLD_GB`, etc.) — reuse them instead of repeating magic numbers.
+
+## Flags
+
+- Each command has a `*Flags` struct with a `SetFlags(cmd *cobra.Command)` method. Compose flags via embedding (see `InstallFlags` embedding `InstallationSourceFlags`).
+- Default values are set in `SetFlags`. Document the flag's purpose in the description passed to `StringVar`/`BoolVar`.
+
+## Concurrency
+
+- Use `golang.org/x/sync/errgroup` (already indirectly available through k8s deps; add direct dep if missing) with `SetLimit` for fan-out. No unbounded goroutines.
+- Every goroutine respects `ctx.Done()`.
+
+## Formatting and lint
+
+- Run `gofmt -w`. CI enforces `make check-fmt` and `make lint` (golangci-lint).
+- Keep imports grouped: stdlib / third-party / internal (`github.com/tensorleap/helm-charts/...`). `goimports` handles this.
+
+## External-facing stability
+
+- `pkg/server.RunInstallCmd` and similar are consumed by `leap-cli` (separate repo). Do NOT change signatures without coordinating a `leap-cli` bump (see `DEVELOPER-GUIDE.md`).
+- Bump `pkg/version/version.go` for any user-visible CLI change and tag the repo.
+
+## Testing
+
+- Run `go test ./...` and `go test -race ./...` before pushing.
+- Use fakes over mocks; `httptest.NewServer` for HTTP; avoid sleeps (use `require.Eventually` or a fake clock).
