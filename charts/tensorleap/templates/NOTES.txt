@@ -1,0 +1,33 @@
+{{/*
+Post-install / post-upgrade notes. Helm prints this file after a successful
+release so the operator sees it on stdout. We use it for a soft warning when
+the install combination is the one that silently breaks Keycloak browser
+login (non-loopback domain + plaintext HTTP).
+*/}}
+
+Tensorleap was deployed to namespace "{{ .Release.Namespace }}" as release "{{ .Release.Name }}".
+
+URL: {{ .Values.global.url | default (printf "http://%s" .Values.global.domain) }}
+
+{{- $domain := .Values.global.domain | default "" -}}
+{{- $tlsOn := .Values.global.tls.enabled | default false -}}
+{{- $loopback := list "" "localhost" "127.0.0.1" "::1" -}}
+{{- if and (not (has $domain $loopback)) (not $tlsOn) }}
+
+WARNING: global.domain={{ $domain | quote }} is set with global.tls.enabled=false.
+
+  Keycloak's "sslRequired: external" policy rejects plaintext auth on
+  non-loopback hosts, so the first browser login will land on an
+  "HTTPS required" page even though the install itself succeeded.
+
+  Fix it by re-running with TLS enabled:
+
+    helm upgrade {{ .Release.Name }} {{ .Chart.Name }} \
+      -n {{ .Release.Namespace }} \
+      --reuse-values \
+      --set global.tls.enabled=true \
+      --set-file global.tls.cert=./tls.crt \
+      --set-file global.tls.key=./tls.key
+
+  Or switch to a loopback domain (global.domain=localhost) for local dev.
+{{- end }}

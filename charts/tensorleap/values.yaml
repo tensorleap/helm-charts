@@ -36,6 +36,11 @@ global:
   basePath: ""
   url: "http://localhost"
   proxyUrl: ""
+  # Set tls.enabled=true and provide cert/key for any non-loopback domain.
+  # Keycloak refuses plaintext auth on non-loopback hosts, so leaving this off
+  # with a real domain produces an "HTTPS required" page on first browser
+  # login. The chart prints a NOTES warning on install when this combination
+  # is detected, but does not block the install.
   tls:
     enabled: false
     cert: ""
