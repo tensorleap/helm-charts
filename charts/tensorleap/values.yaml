@@ -22,6 +22,12 @@ ingress-nginx:
         cpu: "100m"
 
 global:
+  # Set to true to install all resources strictly within the release namespace.
+  # When true: node-server RBAC becomes Role (not ClusterRole), engine-cm and
+  # node-server env get explicit namespace references, and no cluster-wide
+  # resources are created. Use this for installing into existing shared
+  # Kubernetes clusters. Default false preserves current k3d behavior.
+  namespacedInstall: false
   target_namespace: ""
   storageClassName: ""
   create_local_volumes: true

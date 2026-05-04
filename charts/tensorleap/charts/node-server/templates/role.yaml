@@ -1,5 +1,5 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: {{ empty .Values.global.target_namespace | ternary "Role" "ClusterRole" }}
+kind: {{ if or (empty .Values.global.target_namespace) .Values.global.namespacedInstall }}Role{{ else }}ClusterRole{{ end }}
 metadata:
   name: node-server-role
 rules:
