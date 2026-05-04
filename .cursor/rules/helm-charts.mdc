@@ -1,0 +1,61 @@
+---
+description: Conventions for editing Helm charts and Kubernetes manifests in this repo
+globs: charts/**/*.yaml,charts/**/*.yml,charts/**/*.tpl
+alwaysApply: false
+---
+
+# Helm / K8s manifest rules (this repo)
+
+## Editing templates
+
+- Preserve existing indentation and helper usage. If the surrounding file uses `nindent 4`, match it.
+- Wrap conditional manifests at the file level (`{{- if .Values.foo.enabled }}...{{- end }}`), not per-field.
+- Never hand-roll labels when a helper (`chart.labels`, `chart.selectorLabels`) exists.
+
+## Resources
+
+- Every container MUST have `resources.requests` and `resources.limits`. Memory `requests == limits` for stateful components (mongodb, elasticsearch, rabbitmq, minio, keycloak).
+- When adding a new workload, set probes explicitly. Do not rely on implicit defaults.
+
+## Persistent volumes
+
+- This repo supports two PV modes driven by `global.create_local_volumes`:
+  - `true` — a static `PersistentVolume` with `hostPath` is emitted alongside the PVC and bound via `claimRef`. Used by k3d single-node installs (`/var/lib/tensorleap/standalone/storage/<name>`).
+  - `false` — the PVC relies on a cluster `StorageClass` (via `global.storageClassName`).
+- New PVCs MUST follow this dual pattern. See `charts/tensorleap/charts/node-server/templates/mongodb-pvc.yaml` as the reference.
+- Do not commit PVC size reductions — shrinking is not supported.
+
+## Elasticsearch / ECK
+
+- The `Elasticsearch` CR lives in `charts/tensorleap/templates/elasticsearch.yaml`. The CRD is installed by `tensorleap-infra` via `eck-operator`.
+- If you change `spec.version` in the Elasticsearch CR, also update the explicit `image:` field so `update-images` picks it up.
+- `ES_JAVA_OPTS` heap must be ≤ 50% of the container memory limit AND ≤ 31Gi.
+- `vm.max_map_count=262144` is set via a privileged initContainer on the ES pod. Keep it.
+
+## Chart.yaml
+
+- Bump `charts/tensorleap/Chart.yaml` `version:` on every change that affects rendered output.
+- Minor-version bump (`1.5.x → 1.6.0`) signals that cluster reinstall is required (see `DEVELOPER-GUIDE.md` — the installer compares minor versions to decide reinstall).
+- Dependencies are pinned to exact versions; update both the version and the bundled tarball (`helm dependency build`).
+
+## Subcharts
+
+- `engine`, `node-server`, `web-ui` are local subcharts edited in this repo.
+- External subcharts (`ingress-nginx`, `keycloakx`, `datadog`, `eck-operator`) are configured through `values.yaml` of the parent chart using the dependency name (or alias) as the key. Do not edit the tgz contents.
+
+## Image tags
+
+- `image_tag` values for `engine`, `node-server`, `web-ui`, pippin are updated by the `Update images` workflow from stable tags in the respective source repos.
+- When editing by hand, also update `engine-latest-image`, `node-server-latest-image`, `web-ui-latest-image`, `pippin-latest-image` at the repo root AND run `make update-images`.
+
+## After editing charts
+
+Run before committing:
+
+```
+make build-helm
+helm lint charts/tensorleap
+helm template test charts/tensorleap > /tmp/out.yaml   # inspect diff
+make update-images
+make validate-images
+```
