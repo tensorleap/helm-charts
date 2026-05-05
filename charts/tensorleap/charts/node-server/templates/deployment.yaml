@@ -118,7 +118,7 @@ spec:
         - name: migrate-sessions-to-versions
           image: {{ .Values.image }}:{{ .Values.image_tag }}
           imagePullPolicy: IfNotPresent
-          command: ["npx", "ts-node", "scripts/migrate-sessions-to-versions.ts"]
+          command: ["node", "dist/scripts/migrate-sessions-to-versions.js"]
           envFrom:
             - configMapRef:
                 name: tensorleap-node-server-env-configmap
