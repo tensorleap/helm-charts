@@ -1,4 +1,4 @@
-image_tag: master-a3c24351
+image_tag: 1.6.01-instances-quickfix-1122ba74
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
