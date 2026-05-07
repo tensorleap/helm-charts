@@ -231,6 +231,8 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		flags.DisableAuth = new(bool)
 	}
 
+	warnIfPlaintextOnRealDomain(flags.Domain, tlsParams.Enabled)
+
 	imageCachingMethod, err := initImageCachingMethod(isAirgap, previousParams, flags.ImageCachingMethod)
 	if err != nil {
 		return nil, err
@@ -983,4 +985,21 @@ func LoadInstallationParams(paramsBytes []byte) (*InstallationParams, error) {
 		return nil, err
 	}
 	return params, nil
+}
+
+// warnIfPlaintextOnRealDomain prints a non-fatal warning when a non-loopback
+// domain is paired with TLS off. Keycloak's "sslRequired: external" policy
+// then rejects browser logins with an "HTTPS required" page, so the install
+// works but auth is broken until TLS is added.
+func warnIfPlaintextOnRealDomain(domain string, tlsEnabled bool) {
+	if tlsEnabled {
+		return
+	}
+	switch domain {
+	case "", "localhost", "127.0.0.1", "::1":
+		return
+	}
+	log.Warnf("--domain=%q is set with TLS disabled. Keycloak refuses plaintext "+
+		"auth on non-loopback hosts -- browser login will fail with \"HTTPS required\". "+
+		"Pass --cert/--key (or set global.tls.{enabled,cert,key}) to fix.", domain)
 }

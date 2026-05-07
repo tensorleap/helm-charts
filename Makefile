@@ -50,6 +50,22 @@ check-fmt:
 test:
 	@go test ./...
 
+.PHONY: test-existing-cluster test-existing-cluster-clean install-existing-cluster
+test-existing-cluster:
+	@./scripts/test-existing-cluster.sh
+
+test-existing-cluster-clean:
+	@kind delete cluster --name tensorleap-test 2>/dev/null || true
+
+# Operator-style installer for an existing Kubernetes cluster. Forwards every
+# argument to the script, e.g.
+#   make install-existing-cluster ARGS="--kube-context my-prod \
+#     --domain tensorleap.example.com --storage-class gp3 \
+#     --tls-cert ./tls.crt --tls-key ./tls.key"
+# Run with no ARGS (or ARGS="--help") to see the full flag list.
+install-existing-cluster:
+	@./scripts/install-existing-cluster.sh $(ARGS)
+
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
 .PHONY: update-images
 update-images:

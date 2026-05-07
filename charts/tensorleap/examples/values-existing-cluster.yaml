@@ -1,0 +1,109 @@
+# Example values file for installing Tensorleap into an existing Kubernetes
+# cluster as a namespace-scoped application.
+#
+# Two equivalent ways to install with this file:
+#
+# Option A -- operator-style script (preflight checks + helm under the hood):
+#   ./scripts/install-existing-cluster.sh \
+#     --kube-context  my-prod \
+#     --domain        tensorleap.example.com \
+#     --storage-class gp3 \
+#     --tls-cert      ./tls.crt \
+#     --tls-key       ./tls.key \
+#     --extra-values  ./values-existing-cluster.yaml
+#
+# Option B -- plain helm against the public Helm repo (latest version):
+#   helm repo add tensorleap https://helm.tensorleap.ai
+#   helm repo update
+#
+#   # 1. Infra chart (ECK CRDs + optional registry / NVIDIA plugin)
+#   helm upgrade --install tensorleap-infra tensorleap/tensorleap-infra \
+#     -n tensorleap --create-namespace \
+#     --set nvidiaGpu.enabled=false \
+#     --set registry.enabled=false
+#
+#   # 2. Main chart (cert/key injected from PEM files)
+#   helm upgrade --install tensorleap tensorleap/tensorleap \
+#     -n tensorleap \
+#     -f ./values-existing-cluster.yaml \
+#     --set-file global.tls.cert=./tls.crt \
+#     --set-file global.tls.key=./tls.key \
+#     --timeout 15m
+#
+#   # Pin a specific chart release for reproducibility (optional):
+#   #   ... --version 1.5.97
+#
+# Upgrade (Option B):
+#   helm repo update
+#   helm upgrade tensorleap tensorleap/tensorleap -n tensorleap \
+#     -f ./values-existing-cluster.yaml \
+#     --set-file global.tls.cert=./tls.crt \
+#     --set-file global.tls.key=./tls.key
+#
+# Uninstall (controller-managed PVCs are retained; see docs/INSTALL-MODES.md):
+#   helm uninstall tensorleap       -n tensorleap
+#   helm uninstall tensorleap-infra -n tensorleap
+#
+# If you have a clone of this repo and want to install from local charts,
+# replace `tensorleap/tensorleap-infra` / `tensorleap/tensorleap` with
+# `./charts/tensorleap-infra` / `./charts/tensorleap` (and skip the
+# `helm repo add` / `helm repo update` step).
+
+global:
+  # Ensures all resources are namespace-scoped (no ClusterRole). Required for
+  # installing into a shared Kubernetes cluster.
+  namespacedInstall: true
+
+  # Use dynamic PVC provisioning with the cluster's storage class instead of
+  # static hostPath PersistentVolumes (which only work on k3d).
+  create_local_volumes: false
+  storageClassName: "gp3"  # change to your cluster's storage class
+
+  # Public-facing domain/URL. Keycloak and ingress rely on these for correct
+  # redirect URLs and TLS hostname validation.
+  domain: "tensorleap.example.com"
+  url: "https://tensorleap.example.com"
+  proxyUrl: ""
+
+  tls:
+    # Always enable for non-loopback domains -- Keycloak's "sslRequired:
+    # external" policy rejects HTTP browser logins otherwise. The chart
+    # will print a warning at install time if this is left disabled while
+    # using a real domain.
+    enabled: true
+    # Inject cert/key from PEM files via --set-file (preferred) instead of
+    # inlining secrets here. Leave the placeholders if you use --set-file.
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      REPLACE_WITH_YOUR_CERTIFICATE
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      REPLACE_WITH_YOUR_PRIVATE_KEY
+      -----END RSA PRIVATE KEY-----
+
+  elasticsearch:
+    # Elasticsearch inside the chart requires the ECK operator from the infra
+    # chart. If you already have an external Elasticsearch, disable this and
+    # set the URL instead.
+    enabled: true
+    url: ""
+  keycloakx:
+    enabled: true
+
+# Disable the bundled ingress-nginx; existing clusters usually already run one.
+# If your cluster has a different ingress class, adjust the ingress annotations
+# in the chart templates or override them here.
+ingress-nginx:
+  enabled: false
+
+# Disable Datadog when using your own observability stack.
+datadog:
+  enabled: false
+
+# If you keep ingress-nginx enabled but install into a namespace other than
+# "tensorleap", override the default-ssl-certificate reference here:
+# ingress-nginx:
+#   controller:
+#     extraArgs:
+#       default-ssl-certificate: "<your-namespace>/tls-secret"

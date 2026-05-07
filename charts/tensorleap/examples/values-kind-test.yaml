@@ -1,0 +1,33 @@
+# Values used by scripts/test-existing-cluster.sh for local Kind-based testing
+# of the existing-cluster install path. See docs/INSTALL-MODES.md.
+#
+# Mirrors a production install: a non-loopback domain served over HTTPS with
+# a self-signed cert. The script generates the cert in test/ and passes it
+# via `--set-file global.tls.{cert,key}`, so this file does NOT contain the
+# cert or key inline.
+
+global:
+  namespacedInstall: true
+
+  create_local_volumes: false
+  storageClassName: "standard"
+
+  domain: "tensorleap.local"
+  url: "https://tensorleap.local"
+  proxyUrl: ""
+
+  tls:
+    enabled: true
+    # cert and key are injected by the test script with --set-file.
+
+  elasticsearch:
+    enabled: true
+    url: ""
+  keycloakx:
+    enabled: true
+
+ingress-nginx:
+  enabled: false
+
+datadog:
+  enabled: false
