@@ -1,4 +1,4 @@
-image_tag: master-206fcbe1
+image_tag: adding_latant_space_to_version-0daf94fd
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false

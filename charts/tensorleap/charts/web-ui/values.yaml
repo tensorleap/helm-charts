@@ -1,4 +1,4 @@
-image_tag: master-a67ee8a3
+image_tag: adding_latant_space_to_version-0ffe9ca0
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
