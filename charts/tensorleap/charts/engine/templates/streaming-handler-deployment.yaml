@@ -27,6 +27,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: 600
       priorityClassName: low-priority
+      serviceAccountName: deployment-manager
       containers:
         - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           resources:
