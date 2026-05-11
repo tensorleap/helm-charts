@@ -1,4 +1,4 @@
-image_tag: feature-pytorch-mvp-95876ac4
+image_tag: feature-pytorch-mvp-cef2b3e3
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true

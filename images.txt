@@ -12,7 +12,7 @@ public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py312
 public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py38
 public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py39
 public.ecr.aws/tensorleap/engine:feature-pytorch-mvp-be48188b
-public.ecr.aws/tensorleap/node-server:feature-pytorch-mvp-95876ac4
+public.ecr.aws/tensorleap/node-server:feature-pytorch-mvp-cef2b3e3
 public.ecr.aws/tensorleap/pippin:master-0345abc5
 public.ecr.aws/tensorleap/web-ui:master-f36d45d9
 quay.io/keycloak/keycloak:26.3.2
