@@ -11,7 +11,7 @@ metadata:
   name: deployment-manager-role
 rules:
   - apiGroups: ["apps", ""]
-    resources: ["deployments", "pods"]
+    resources: ["deployments", "pods", "services"]
     verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
   - apiGroups: ["metrics.k8s.io"]
     resources: ["pods"]
