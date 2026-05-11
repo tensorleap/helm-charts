@@ -7,11 +7,11 @@ docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 ghcr.io/project-zot/zot-linux-amd64:v2.1.15
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py310
-public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py312
-public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py38
-public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-be48188b-py39
-public.ecr.aws/tensorleap/engine:feature-pytorch-mvp-be48188b
+public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-0dfced6c-py310
+public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-0dfced6c-py312
+public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-0dfced6c-py38
+public.ecr.aws/tensorleap/engine-generic:feature-pytorch-mvp-0dfced6c-py39
+public.ecr.aws/tensorleap/engine:feature-pytorch-mvp-0dfced6c
 public.ecr.aws/tensorleap/node-server:feature-pytorch-mvp-cef2b3e3
 public.ecr.aws/tensorleap/pippin:master-0345abc5
 public.ecr.aws/tensorleap/web-ui:master-f36d45d9
