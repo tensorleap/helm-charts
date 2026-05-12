@@ -35,5 +35,3 @@ data:
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
 
 
-  REDIS_HOST: redis.{{ .Release.Namespace }}.svc.cluster.local
-  REDIS_PORT: "6379"
