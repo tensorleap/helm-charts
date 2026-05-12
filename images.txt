@@ -7,11 +7,11 @@ docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 ghcr.io/project-zot/zot-linux-amd64:v2.1.15
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:master-8409aaa2-py310
-public.ecr.aws/tensorleap/engine-generic:master-8409aaa2-py312
-public.ecr.aws/tensorleap/engine-generic:master-8409aaa2-py38
-public.ecr.aws/tensorleap/engine-generic:master-8409aaa2-py39
-public.ecr.aws/tensorleap/engine:master-8409aaa2
+public.ecr.aws/tensorleap/engine-generic:bugfix-metrics-insgihts-26039140-py310
+public.ecr.aws/tensorleap/engine-generic:bugfix-metrics-insgihts-26039140-py312
+public.ecr.aws/tensorleap/engine-generic:bugfix-metrics-insgihts-26039140-py38
+public.ecr.aws/tensorleap/engine-generic:bugfix-metrics-insgihts-26039140-py39
+public.ecr.aws/tensorleap/engine:bugfix-metrics-insgihts-26039140
 public.ecr.aws/tensorleap/node-server:master-c985a88d
 public.ecr.aws/tensorleap/pippin:master-0345abc5
 public.ecr.aws/tensorleap/web-ui:master-791b5235
