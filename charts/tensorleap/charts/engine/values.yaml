@@ -1,4 +1,4 @@
-image_tag: master-8409aaa2
+image_tag: bugfix-metrics-insgihts-26039140
 image_name: public.ecr.aws/tensorleap/engine
 entry_point: generic_processor
 metrics_activate_nfs: false
