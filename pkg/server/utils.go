@@ -147,7 +147,6 @@ func LoadManifestOnly(flags *InstallationSourceFlags, previousMnf *manifest.Inst
 				return nil, false, err
 			}
 		}
-		log.Info("Using tag: " + mnf.Tag)
 	}
 	if err != nil {
 		log.SendCloudReport("error", "Build manifest failed", "Failed",
