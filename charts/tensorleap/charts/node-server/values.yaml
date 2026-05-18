@@ -1,4 +1,4 @@
-image_tag: master-c2868642
+image_tag: fetch-similar-by-ls-2bf37d9c
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true

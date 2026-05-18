@@ -1,4 +1,4 @@
-image_tag: master-cf9398cd
+image_tag: fetch-similar-by-ls-05bf0aba
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
