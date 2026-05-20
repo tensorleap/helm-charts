@@ -8,6 +8,11 @@ on:
         required: false
         default: ''
         type: string
+      cli_tag:
+        description: 'leap-cli release tag to install, e.g. v0.0.151 (omit or leave empty to install latest)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   install-server:
@@ -16,7 +21,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Install leap-cli
+        env:
+          CLI_TAG: ${{ inputs.cli_tag }}
         run: |
+          if [ -n "$CLI_TAG" ]; then
+            echo "Installing leap-cli pinned to tag: $CLI_TAG"
+            export TAG="$CLI_TAG"
+          else
+            echo "Installing latest leap-cli"
+          fi
           curl -s https://raw.githubusercontent.com/tensorleap/leap-cli/master/install.sh | bash
           if [ $? -ne 0 ]; then
             echo "❌ leap-cli installation failed"
