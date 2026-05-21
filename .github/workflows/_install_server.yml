@@ -22,11 +22,12 @@ jobs:
     steps:
       - name: Install leap-cli
         env:
-          CLI_TAG: ${{ inputs.cli_tag }}
+          # install.sh reads $TAG from the environment to pin the release; empty = latest.
+          # See leap-cli/install.sh checkTagProvided().
+          TAG: ${{ inputs.cli_tag }}
         run: |
-          if [ -n "$CLI_TAG" ]; then
-            echo "Installing leap-cli pinned to tag: $CLI_TAG"
-            export TAG="$CLI_TAG"
+          if [ -n "$TAG" ]; then
+            echo "Installing leap-cli pinned to tag: $TAG"
           else
             echo "Installing latest leap-cli"
           fi
