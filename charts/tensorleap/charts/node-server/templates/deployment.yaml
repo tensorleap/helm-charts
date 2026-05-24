@@ -29,7 +29,11 @@ spec:
           volumeMounts:
             - mountPath: /mnt/shared
               name: shared
-        - name: db-migration
+        # Phase 1: regular .js migrations up to (and including) the
+        # special-migration boundary. Anything past the boundary is
+        # deferred to db-migration-post which runs after the special
+        # sessions-to-versions migration.
+        - name: db-migration-pre
           securityContext:
             runAsUser: 0
           image: {{ .Values.mongodb_image }}
@@ -37,70 +41,7 @@ spec:
             - bash
             - "-c"
             - |
-              set -euo pipefail
-
-              # Optional bounds, both inclusive, both numeric.
-              # MIGRATION_FROM: skip migrations with version < MIGRATION_FROM (default 1 = no lower bound).
-              # MIGRATION_TO:   skip migrations with version > MIGRATION_TO   (default 99999 = no upper bound).
-              FROM=${MIGRATION_FROM:-1}
-              TO=${MIGRATION_TO:-99999}
-
-              echo 'Verifying db schema version...'
-              echo "Migration window for this pass: [$FROM..$TO]"
-
-              CURRNET_VERSION=$(mongosh $MONGO_URI --eval 'print((db.db_metadata.findOne({ _id: 1 }) || { schemaVersion: 0 }).schemaVersion); process.exit(0);' --quiet)
-              echo "Current schemaVersion: $CURRNET_VERSION"
-              cd /mnt/shared/migrations
-              LATEST_VERSION=$(ls *.js | sed 's/-.*$//' | sort -r | head -1 | sed 's/^0*//')
-              echo "Latest schemaVersion (all files): $LATEST_VERSION"
-
-              # Effective ceiling for this run = min(LATEST_VERSION, TO).
-              TARGET_VERSION=$LATEST_VERSION
-              if [ $TO -lt $TARGET_VERSION ]; then TARGET_VERSION=$TO; fi
-              echo "Target schemaVersion for this pass: $TARGET_VERSION"
-
-              test $CURRNET_VERSION -ge $TARGET_VERSION && { echo "Already at or above target — nothing to do."; exit 0; }
-
-              if [ $CURRNET_VERSION -eq 0 ]
-              then
-                echo "Setting initial schemaVersion to $LATEST_VERSION (fresh install — skipping all migrations)"
-                mongosh $MONGO_URI --eval "db.db_metadata.insertOne({ _id: 1, schemaVersion: $LATEST_VERSION })" --quiet
-                exit 0
-              fi
-
-              echo "Locking DB"
-              FAILED_TO_GET_LOCK=$(mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1, schemaVersion: $CURRNET_VERSION, lock: { \$exists: false }}, { \$set: { lock: 'Preparing for migration from $CURRNET_VERSION to $TARGET_VERSION' }})" --quiet)
-              if [ "$FAILED_TO_GET_LOCK" == 'true' ];
-              then
-                echo "Failed to lock DB! (Could be failed migration), waiting for lock to clear before restarting"
-                LOCK_TEXT=$(mongosh $MONGO_URI --eval "db.db_metadata.findOne({ _id: 1 }).lock" --quiet)
-                until [ -z "$LOCK_TEXT" ]
-                do
-                  echo "DB Still locked: $LOCK_TEXT"
-                  echo "To see previous run logs run: kubectl logs $POD_NAME -c db-migration --previous"
-                  echo "To release the lock run: kubectl exec -it mongodb-0 -- mongo mongodb://127.0.0.1:27017/tensorleap --eval 'db.db_metadata.update({_id:1}, {\$unset: {lock: true}})'"
-                  sleep 30
-                  LOCK_TEXT=$(mongosh $MONGO_URI --eval "db.db_metadata.findOne({ _id: 1 }).lock" --quiet)
-                done
-                echo 'DB Unlocked! restarting...'
-                exit -1
-              fi
-
-              for file in $(ls *.js | sort); do
-                VERSION=$(echo $file | sed 's/-.*$//' | sed 's/^0*//')
-                if [ $VERSION -gt $CURRNET_VERSION ] && [ $VERSION -ge $FROM ] && [ $VERSION -le $TO ]
-                then
-                  echo "Updating lock description..."
-                  mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1}, { \$set: { lock: 'Migration from $CURRNET_VERSION to $TARGET_VERSION: $file' }}) == null" --quiet
-                  echo "Running $file"
-                  mongosh $MONGO_URI -f $file --quiet
-                  echo "Upating schemaVersion to $VERSION"
-                  mongosh $MONGO_URI --eval "db.db_metadata.updateOne({ _id: 1 }, { \$set: { schemaVersion: $VERSION }}, { upsert: true })" --quiet
-                fi
-              done
-
-              echo "Unlocking DB"
-              mongosh $MONGO_URI --eval "db.db_metadata.updateOne({ _id: 1 },{ \$unset: { lock: true }})" --quiet
+              {{- include "node-server.dbMigrationScript" . | nindent 14 }}
           volumeMounts:
             - mountPath: /mnt/shared
               name: shared
@@ -108,6 +49,11 @@ spec:
             - configMapRef:
                 name: tensorleap-node-server-env-configmap
           env:
+            # Phase 1: up to and including the special-migration boundary.
+            # Migrations after this index assume sessions-to-versions has
+            # already produced the new versions/resources shape.
+            - name: MIGRATION_TO
+              value: "{{ .Values.db_migration_special_boundary | default 134 }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -152,6 +98,82 @@ spec:
           volumeMounts:
             - name: minio
               mountPath: /usr/minio
+        # Phase 2: regular .js migrations strictly after the
+        # special-migration boundary. Waits for the special migration's
+        # background K8s Job to drain `_storage_tasks` before running —
+        # post-boundary migrations may depend on the file moves done
+        # there.
+        - name: db-migration-post
+          securityContext:
+            runAsUser: 0
+          image: {{ .Values.mongodb_image }}
+          command:
+            - bash
+            - "-c"
+            - |
+              set -euo pipefail
+
+              WAIT_TIMEOUT_SECONDS=${MIGRATION_WAIT_TIMEOUT_SECONDS:-1800}
+              echo "Waiting for sessions-to-versions storage tasks to drain (timeout ${WAIT_TIMEOUT_SECONDS}s)..."
+
+              waited=0
+              while true; do
+                PENDING=$(mongosh $MONGO_URI --eval '
+                  const meta = db.getCollection("_migrations").findOne({_id: "sessions-to-versions-v1"});
+                  if (!meta || !meta.completedAt) { print("marker-missing"); quit(0); }
+                  const tasksCol = db.getCollection("_storage_tasks");
+                  if (!db.getCollectionNames().includes("_storage_tasks")) { print(0); quit(0); }
+                  print(tasksCol.countDocuments({status: {$nin: ["completed", "skipped"]}}));
+                ' --quiet | tail -1)
+
+                if [ "$PENDING" = "0" ]; then
+                  echo "Storage tasks drained — proceeding."
+                  break
+                fi
+                if [ "$PENDING" = "marker-missing" ]; then
+                  echo "WARNING: sessions-to-versions completion marker missing — special migration did not run? Skipping wait and proceeding."
+                  break
+                fi
+                if [ "$waited" -ge "$WAIT_TIMEOUT_SECONDS" ]; then
+                  echo "ERROR: timed out after ${WAIT_TIMEOUT_SECONDS}s waiting for $PENDING storage task(s) to drain."
+                  echo "To inspect: kubectl logs -n $NAMESPACE job/storage-tasks-migration"
+                  exit 1
+                fi
+                echo "  $PENDING storage task(s) still pending/in_progress (waited ${waited}s)..."
+                sleep 15
+                waited=$((waited + 15))
+              done
+
+              {{- include "node-server.dbMigrationScript" . | nindent 14 }}
+          volumeMounts:
+            - mountPath: /mnt/shared
+              name: shared
+          envFrom:
+            - configMapRef:
+                name: tensorleap-node-server-env-configmap
+          env:
+            # Phase 2: pick up where pre left off — anything STRICTLY
+            # above the boundary the pre pass capped at.
+            - name: MIGRATION_FROM
+              value: "{{ add (.Values.db_migration_special_boundary | default 134 | int) 1 }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HMAC_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootUser
+            - name: HMAC_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: rootPassword
       containers:
         - name: tensorleap-node-server
           image: {{ .Values.image }}:{{ .Values.image_tag }}
