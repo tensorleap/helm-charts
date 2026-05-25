@@ -93,7 +93,7 @@ Replaced hardcoded `namespace: tensorleap` strings and `.tensorleap.svc.cluster.
 Files affected:
 
 - [engine_sa.yaml](../charts/tensorleap/charts/engine/templates/engine_sa.yaml) -- 4 occurrences on ServiceAccount / Role / RoleBinding
-- [engine-cm.yaml](../charts/tensorleap/charts/engine/templates/engine-cm.yaml) -- `REDIS_HOST`
+- [engine-cm.yaml](../charts/tensorleap/charts/engine/templates/engine-cm.yaml) -- `RABBIT_HOST`, `STORAGE_ENDPOINT`
 - [node-server-env-configmap.yaml](../charts/tensorleap/charts/node-server/templates/node-server-env-configmap.yaml) -- `KEYCLOAK_CLUSTER_URL`
 
 #### Verified behavior
