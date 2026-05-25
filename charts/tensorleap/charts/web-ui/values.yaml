@@ -1,4 +1,4 @@
-image_tag: master-3aa5ab8c
+image_tag: lowperf-insights-rank-by-affinity-cb0b3979
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
