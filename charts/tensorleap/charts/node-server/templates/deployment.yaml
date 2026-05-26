@@ -50,10 +50,23 @@ spec:
                 name: tensorleap-node-server-env-configmap
           env:
             # Phase 1: up to and including the special-migration boundary.
-            # Migrations after this index assume sessions-to-versions has
-            # already produced the new versions/resources shape.
+            # Migrations strictly after this index assume sessions-to-versions
+            # has already (a) populated `inferenceArtifactId` on versions
+            # and (b) finished the storage-tasks K8s Job that moves files
+            # to the new `inference/<id>/` / `vis/<id>/` layout.
+            #
+            # Boundary = 132 (not 134) because migration 133 backfills
+            # `graphValidationData.available_latent_spaces` by reading a
+            # PCA manifest at the *new* storage path, so it needs both of
+            # the above. Running it pre-sessions defaults every version
+            # to `[{default, balanced}]` and the script's idempotency
+            # guard (`$exists: true`) prevents a corrective re-run.
+            # Migration 134 is version/session-independent (only cleans up
+            # `under_representation` references in insights/jobs/etc.) so
+            # it can safely live in post — keeping it together with 133
+            # avoids splitting consecutive numbered files across phases.
             - name: MIGRATION_TO
-              value: "{{ .Values.db_migration_special_boundary | default 134 }}"
+              value: "{{ .Values.db_migration_special_boundary | default 132 }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -153,9 +166,10 @@ spec:
                 name: tensorleap-node-server-env-configmap
           env:
             # Phase 2: pick up where pre left off — anything STRICTLY
-            # above the boundary the pre pass capped at.
+            # above the boundary the pre pass capped at. Default must match
+            # the pre-pass MIGRATION_TO default above (currently 132).
             - name: MIGRATION_FROM
-              value: "{{ add (.Values.db_migration_special_boundary | default 134 | int) 1 }}"
+              value: "{{ add (.Values.db_migration_special_boundary | default 132 | int) 1 }}"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
