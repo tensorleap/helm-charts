@@ -38,6 +38,17 @@ func GetReleasesPage(owner, repo string, page, per_page int) ([]Release, error) 
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		var apiErr struct {
+			Message string `json:"message"`
+		}
+		body, _ := io.ReadAll(res.Body)
+		if jsonErr := json.Unmarshal(body, &apiErr); jsonErr == nil && apiErr.Message != "" {
+			return nil, fmt.Errorf("github API error (status %d): %s", res.StatusCode, apiErr.Message)
+		}
+		return nil, fmt.Errorf("github API error: status %d", res.StatusCode)
+	}
+
 	err = json.NewDecoder(res.Body).Decode(&releases)
 	if err != nil {
 		return nil, err
