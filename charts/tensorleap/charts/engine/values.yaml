@@ -1,5 +1,6 @@
 image_tag: master-c59e9797
 image_name: public.ecr.aws/tensorleap/engine
+redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
