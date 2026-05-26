@@ -131,20 +131,41 @@ spec:
 
               waited=0
               while true; do
-                PENDING=$(mongosh $MONGO_URI --eval '
+                # `pending` counts tasks that have NOT reached a terminal
+                # state; `skipped` is reported separately. Skipped tasks
+                # mean the worker couldn't locate the source — failing
+                # loud beats silently proceeding (which is what stamped
+                # half the cluster with the `[{default, balanced}]`
+                # latent-space sentinel last time).
+                STATUS=$(mongosh $MONGO_URI --eval '
                   const meta = db.getCollection("_migrations").findOne({_id: "sessions-to-versions-v1"});
                   if (!meta || !meta.completedAt) { print("marker-missing"); quit(0); }
-                  const tasksCol = db.getCollection("_storage_tasks");
-                  if (!db.getCollectionNames().includes("_storage_tasks")) { print(0); quit(0); }
-                  print(tasksCol.countDocuments({status: {$nin: ["completed", "skipped"]}}));
+                  const names = db.getCollectionNames();
+                  if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0"); quit(0); }
+                  const c = db.getCollection("_storage_tasks");
+                  const pending = c.countDocuments({status: {$in: ["pending", "in_progress", "failed"]}});
+                  const skipped = c.countDocuments({status: "skipped"});
+                  print("pending=" + pending + " skipped=" + skipped);
                 ' --quiet | tail -1)
 
-                if [ "$PENDING" = "0" ]; then
-                  echo "Storage tasks drained — proceeding."
+                if [ "$STATUS" = "marker-missing" ]; then
+                  echo "WARNING: sessions-to-versions completion marker missing — special migration did not run? Skipping wait and proceeding."
                   break
                 fi
-                if [ "$PENDING" = "marker-missing" ]; then
-                  echo "WARNING: sessions-to-versions completion marker missing — special migration did not run? Skipping wait and proceeding."
+
+                PENDING=$(echo "$STATUS" | sed -n 's/^pending=\([0-9][0-9]*\).*/\1/p')
+                SKIPPED=$(echo "$STATUS" | sed -n 's/.*skipped=\([0-9][0-9]*\)$/\1/p')
+
+                if [ "$PENDING" = "0" ]; then
+                  if [ "$SKIPPED" != "0" ]; then
+                    echo "ERROR: $SKIPPED storage task(s) ended in 'skipped' status."
+                    echo "       The worker couldn't locate their source files — likely a fallbackFrom"
+                    echo "       gap or a layout mismatch. Refusing to proceed; post-boundary migrations"
+                    echo "       depend on those files being at the new layout."
+                    echo "To inspect: kubectl exec -it -n $NAMESPACE mongodb-0 -- mongosh tensorleap --eval 'db._storage_tasks.find({status:\"skipped\"}, {operation:1, assetType:1, from:1, fallbackFrom:1, error:1}).limit(5).forEach(d=>printjson(d))'"
+                    exit 1
+                  fi
+                  echo "Storage tasks drained — proceeding."
                   break
                 fi
                 if [ "$waited" -ge "$WAIT_TIMEOUT_SECONDS" ]; then
