@@ -131,21 +131,32 @@ spec:
 
               waited=0
               while true; do
-                # Treat only `pending` and `in_progress` as truly pending.
-                # `failed` and `skipped` are terminal — surface them in the
-                # log for visibility but don't block post migrations: a
-                # half-broken storage layout is recoverable manually, but
-                # an indefinitely-blocked deploy isn't.
+                # Only wait for tasks at priority ≤ 2 (MOVE + COPY): those
+                # relocate files the engine reads at the new layout. Tasks
+                # at priority ≥ 3 (CLEANUP removes empty old dirs; REWRITE
+                # rewrites embedded paths inside file content) can drain
+                # in the background after the server is up — they don't
+                # gate post-boundary migrations 133-138, and waiting for
+                # them on a large install delays the deploy unnecessarily.
+                # `failed` / `skipped` are surfaced for visibility but
+                # don't block the deploy regardless of priority.
                 STATUS=$(mongosh $MONGO_URI --eval '
                   const meta = db.getCollection("_migrations").findOne({_id: "sessions-to-versions-v1"});
                   if (!meta || !meta.completedAt) { print("marker-missing"); quit(0); }
                   const names = db.getCollectionNames();
-                  if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0 failed=0"); quit(0); }
+                  if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0 failed=0 background=0"); quit(0); }
                   const c = db.getCollection("_storage_tasks");
-                  const pending = c.countDocuments({status: {$in: ["pending", "in_progress"]}});
+                  const pending = c.countDocuments({
+                    priority: {$lte: 2},
+                    status: {$in: ["pending", "in_progress"]},
+                  });
+                  const background = c.countDocuments({
+                    priority: {$gt: 2},
+                    status: {$in: ["pending", "in_progress"]},
+                  });
                   const skipped = c.countDocuments({status: "skipped"});
                   const failed = c.countDocuments({status: "failed"});
-                  print("pending=" + pending + " skipped=" + skipped + " failed=" + failed);
+                  print("pending=" + pending + " skipped=" + skipped + " failed=" + failed + " background=" + background);
                 ' --quiet | tail -1)
 
                 if [ "$STATUS" = "marker-missing" ]; then
@@ -155,7 +166,8 @@ spec:
 
                 PENDING=$(echo "$STATUS" | sed -n 's/^pending=\([0-9][0-9]*\).*/\1/p')
                 SKIPPED=$(echo "$STATUS" | sed -n 's/.*skipped=\([0-9][0-9]*\).*/\1/p')
-                FAILED=$(echo "$STATUS" | sed -n 's/.*failed=\([0-9][0-9]*\)$/\1/p')
+                FAILED=$(echo "$STATUS" | sed -n 's/.*failed=\([0-9][0-9]*\).*/\1/p')
+                BACKGROUND=$(echo "$STATUS" | sed -n 's/.*background=\([0-9][0-9]*\)$/\1/p')
 
                 if [ "$PENDING" = "0" ]; then
                   if [ "$SKIPPED" != "0" ] || [ "$FAILED" != "0" ]; then
@@ -163,16 +175,19 @@ spec:
                     echo "         Post-boundary migrations may not find every file at the new layout."
                     echo "To inspect: kubectl exec -it -n $NAMESPACE mongodb-0 -- mongosh tensorleap --eval 'db._storage_tasks.find({status:{\$in:[\"skipped\",\"failed\"]}}, {operation:1, assetType:1, from:1, fallbackFrom:1, error:1}).limit(10).forEach(d=>printjson(d))'"
                   else
-                    echo "Storage tasks drained — proceeding."
+                    echo "Blocking storage tasks (MOVE + COPY) drained — proceeding."
+                  fi
+                  if [ "$BACKGROUND" != "0" ]; then
+                    echo "  ($BACKGROUND CLEANUP/REWRITE task(s) will continue draining in the background — they don't block the deploy.)"
                   fi
                   break
                 fi
                 if [ "$waited" -ge "$WAIT_TIMEOUT_SECONDS" ]; then
-                  echo "ERROR: timed out after ${WAIT_TIMEOUT_SECONDS}s waiting for $PENDING storage task(s) to drain."
+                  echo "ERROR: timed out after ${WAIT_TIMEOUT_SECONDS}s waiting for $PENDING MOVE/COPY storage task(s) to drain."
                   echo "To inspect: kubectl logs -n $NAMESPACE job/storage-tasks-migration"
                   exit 1
                 fi
-                echo "  $PENDING storage task(s) still pending/in_progress (waited ${waited}s)..."
+                echo "  $PENDING MOVE/COPY task(s) still pending/in_progress; $BACKGROUND CLEANUP/REWRITE deferred (waited ${waited}s)..."
                 sleep 15
                 waited=$((waited + 15))
               done
