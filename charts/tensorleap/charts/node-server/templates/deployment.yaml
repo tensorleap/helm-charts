@@ -143,6 +143,13 @@ spec:
                 STATUS=$(mongosh $MONGO_URI --eval '
                   const meta = db.getCollection("_migrations").findOne({_id: "sessions-to-versions-v1"});
                   if (!meta || !meta.completedAt) { print("marker-missing"); quit(0); }
+                  // `rehydratedAt` is set when migrate-sessions-to-versions
+                  // hits the early-exit-on-marker branch and re-queues
+                  // storage tasks from migrated-version provenance — a
+                  // best-effort top-up that does NOT gate any post-
+                  // boundary migration. Let the deploy come up; the
+                  // worker keeps draining in the background.
+                  if (meta.rehydratedAt) { print("rehydrate-skip"); quit(0); }
                   const names = db.getCollectionNames();
                   if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0 failed=0 background=0"); quit(0); }
                   const c = db.getCollection("_storage_tasks");
@@ -161,6 +168,11 @@ spec:
 
                 if [ "$STATUS" = "marker-missing" ]; then
                   echo "WARNING: sessions-to-versions completion marker missing — special migration did not run? Skipping wait and proceeding."
+                  break
+                fi
+
+                if [ "$STATUS" = "rehydrate-skip" ]; then
+                  echo "Storage task queue was rehydrated from migrated docs (re-run / PROD-recovery) — proceeding immediately; worker will drain in the background."
                   break
                 fi
 
