@@ -1,4 +1,4 @@
-image_tag: migration-fix-bundle-aae7fb2a
+image_tag: migration-fix-bundle-edc2c5da
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
