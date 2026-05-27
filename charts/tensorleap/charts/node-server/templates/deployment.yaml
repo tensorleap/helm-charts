@@ -131,21 +131,21 @@ spec:
 
               waited=0
               while true; do
-                # `pending` counts tasks that have NOT reached a terminal
-                # state; `skipped` is reported separately. Skipped tasks
-                # mean the worker couldn't locate the source — failing
-                # loud beats silently proceeding (which is what stamped
-                # half the cluster with the `[{default, balanced}]`
-                # latent-space sentinel last time).
+                # Treat only `pending` and `in_progress` as truly pending.
+                # `failed` and `skipped` are terminal — surface them in the
+                # log for visibility but don't block post migrations: a
+                # half-broken storage layout is recoverable manually, but
+                # an indefinitely-blocked deploy isn't.
                 STATUS=$(mongosh $MONGO_URI --eval '
                   const meta = db.getCollection("_migrations").findOne({_id: "sessions-to-versions-v1"});
                   if (!meta || !meta.completedAt) { print("marker-missing"); quit(0); }
                   const names = db.getCollectionNames();
-                  if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0"); quit(0); }
+                  if (!names.includes("_storage_tasks")) { print("pending=0 skipped=0 failed=0"); quit(0); }
                   const c = db.getCollection("_storage_tasks");
-                  const pending = c.countDocuments({status: {$in: ["pending", "in_progress", "failed"]}});
+                  const pending = c.countDocuments({status: {$in: ["pending", "in_progress"]}});
                   const skipped = c.countDocuments({status: "skipped"});
-                  print("pending=" + pending + " skipped=" + skipped);
+                  const failed = c.countDocuments({status: "failed"});
+                  print("pending=" + pending + " skipped=" + skipped + " failed=" + failed);
                 ' --quiet | tail -1)
 
                 if [ "$STATUS" = "marker-missing" ]; then
@@ -154,18 +154,17 @@ spec:
                 fi
 
                 PENDING=$(echo "$STATUS" | sed -n 's/^pending=\([0-9][0-9]*\).*/\1/p')
-                SKIPPED=$(echo "$STATUS" | sed -n 's/.*skipped=\([0-9][0-9]*\)$/\1/p')
+                SKIPPED=$(echo "$STATUS" | sed -n 's/.*skipped=\([0-9][0-9]*\).*/\1/p')
+                FAILED=$(echo "$STATUS" | sed -n 's/.*failed=\([0-9][0-9]*\)$/\1/p')
 
                 if [ "$PENDING" = "0" ]; then
-                  if [ "$SKIPPED" != "0" ]; then
-                    echo "ERROR: $SKIPPED storage task(s) ended in 'skipped' status."
-                    echo "       The worker couldn't locate their source files — likely a fallbackFrom"
-                    echo "       gap or a layout mismatch. Refusing to proceed; post-boundary migrations"
-                    echo "       depend on those files being at the new layout."
-                    echo "To inspect: kubectl exec -it -n $NAMESPACE mongodb-0 -- mongosh tensorleap --eval 'db._storage_tasks.find({status:\"skipped\"}, {operation:1, assetType:1, from:1, fallbackFrom:1, error:1}).limit(5).forEach(d=>printjson(d))'"
-                    exit 1
+                  if [ "$SKIPPED" != "0" ] || [ "$FAILED" != "0" ]; then
+                    echo "WARNING: storage tasks finished with non-completed terminal states: skipped=$SKIPPED failed=$FAILED."
+                    echo "         Post-boundary migrations may not find every file at the new layout."
+                    echo "To inspect: kubectl exec -it -n $NAMESPACE mongodb-0 -- mongosh tensorleap --eval 'db._storage_tasks.find({status:{\$in:[\"skipped\",\"failed\"]}}, {operation:1, assetType:1, from:1, fallbackFrom:1, error:1}).limit(10).forEach(d=>printjson(d))'"
+                  else
+                    echo "Storage tasks drained — proceeding."
                   fi
-                  echo "Storage tasks drained — proceeding."
                   break
                 fi
                 if [ "$waited" -ge "$WAIT_TIMEOUT_SECONDS" ]; then
