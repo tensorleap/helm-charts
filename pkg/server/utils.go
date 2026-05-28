@@ -248,7 +248,7 @@ func IsUseDefaultPropOption() bool {
 }
 
 func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
-	isInstallLatestVersion := false
+	isInstallLatestVersion := true
 
 	if IsUseDefaultPropOption() {
 		return isInstallLatestVersion, nil
@@ -257,10 +257,10 @@ func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
 	latestTag, err := manifest.GetLatestManifestTag()
 	if err != nil {
 		log.Warnf("Failed to get latest manifest tag: %v", err)
-		return isInstallLatestVersion, nil
+		return false, nil
 	}
 	if latestTag == previousTag {
-		return isInstallLatestVersion, nil
+		return false, nil
 	}
 
 	prompt := survey.Confirm{
