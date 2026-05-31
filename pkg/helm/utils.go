@@ -38,6 +38,7 @@ type ServerHelmValuesParams struct {
 	HostName               string            `json:"hostname"`
 	DatadogEnv             map[string]string `json:"datadogEnv"`
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
+	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
 	LocalBucketPath        string            `json:"localBucketPath"`
 }
@@ -257,6 +258,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		},
 		"tensorleap-node-server": Record{
 			"enableKeycloak":         params.KeycloakEnabled,
+			"disableAuth":            params.DisableAuth,
 			"disableDatadogMetrics":  params.DisableDatadogMetrics,
 			"installedServerVersion": params.InstalledServerVersion,
 			"localBucketPath":        params.LocalBucketPath,
