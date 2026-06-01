@@ -851,6 +851,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		Tls:                    *tlsParams,
 		DatadogEnv:             datadogEnvs,
 		KeycloakEnabled:        !params.DisabledAuth,
+		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
 		LocalBucketPath:        localBucketPath,
 	}

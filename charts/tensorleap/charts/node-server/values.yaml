@@ -2,6 +2,7 @@ image_tag: master-7898214a
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
+disableAuth: false
 installedServerVersion: "unknown"
 
 ingress:
