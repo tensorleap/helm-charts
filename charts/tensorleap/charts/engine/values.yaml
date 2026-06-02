@@ -6,6 +6,12 @@ metrics_activate_nfs: false
 samples_generator_nfs: false
 # Hybrid Redis->storage data plane: redis (default) | blob (payloads on shared volume)
 payload_store: redis
+# Phase 5 blob-mode capacity tuning (only used when payload_store=blob). Disk-bound
+# queue-cap budget = free_disk x fraction / max_concurrent_jobs / 4. Raise concurrency on
+# bigger nodes. min_free_gb is the shared-volume disk-free guard floor.
+job_shared_max_concurrent_jobs: 2
+job_shared_disk_fraction: 0.6
+job_shared_disk_min_free_gb: 2
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: master-26a41e94
