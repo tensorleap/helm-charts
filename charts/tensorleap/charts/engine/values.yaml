@@ -1,4 +1,4 @@
-image_tag: feat-push-job-ac7d8095
+image_tag: feat-push-job-437ec670
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
