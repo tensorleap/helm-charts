@@ -35,5 +35,8 @@ data:
   GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
   GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
+  # Hybrid Redis->storage migration: redis (default) keeps payloads in Redis;
+  # blob moves payloads to the per-job shared volume, Redis carries references.
+  PAYLOAD_STORE: "{{ .Values.payload_store }}"
 
 
