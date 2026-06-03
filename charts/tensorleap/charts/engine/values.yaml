@@ -12,6 +12,9 @@ payload_store: redis
 job_shared_max_concurrent_jobs: 2
 job_shared_disk_fraction: 0.6
 job_shared_disk_min_free_gb: 2
+# Static per-job Redis sizing in blob mode (default; per-job pod_memory_override still wins)
+redis_blob_pod_gb: 1
+redis_blob_maxmemory_mb: 768
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: master-26a41e94
