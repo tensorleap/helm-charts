@@ -1,4 +1,4 @@
-image_tag: feat-push-job-c2395df2
+image_tag: master-35a07b26
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
