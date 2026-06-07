@@ -6,11 +6,11 @@ docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 ghcr.io/project-zot/zot-linux-amd64:v2.1.15
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-6acb5819-py310
-public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-6acb5819-py312
-public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-6acb5819-py38
-public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-6acb5819-py39
-public.ecr.aws/tensorleap/engine:add-per-job-shared-volume-6acb5819
+public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-3d037929-py310
+public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-3d037929-py312
+public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-3d037929-py38
+public.ecr.aws/tensorleap/engine-generic:add-per-job-shared-volume-3d037929-py39
+public.ecr.aws/tensorleap/engine:add-per-job-shared-volume-3d037929
 public.ecr.aws/tensorleap/node-server:feat-push-job-c2395df2
 public.ecr.aws/tensorleap/pippin:master-26a41e94
 public.ecr.aws/tensorleap/web-ui:master-2e3054d0
