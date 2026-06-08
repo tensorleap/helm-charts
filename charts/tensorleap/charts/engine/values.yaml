@@ -1,4 +1,4 @@
-image_tag: eval-poc-on-hybrid-blob-c267afa1
+image_tag: eval-poc-on-feat-push-job-8a762bec
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
