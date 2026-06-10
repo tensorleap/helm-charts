@@ -248,7 +248,7 @@ func IsUseDefaultPropOption() bool {
 }
 
 func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
-	isInstallLatestVersion := true
+	isInstallLatestVersion := false
 
 	if IsUseDefaultPropOption() {
 		return isInstallLatestVersion, nil
