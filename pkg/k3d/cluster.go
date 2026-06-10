@@ -360,6 +360,10 @@ func buildK3sExtraArgs() []conf.K3sArgWithNodeFilters {
 			Arg:         fmt.Sprintf("--kubelet-arg=eviction-hard=nodefs.available<%s,imagefs.available<%s", evictionThreshold, evictionThreshold),
 			NodeFilters: []string{"server:*"},
 		},
+		{
+			Arg:         "--kubelet-arg=max-pods=500",
+			NodeFilters: []string{"server:*"},
+		},
 	}
 }
 

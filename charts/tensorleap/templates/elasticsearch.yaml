@@ -50,12 +50,12 @@ spec:
             - name: elasticsearch
               env:
               - name: ES_JAVA_OPTS
-                value: "-Xms3g -Xmx3g"
+                value: "-Xms4g -Xmx4g"
               resources:
                 requests:
-                  memory: "6Gi"
+                  memory: "8Gi"
                 limits:
-                  memory: "6Gi"
+                  memory: "8Gi"
           initContainers:
             - name: sysctl
               securityContext:
