@@ -1,4 +1,4 @@
-image_tag: ngnb-328-b16e9c77
+image_tag: ngnb-328-26eea75e
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
