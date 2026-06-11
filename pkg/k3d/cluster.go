@@ -122,6 +122,10 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		log.Infof("CPU limit applied to all k3d containers: %d\n", cpuLimit)
 	}
 
+	if err := applyNodeSysctls(); err != nil {
+		log.Printf("Failed to apply node sysctls: %v", err)
+	}
+
 	cluster, err = GetCluster(ctx)
 	return
 }
@@ -163,6 +167,38 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 	cmd := exec.Command("docker", "update", "--cpus", cpuLimit, containerID)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to update container %s: %w", containerID, err)
+	}
+	return nil
+}
+
+// applyNodeSysctls raises non-namespaced kernel limits on the k3d node container(s).
+// These are shared with the host kernel and their defaults — especially
+// fs.inotify.max_user_instances (128) — are exhausted when hundreds of pods
+// (streaming-handler + generic-process) run on a single node, so containers fail to
+// start with RunContainerError even though CPU/RAM are fine. The k3d node runs
+// privileged and shares the host kernel, so `docker exec ... sysctl -w` raises them
+// host-wide (these aren't a kubelet-arg, like max-pods, nor a namespaced pod sysctl).
+// Best-effort: a failure on one container/param is logged, not fatal.
+func applyNodeSysctls() error {
+	containers, err := getK3dContainers()
+	if err != nil {
+		return fmt.Errorf("failed to get k3d containers: %w", err)
+	}
+	sysctls := []string{
+		"fs.inotify.max_user_instances=8192",  // default 128 -> headroom for 100s of pods
+		"fs.inotify.max_user_watches=1048576", // default ~8k/64k
+		"fs.file-max=2097152",
+		"kernel.pid_max=4194304", // 64-bit kernel maximum
+	}
+	log.Infof("Applying node sysctls to k3d containers: %v\n", containers)
+	for _, container := range containers {
+		for _, s := range sysctls {
+			out, err := exec.Command("docker", "exec", container, "sysctl", "-w", s).CombinedOutput()
+			if err != nil {
+				log.Printf("Failed to set sysctl %s on container %s: %v (%s)",
+					s, container, err, strings.TrimSpace(string(out)))
+			}
+		}
 	}
 	return nil
 }
