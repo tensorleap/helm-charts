@@ -54,7 +54,7 @@ spec:
               resources:
                 requests:
                   memory: "6Gi"
-                  cpu: "1"
+                  cpu: "500m"
                 limits:
                   memory: "6Gi"
           initContainers:
