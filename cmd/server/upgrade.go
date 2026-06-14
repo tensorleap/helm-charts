@@ -75,7 +75,9 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.Installatio
 		return nil, err
 	}
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
+	// upgrade always moves to the latest version (honoring an explicit
+	// --tag if given); never prompt to stay on the current version.
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf, true)
 	if err != nil {
 		return nil, err
 	}

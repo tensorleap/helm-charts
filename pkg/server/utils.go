@@ -22,7 +22,12 @@ const (
 	KUBE_NAMESPACE = "tensorleap"
 )
 
-func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manifest.InstallationManifest) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
+// InitInstallationProcess resolves the manifest (tag/local/airgap) and loads
+// the helm charts for it. forceLatestVersion, set by `upgrade`, skips the
+// "use latest version?" prompt and always resolves to the latest tag (unless
+// the caller passed an explicit --tag) — upgrade should never offer to stay
+// on the current version. install/reinstall pass false to keep the prompt.
+func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manifest.InstallationManifest, forceLatestVersion bool) (mnf *manifest.InstallationManifest, isAirGap bool, infraHelmChart, serverHelmChart *chart.Chart, err error) {
 	isAirGap = flags.IsAirGap()
 	if isAirGap {
 		log.DisableReporting()
@@ -50,7 +55,9 @@ func InitInstallationProcess(flags *InstallationSourceFlags, previousMnf *manife
 			mnf, err = manifest.GenerateManifestFromLocal(fileGetter, localDir)
 		} else {
 			tag := flags.Tag
-			if previousMnf != nil && tag == "" && previousMnf.Tag != "" {
+			// On upgrade (forceLatestVersion) we never offer to keep the
+			// current version — leaving tag == "" resolves to latest below.
+			if !forceLatestVersion && previousMnf != nil && tag == "" && previousMnf.Tag != "" {
 
 				isInstallLatestVersion, err := AskUserForIsUseLatestVersion(previousMnf.Tag)
 				if err != nil {

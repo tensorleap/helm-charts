@@ -68,7 +68,7 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 		return nil, err
 	}
 
-	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf)
+	mnf, isAirgap, infraChart, serverChart, err := server.InitInstallationProcess(&flags.InstallationSourceFlags, previousMnf, false)
 	if err != nil {
 		return nil, err
 	}
