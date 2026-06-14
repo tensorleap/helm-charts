@@ -400,6 +400,15 @@ func buildK3sExtraArgs() []conf.K3sArgWithNodeFilters {
 			Arg:         "--kubelet-arg=max-pods=500",
 			NodeFilters: []string{"server:*"},
 		},
+		{
+			// Single-node k3d: one containerd handles all pod lifecycle. A burst of
+			// container starts saturates its gRPC socket, and the kubelet's default 2m
+			// runtime-request-timeout then expires -> RunContainerError (context
+			// deadline exceeded) and a self-sustaining teardown jam. Give containerd
+			// more time to drain the backlog so a slow start doesn't become a failure.
+			Arg:         "--kubelet-arg=runtime-request-timeout=5m",
+			NodeFilters: []string{"server:*"},
+		},
 	}
 }
 
