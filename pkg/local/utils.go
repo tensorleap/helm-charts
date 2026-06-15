@@ -21,6 +21,8 @@ const (
 	STORAGE_DIR_NAME                = "storage"
 	KEYCLOAK_DB_STORAGE_DIR_NAME    = "storage/keycloak"
 	ELASTIC_STORAGE_DIR_NAME        = "storage/elasticsearch"
+	MONGODB_STORAGE_DIR_NAME        = "storage/mongodb"
+	MINIO_STORAGE_DIR_NAME          = "storage/minio"
 	HOSTNAME_FILE                   = "hostname"
 	MANIFEST_DIR_NAME               = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
@@ -226,6 +228,22 @@ func ClearAppData() error {
 		}
 	}
 
+	return nil
+}
+
+// RemoveDataSubDir removes a single path (file or directory) under the server
+// data dir, falling back to sudo when a permission error blocks direct removal.
+// Used by the custom uninstall to delete only the items the user selected.
+func RemoveDataSubDir(subDir string) error {
+	target := path.Join(GetServerDataDir(), subDir)
+	log.Infof("Removing: %s", target)
+	if err := os.RemoveAll(target); err != nil {
+		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", target))
+		if err := rmCmd.Run(); err != nil {
+			log.SendCloudReport("error", "Failed removing data path", "Failed", &map[string]interface{}{"path": target, "error": err.Error()})
+			return err
+		}
+	}
 	return nil
 }
 
