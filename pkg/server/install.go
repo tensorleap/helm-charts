@@ -101,14 +101,23 @@ func airgapBootstrap(ctx context.Context, mnf *manifest.InstallationManifest, in
 	return nil
 }
 
-// getBootstrapImages returns the minimal set of images that must be imported
+// getBootstrapImages returns the set of images that must be imported directly
 // into containerd via k3d image-import before any in-cluster registry exists.
-// k3s system images (coredns, klipper-lb, etc.) are embedded in the k3s binary
-// and auto-loaded on startup, so only the Zot registry image is needed here.
+// The cluster registries.yaml routes all docker.io (and other) pulls through
+// the local Zot registry at 127.0.0.1:5000.  Zot runs as a k8s pod, and k8s
+// needs the pause image to create pod sandboxes — but it tries to pull that
+// image through Zot, which isn't up yet.  Breaking the deadlock requires that
+// the k3s system images (including rancher/mirrored-pause) are pre-loaded
+// directly into containerd before we wait for Zot to become ready.
 func getBootstrapImages(mnf *manifest.InstallationManifest, useGpu bool) []string {
 	images := []string{}
 	if mnf.Images.Zot != "" {
 		images = append(images, mnf.Images.Zot)
+	}
+	if useGpu {
+		images = append(images, mnf.Images.K3sGpuImages...)
+	} else {
+		images = append(images, mnf.Images.K3sImages...)
 	}
 	return images
 }
