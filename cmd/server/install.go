@@ -66,6 +66,9 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.Installatio
 	}
 
 	isAirgap := flags.IsAirGap()
+	if isAirgap {
+		log.DisableReporting()
+	}
 
 	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
 	if err != nil {

@@ -62,6 +62,9 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 	}
 
 	isAirgap := flags.IsAirGap()
+	if isAirgap {
+		log.DisableReporting()
+	}
 
 	installationParams, err := server.InitInstallationParamsFromFlags(&flags.InstallFlags, isAirgap)
 	if err != nil {
