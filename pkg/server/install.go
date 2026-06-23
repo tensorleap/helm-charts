@@ -146,12 +146,11 @@ func installInfraChart(ctx context.Context, mnf *manifest.InstallationManifest, 
 		return err
 	}
 	if !isInfraReleaseExisted {
-		var syncRegistries []helm.ZotSyncRegistry
-		if installationParams.IsAirgap {
-			syncRegistries = k3d.BuildZotSyncRegistries(mnf)
-		}
-		infraValues := helm.CreateInfraChartValues(installationParams.GetInfraHelmValuesParams(syncRegistries, mnf.Images.Zot))
-		if err := helm.InstallChart(helmConfig, infraChartMeta.ReleaseName, infraChart, infraValues); err != nil {
+		infraValues := helm.CreateInfraChartValues(installationParams.GetInfraHelmValuesParams(nil, mnf.Images.Zot))
+		// Don't wait: ECK operator (also in this chart) needs its image pulled from
+		// Zot, which isn't ready yet. WaitForRegistry polls for Zot specifically;
+		// Phase 2 pushes all images so ECK operator can pull on retry.
+		if err := helm.InstallChartNoWait(helmConfig, infraChartMeta.ReleaseName, infraChart, infraValues); err != nil {
 			return err
 		}
 	}
