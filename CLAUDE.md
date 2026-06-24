@@ -77,6 +77,20 @@ make update-images
 make validate-images
 ```
 
+## Testing the platform end-to-end (QA knowledge base)
+
+`qa-knowledge/` is an evidence-based reference for verifying a **running** Tensorleap
+install: architecture, every job type, end-to-end data flows, failure modes, and
+which tool to use to observe each step (kubectl / Elasticsearch / Mongo / RabbitMQ /
+MinIO / Redis / Datadog / Playwright). **When testing a feature end-to-end,
+verifying a fix in a live cluster, debugging a job or dashboard, or acting as QA,
+read the relevant docs first** — start at `qa-knowledge/README.md` (index + the
+"corrected mental model"), then open only the doc you need (e.g. `03-data-flows.md`,
+`09-job-catalog.md`, `10-verification-toolbox.md`). Don't load every doc; pick by
+task. The KB is self-maintained by a weekly Action
+(`.github/workflows/qa-kb-maintenance.yml`); contributing guide in
+`qa-knowledge/maintenance/MAINTENANCE.md`.
+
 ## Commits
 
 Imperative mood, capitalized first letter. Branches kebab-case (`-`, never `/`).
