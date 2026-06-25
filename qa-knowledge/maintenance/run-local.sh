@@ -22,9 +22,11 @@ export KB_SRC_HELM_CHARTS="$HELM_CHARTS_ROOT"
 export KB_SRC_ENGINE="$PARENT_DIR/engine"
 export KB_SRC_NODE_SERVER="$PARENT_DIR/node-server"
 export KB_SRC_WEB_UI="$PARENT_DIR/web-ui"
+export KB_SRC_LEAP_CLI="$PARENT_DIR/leap-cli"
+export KB_SRC_CODE_LOADER="$PARENT_DIR/code-loader"
 export KB_FORCE_FULL="${KB_FORCE_FULL:-false}"
 
-for d in "$KB_SRC_ENGINE" "$KB_SRC_NODE_SERVER" "$KB_SRC_WEB_UI"; do
+for d in "$KB_SRC_ENGINE" "$KB_SRC_NODE_SERVER" "$KB_SRC_WEB_UI" "$KB_SRC_LEAP_CLI" "$KB_SRC_CODE_LOADER"; do
   if [ ! -d "$d/.git" ]; then
     echo "ERROR: expected source repo at $d (clone it as a sibling of helm-charts)" >&2
     exit 1
@@ -34,7 +36,7 @@ done
 # Bring siblings to their latest master unless told not to (does not switch your branch;
 # fetches origin/master so the agent can diff against it).
 if [ "${KB_NO_FETCH:-false}" != "true" ]; then
-  for d in "$KB_SRC_ENGINE" "$KB_SRC_NODE_SERVER" "$KB_SRC_WEB_UI"; do
+  for d in "$KB_SRC_ENGINE" "$KB_SRC_NODE_SERVER" "$KB_SRC_WEB_UI" "$KB_SRC_LEAP_CLI" "$KB_SRC_CODE_LOADER"; do
     echo ">> fetching origin/master in $d"
     git -C "$d" fetch --quiet origin master || echo "WARN: fetch failed in $d (continuing with local state)"
   done

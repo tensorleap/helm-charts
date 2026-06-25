@@ -71,7 +71,7 @@ that must be infrastructure-agnostic.
 
 ---
 
-## The four repos
+## The source repos
 
 | Repo | Path | What it is |
 |---|---|---|
@@ -79,8 +79,8 @@ that must be infrastructure-agnostic.
 | `engine` | `/Users/asafyehezkel/tensorleap-projects/engine` | Python compute: main engine, engine-generics, streaming-handler, orchestrator. |
 | `node-server` | `/Users/asafyehezkel/tensorleap-projects/node-server` | TypeScript Express/tsoa API server + job creator. |
 | `web-ui` | `/Users/asafyehezkel/tensorleap-projects/web-ui` | React 19 SPA (dashboards, version control, network editor). |
-| `leap-cli` *(not checked out here)* | — | The user-facing `leap push / auth / projects / run` CLI. `leap server …` is imported from `helm-charts`. |
-| `code-loader` *(not checked out here)* | — | Python contract (`@tensorleap_*` decorators) for customer integrations. |
+| `leap-cli` | `/Users/asafyehezkel/tensorleap-projects/leap-cli` | The user-facing `leap push / auth / projects / run` CLI. `leap server …` is imported from `helm-charts`. Tracked by the maintenance skill. |
+| `code-loader` | `/Users/asafyehezkel/tensorleap-projects/code-loader` | Python contract (`@tensorleap_*` decorators) for customer integrations. Tracked by the maintenance skill. |
 
 ---
 

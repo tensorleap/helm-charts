@@ -1,5 +1,5 @@
 {
-  "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify.",
+  "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
   "last_verified_utc": "2026-06-24",
   "repos": {
     "helm-charts": {
@@ -25,6 +25,20 @@
       "track_branch": "master",
       "built_from_branch": "master",
       "built_from_sha": "c0afae075de472cdb2750d65e925dffad49a6162"
+    },
+    "leap-cli": {
+      "remote": "git@github.com:tensorleap/leap-cli.git",
+      "track_branch": "master",
+      "built_from_branch": null,
+      "built_from_sha": null,
+      "_status": "newly tracked 2026-06-25; null baseline -> first refresh full-verifies its docs (02/03/05/08/09). Local checkout was on branch fix-default-client-proxy."
+    },
+    "code-loader": {
+      "remote": "git@github.com:tensorleap/code-loader.git",
+      "track_branch": "master",
+      "built_from_branch": null,
+      "built_from_sha": null,
+      "_status": "newly tracked 2026-06-25; null baseline -> first refresh full-verifies its docs (02/05/08/09)."
     }
   }
 }

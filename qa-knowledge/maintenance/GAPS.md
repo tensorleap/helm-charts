@@ -28,5 +28,10 @@ Open gaps:
   [09-job-catalog.md](../09-job-catalog.md#graph-jobs-two-distinct-things)).
 - **SLIM_LS per-task memory ceilings** (insights/balancing load latent spaces in a
   single pod) — confirm OOM thresholds on a live cluster.
+- **leap-cli + code-loader newly added to tracking** (2026-06-25) with null
+  baselines — their docs (02/03/05/08/09) were authored from the first recon without
+  these repos checked out, so the first `update-qa-knowledge` refresh should
+  full-verify them and record real master SHAs. leap-cli's local checkout is on branch
+  `fix-default-client-proxy`; track `master`.
 - A few `file:line` anchors are snapshots and may have drifted; treat as
   named-symbol hints.

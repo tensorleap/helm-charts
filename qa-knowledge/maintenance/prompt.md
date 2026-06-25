@@ -20,12 +20,15 @@ have not confirmed is stale.
   - engine: `$KB_SRC_ENGINE` → else `../engine`
   - node-server: `$KB_SRC_NODE_SERVER` → else `../node-server`
   - web-ui: `$KB_SRC_WEB_UI` → else `../web-ui`
+  - leap-cli: `$KB_SRC_LEAP_CLI` → else `../leap-cli`
+  - code-loader: `$KB_SRC_CODE_LOADER` → else `../code-loader`
   In a manual run, diff against `origin/master` (after `git fetch`), not a checked-out
   branch.
 - `$KB_FORCE_FULL` — if `true`, re-verify every doc regardless of diff.
 
 Manifest paths are repo-prefixed (`engine/...`, `node-server/...`, `web-ui/...`,
-`helm-charts/...`). Map the prefix to the env var above to get the real path.
+`helm-charts/...`, `leap-cli/...`, `code-loader/...`). Map the prefix to the env var
+above to get the real path.
 
 ## Procedure
 
@@ -38,6 +41,9 @@ Manifest paths are repo-prefixed (`engine/...`, `node-server/...`, `web-ui/...`,
      Fall back to `git -C <srcpath> log --since="60 days ago" --name-only` to
      approximate recent changes, and treat every doc that depends on this repo as
      **needs-review**. Note this in your summary.
+   - If `built_from_sha` is null/absent (a newly tracked repo), you cannot diff —
+     treat every doc that depends on this repo as **needs-review** (full re-verify),
+     then record its current HEAD as the new baseline.
    - If `$KB_FORCE_FULL` is `true`, treat all docs as needs-review.
 
 2. **Map changes to docs** using `manifest.json`. A doc is "impacted" if any

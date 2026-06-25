@@ -1,6 +1,6 @@
 ---
 name: update-qa-knowledge
-description: Refresh the helm-charts qa-knowledge/ QA knowledge base by diffing the latest source masters (engine, node-server, web-ui, helm-charts) against the docs and patching only what drifted, then opening a PR. Use when the user asks to update / refresh / sync / re-verify the QA knowledge base, or after a product or architecture change the docs should reflect. Manual, on-demand maintenance.
+description: Refresh the helm-charts qa-knowledge/ QA knowledge base by diffing the latest source masters (engine, node-server, web-ui, helm-charts, leap-cli, code-loader) against the docs and patching only what drifted, then opening a PR. Use when the user asks to update / refresh / sync / re-verify the QA knowledge base, or after a product or architecture change the docs should reflect. Manual, on-demand maintenance.
 ---
 
 # Update the QA knowledge base
@@ -13,8 +13,8 @@ on-demand counterpart to the (future) auto-trigger — see
 
 - Run from inside the **helm-charts** repo (it contains `qa-knowledge/`).
 - The source repos must be available as **local siblings**: `../engine`,
-  `../node-server`, `../web-ui` (helm-charts itself = repo root). If any is missing,
-  tell the user and stop — do not guess.
+  `../node-server`, `../web-ui`, `../leap-cli`, `../code-loader` (helm-charts itself =
+  repo root). If any is missing, tell the user and stop — do not guess.
 - Bring siblings to the latest master first: `git -C ../<repo> fetch origin master`.
   **Do not switch the user's branches** — read `origin/master` for diffing. Skip the
   fetch if the user says to use the repos as-is.
@@ -30,6 +30,8 @@ exactly, with these source paths (no `$KB_SRC_*` env vars in a manual run):
 | engine | `../engine` |
 | node-server | `../node-server` |
 | web-ui | `../web-ui` |
+| leap-cli | `../leap-cli` |
+| code-loader | `../code-loader` |
 
 In short, per that prompt:
 1. For each repo, read `built_from_sha` from `qa-knowledge/maintenance/kb-state.json`

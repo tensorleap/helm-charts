@@ -1,5 +1,5 @@
 {
-  "_note": "Maps each KB doc to the source path globs it depends on. The maintenance agent uses this to decide which docs a changed source file may affect. Paths are repo-prefixed; the prefix maps to an env var path: helm-charts->$KB_SRC_HELM_CHARTS, engine->$KB_SRC_ENGINE, node-server->$KB_SRC_NODE_SERVER, web-ui->$KB_SRC_WEB_UI. Globs are advisory hints, not a hard filter — when in doubt, re-verify. Add a new doc here when you add one to the KB.",
+  "_note": "Maps each KB doc to the source path globs it depends on. The maintenance agent uses this to decide which docs a changed source file may affect. Paths are repo-prefixed; the prefix maps to an env var path: helm-charts->$KB_SRC_HELM_CHARTS, engine->$KB_SRC_ENGINE, node-server->$KB_SRC_NODE_SERVER, web-ui->$KB_SRC_WEB_UI, leap-cli->$KB_SRC_LEAP_CLI, code-loader->$KB_SRC_CODE_LOADER. Globs are advisory hints, not a hard filter — when in doubt, re-verify. Add a new doc here when you add one to the KB.",
   "docs": {
     "01-architecture.md": [
       "helm-charts/charts/**",
@@ -11,7 +11,10 @@
       "web-ui/src/**",
       "node-server/src/**",
       "engine/src_tensorleap/**",
-      "helm-charts/charts/**"
+      "helm-charts/charts/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
     ],
     "03-data-flows.md": [
       "engine/src_tensorleap/manager/**",
@@ -25,7 +28,8 @@
       "node-server/src/dashboards/**",
       "web-ui/src/dashboard/**",
       "web-ui/src/core/**",
-      "web-ui/src/auth/**"
+      "web-ui/src/auth/**",
+      "leap-cli/cmd/**"
     ],
     "04-job-types-and-lifecycle.md": [
       "engine/src_tensorleap/contract/common/enums.py",
@@ -39,7 +43,10 @@
       "helm-charts/pkg/**",
       "helm-charts/cmd/server/**",
       "node-server/src/utils/**",
-      "engine/src_tensorleap/infrastructure/redis/**"
+      "engine/src_tensorleap/infrastructure/redis/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
     ],
     "06-ui-inspection.md": [
       "web-ui/src/tour/ToursConfig.tsx",
@@ -63,7 +70,10 @@
       "node-server/src/evaluate/**",
       "node-server/src/versions/**",
       "node-server/src/jobs/**",
-      "helm-charts/cmd/server/**"
+      "helm-charts/cmd/server/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
     ],
     "09-job-catalog.md": [
       "node-server/src/visualizations/**",
@@ -78,7 +88,10 @@
       "node-server/src/jobs/**",
       "engine/src_tensorleap/manager/**",
       "engine/src_tensorleap/workers/**",
-      "engine/src_tensorleap/contract/common/enums.py"
+      "engine/src_tensorleap/contract/common/enums.py",
+      "leap-cli/cmd/**",
+      "leap-cli/docs/**",
+      "code-loader/code_loader/**"
     ],
     "10-verification-toolbox.md": [
       "helm-charts/charts/tensorleap/charts/engine/templates/**",

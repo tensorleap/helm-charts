@@ -23,8 +23,8 @@ the helm-charts repo whenever you want to bring the docs back in line with the c
 It:
 
 1. Reads the baselines in [`kb-state.json`](kb-state.json) and the latest masters of
-   the source repos (local siblings `../engine`, `../node-server`, `../web-ui`;
-   helm-charts = repo root).
+   the source repos (local siblings `../engine`, `../node-server`, `../web-ui`,
+   `../leap-cli`, `../code-loader`; helm-charts = repo root).
 2. Diffs each repo since its baseline, maps changes to docs via
    [`manifest.json`](manifest.json), and re-verifies **only the impacted docs** using
    the procedure in [`prompt.md`](prompt.md).
@@ -32,8 +32,9 @@ It:
    [`GAPS.md`](GAPS.md).
 4. Opens a PR (`qa-kb-update-*`) for review.
 
-**Preconditions:** the three source repos must be checked out as **siblings** of
-helm-charts. If a sibling is missing, the skill stops and tells you.
+**Preconditions:** the source repos must be checked out as **siblings** of
+helm-charts (`../engine`, `../node-server`, `../web-ui`, `../leap-cli`,
+`../code-loader`). If a sibling is missing, the skill stops and tells you.
 
 Invoke it in Claude Code with `/update-qa-knowledge` (or just ask "update the QA
 knowledge base").
@@ -79,8 +80,9 @@ masters. The building blocks are already here:
 
 An Action would: check out the source repos, set `$KB_SRC_*`, run `prompt.md`, and
 open a PR. It would need secrets `ANTHROPIC_API_KEY` and a token with **read** access
-to `tensorleap/engine`, `tensorleap/node-server`, `tensorleap/web-ui` (the default
-`GITHUB_TOKEN` can't read other repos). We are **not** enabling it yet.
+to `tensorleap/engine`, `tensorleap/node-server`, `tensorleap/web-ui`,
+`tensorleap/leap-cli`, `tensorleap/code-loader` (the default `GITHUB_TOKEN` can't read
+other repos). We are **not** enabling it yet.
 
 ---
 
