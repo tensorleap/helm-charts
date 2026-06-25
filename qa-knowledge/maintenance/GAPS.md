@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-06-25 — manual refresh (engine / web-ui / helm-charts → master)
+Reviewed: engine `9045cc33..026729cf`, web-ui `c0afae07..f16249f1`, helm-charts `8cbe68cb..05643d36` (all baselines were ancestors — clean diffs; 14 per-file verifiers).
+Changed: 01-architecture.md — image tags (engine/engine-generic→`026729cf`, node-server→`9276bb7c`, web-ui→`f16249f1`) + chart version `1.6.28`→`1.6.33`. 03-data-flows.md & 07-failure-modes.md — exit 137 during pod **teardown** (`deletion_timestamp` set) is now classified `UNKNOWN`, not `OOM_KILLED`. 04 & 09 — added the new 7th `SLIM_LS` subtype **Resplitting** (`WorkerSlimLSOps.resplitting`, request `SlimResplittingRequest`, bucket `digest_<d>/resplitting/*`).
+Open gaps: **Resplitting node-server side not shipped** — node-server master has no `resplit` reference, so the REST trigger / subType label / mongo entity / DS-Curation UI for resplitting don't exist yet; doc 09 documents the engine side and flags this. Re-verify when node-server wires it. No-change (internal/additive only): visualizationmanager, redis_vis_queue_manager, insights_calculation_manager, leaptrainer, visualizer_calculator, basestorage sample-vis helper, web-ui PE status hook (already matched after the node-server refresh), version-state.ts, and the installer Go files.
+
 ## 2026-06-25 — manual refresh (node-server → master)
 Reviewed: node-server `1b44e3bb..9276bb7c` (now on `master`; baseline was an ancestor — 4 Population-Exploration commits #1757–#1760). Other repos not re-checked this run.
 Changed: 09-job-catalog.md — Population Exploration: (a) PE now blocks only until the prerequisite evaluate's `insights_analysis` step finishes/skips (#1758), not for the whole evaluate job; (b) the digest no longer hashes `sample_visualizers_revision` (#1760).

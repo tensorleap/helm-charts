@@ -53,7 +53,7 @@ failure surfaces. Use this to **classify** a failure, not just report "it broke"
 
 | Symptom | Root cause | Confirm |
 |---|---|---|
-| Pod `OOMKilled` / exit **137** / phase `Evicted` | under-provisioned memory (auto-settings too low, batch too big) | `kubectl get pod -l jobId=<jobId>`; `kubectl describe pod`; orchestrator maps all → `OOM_KILLED` and FAILs the job. Knobs: machine type, `batch_memory_multiple`, `batchSize` |
+| Pod `OOMKilled` / exit **137** / phase `Evicted` | under-provisioned memory (auto-settings too low, batch too big) | `kubectl get pod -l jobId=<jobId>`; `kubectl describe pod`; orchestrator maps OOMKilled + exit 137 (on pods **not** being torn down) → `OOM_KILLED` and FAILs the job; exit 137 on a pod with `deletion_timestamp` set is teardown (`UNKNOWN`), not OOM. Knobs: machine type, `batch_memory_multiple`, `batchSize` |
 | Throughput stalls mid-run | Redis backpressure: streaming-handler can't keep up | `LLEN streaming_evaluate_<jobId>_queue` stays high; main pod push loop log repeats; streaming-handler replicas at max (10) |
 | Per-job redis crashes under load | `maxmemory-policy noeviction` + too-small redis → OOM instead of evict | `redis-cli INFO memory` `used_memory` near `maxmemory`; redis pod restart |
 | ES `_count` lower than evaluated samples; partial/empty dashlets | streaming-handler dropped docs (NaN sanitation failure or bulk error) | streaming-handler log `failed to index docs to elasticsearch` (`err_vec`) |

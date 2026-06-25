@@ -39,7 +39,8 @@ dashlets → web-ui.
   discarded → `Evaluation failed due to too many discarded samples` (job FAILED).
 - `DatasetScriptException` → UI `Dataset code had crashed`, job FAILED.
 - OOMKill (under-provisioned auto-settings) → pod `OOMKilled`/exit 137/`Evicted`;
-  orchestrator maps all to `OOM_KILLED`.
+  orchestrator maps these to `OOM_KILLED` — **except** exit 137 on a pod being torn
+  down (`deletion_timestamp` set), which is treated as teardown (`UNKNOWN`), not OOM.
 - ImagePull on engine/generic/redis → pod `ImagePullBackOff`; redis-specific fast-fail.
 - Redis backpressure → `LLEN streaming_evaluate_<jobId>_queue` stays high; `noeviction`
   means a too-small redis OOMs rather than evicts.

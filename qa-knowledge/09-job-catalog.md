@@ -27,12 +27,12 @@ glance what *should* be there:
 | `EXPORT_MODEL` | per-job **redis** + **generic-process (1)**, no streaming-handler | Export Model |
 | `DRY_RUN_GRAPH` | per-job **redis** + **generic-process (1)**, no streaming-handler | Graph Validate |
 | `STREAMING_SAMPLES_VIS` | per-job **redis** + **generic-process (1)**, no streaming-handler | Streaming Samples Vis |
-| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation** |
+| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Resplitting** |
 | `ANALYZE_GRAPH` | **NOTHING** — engine main pod only | (graph static analysis, a phase of import) |
 | `WARMUP` | a sleep-placeholder GPU **Job** (`engine-warmup-*`) | Warmup |
 | node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | one **node** Job pod (node-server image), no engine pods | Export/Copy/Import Project |
 
-**SLIM_LS is the big one to internalize:** six different UI features all run as a
+**SLIM_LS is the big one to internalize:** seven different SLIM_LS request types run as a
 *single* `SLIM_LS` pod. If you expect `redis-<jobId>`/`generic-process`/`streaming-handler`
 for a Population Exploration or Insights job, you'll think it's broken — there
 won't be any. The defining observable for SLIM_LS is "exactly one engine pod
@@ -52,6 +52,7 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 | Dataset Balancing | `SLIM_LS` | `WorkerSlimLSOps.dataset_balancing` | `dataset-balancing-<jobId>` | mongo `datasetbalancing`; bucket `digest_<d>/dataset_balancing/*` | row in DS Curation → PRUNING tab grid |
 | Synthetic Data Generation | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` | row in DS Curation → SYNTHETIC tab grid |
 | Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → UNLABELED tab grid |
+| Resplitting *(engine-side; node trigger not yet on master)* | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `resplitting-<jobId>` | bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | DS Curation (data re-split) — verify UI |
 | Push | `PUSH` | `WorkerPush` (CodeParser+ImportModel+ValidateAssets) | `push-<jobId>` | mongo `codesnapshots`,`versions`,`models`; bucket model artifacts | Version Control state PUSHING→PUSHED |
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` | mongo `exportedmodels`; bucket exported file | exported-models list per version |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` | mongo `versions.graphValidationData` | network-editor markers / push state |
@@ -131,6 +132,16 @@ All three are launched from the **DS Curation** toolbar button → `DatasetCurat
   `JobTypeEnum.SYNTHETIC` sample-generation worker (which *does* spawn
   redis+generic+streaming). If you see redis/streaming pods, you're looking at the
   wrong thing.
+
+### Resplitting  *(engine-side as of engine master; node trigger not yet on node-server master)*
+A 7th `SLIM_LS` request type added engine-side: `slim_request_type=resplitting`, worker
+`WorkerSlimLSOps.resplitting` → `Resplitting.run_resplitting` (`trainer/ds_curation/resplitting.py`).
+It re-splits the dataset across train/val/test: groups samples by `keep_together_metadata`,
+stratifies across `split_across_metadata`, KMeans-clusters feature vectors, and assigns
+clusters to splits by `train/val/test_ratio` (request `SlimResplittingRequest`).
+- **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `resplitting-<jobId>`.
+- **Bucket:** `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` (`get_resplitting_csv_path` / `get_resplitting_cluster_filter_path`).
+- **⚠️ Gap:** node-server master has **no** `resplit` reference yet — the REST trigger, subType label, and mongo entity are not shipped on node-server master. Verify the node-server side + the DS Curation UI entry once wired (logged in `maintenance/GAPS.md`).
 
 ---
 

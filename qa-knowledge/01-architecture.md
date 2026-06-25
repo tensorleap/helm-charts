@@ -125,8 +125,8 @@ Deployment, `redis-<jobId>` Pod+Service.
 
 | Workload | Service:port | Image (snapshot) |
 |---|---|---|
-| web-ui | `tensorleap-web-ui:8080` | `public.ecr.aws/tensorleap/web-ui:master-ca1c6ba0` |
-| node-server | `tensorleap-node-server:80` → pod `:4000` | `public.ecr.aws/tensorleap/node-server:master-b3261df8` |
+| web-ui | `tensorleap-web-ui:8080` | `public.ecr.aws/tensorleap/web-ui:master-f16249f1` |
+| node-server | `tensorleap-node-server:80` → pod `:4000` | `public.ecr.aws/tensorleap/node-server:master-9276bb7c` |
 | mongodb | `mongodb:27017` | `mongo:6.0.5` |
 | rabbitmq | `rabbitmq:5672` (amqp) + `:15672` (mgmt UI) | `rabbitmq:3.9.22` |
 | minio (bucket `session`) | `tensorleap-minio:9000` (api) + `:9001` (console) | `minio RELEASE.2021-12-20T22-07-16Z` |
@@ -134,8 +134,8 @@ Deployment, `redis-<jobId>` Pod+Service.
 | keycloak | `keycloak-http` | `keycloak:26.3.2` |
 | ingress-nginx | `:80/:443` (host 4589/443) | `ingress-nginx/controller:v1.10.0` |
 | zot registry | `tensorleap-registry:5000` (host 5699) | `zot v2.1.15` |
-| engine / orchestrator / engine jobs | (no static svc; orchestrator is a Deployment) | `public.ecr.aws/tensorleap/engine:master-dfb8d404` |
-| engine-generics | (runtime Deployment) | `public.ecr.aws/tensorleap/engine-generic:master-dfb8d404-py{38,39,310,312}` |
+| engine / orchestrator / engine jobs | (no static svc; orchestrator is a Deployment) | `public.ecr.aws/tensorleap/engine:master-026729cf` |
+| engine-generics | (runtime Deployment) | `public.ecr.aws/tensorleap/engine-generic:master-026729cf-py{38,39,310,312}` |
 | pippin (dep builder) | (job init container) | `public.ecr.aws/tensorleap/pippin:master-26a41e94` |
 | per-job redis | `redis-<jobId>:6379` (runtime) | `docker.io/library/redis:8.6-alpine` |
 | datadog agent | DaemonSet | `gcr.io/datadoghq/agent:7.52.0` |
@@ -159,7 +159,7 @@ Deployment, `redis-<jobId>` Pod+Service.
 
 - `charts/tensorleap/Chart.yaml` `version` — a **minor** bump (`1.5.x → 1.6.0`)
   signals **cluster reinstall required** (the installer compares minor versions;
-  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.28`, infra `1.1.8`.
+  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.33`, infra `1.1.8`.
 - `pkg/version/version.go` — the Go installer (`leap server`) version. `leap server info` prints it.
 - Reinstall is also triggered by an infra version change or a manifest
   appVersion/schemaVersion change (see `DEVELOPER-GUIDE.md`).
