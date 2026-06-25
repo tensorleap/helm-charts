@@ -13,12 +13,15 @@ have not confirmed is stale.
   to the source path globs it depends on).
 - The baseline state: `qa-knowledge/maintenance/kb-state.json` (per-repo
   `built_from_sha` + `track_branch`).
-- The source repos, at paths given by these env vars (already checked out at the
-  latest `track_branch`):
-  - helm-charts: `$KB_SRC_HELM_CHARTS` (the current repo root, usually `.`)
-  - engine: `$KB_SRC_ENGINE`
-  - node-server: `$KB_SRC_NODE_SERVER`
-  - web-ui: `$KB_SRC_WEB_UI`
+- The source repos. Use the `$KB_SRC_*` env vars if set (a CI/auto run checks them
+  out at the latest `track_branch`); otherwise (a manual/skill run) use local
+  **siblings** of helm-charts:
+  - helm-charts: `$KB_SRC_HELM_CHARTS` → else the current repo root (`.`)
+  - engine: `$KB_SRC_ENGINE` → else `../engine`
+  - node-server: `$KB_SRC_NODE_SERVER` → else `../node-server`
+  - web-ui: `$KB_SRC_WEB_UI` → else `../web-ui`
+  In a manual run, diff against `origin/master` (after `git fetch`), not a checked-out
+  branch.
 - `$KB_FORCE_FULL` — if `true`, re-verify every doc regardless of diff.
 
 Manifest paths are repo-prefixed (`engine/...`, `node-server/...`, `web-ui/...`,

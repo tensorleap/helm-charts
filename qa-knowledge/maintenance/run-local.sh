@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Optional local fallback for the QA KB maintenance flow.
-# Runs the same agent (qa-knowledge/maintenance/prompt.md) on your machine against
-# the SIBLING source repos, then opens a PR via gh. The GitHub Action
-# (.github/workflows/qa-kb-maintenance.yml) is the recommended path — it always
-# uses fresh masters and needs no local checkout.
+# Headless runner for the QA KB maintenance flow (a building block for a future
+# auto-trigger). Runs the same agent (qa-knowledge/maintenance/prompt.md) against the
+# SIBLING source repos via `claude -p`, then opens a PR via gh.
+# For interactive use, prefer the `update-qa-knowledge` skill (/update-qa-knowledge).
 #
 # Requires: a local `claude` CLI (authenticated), `gh` (authenticated), and the
 # source repos checked out as siblings of helm-charts.

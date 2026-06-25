@@ -87,8 +87,8 @@ verifying a fix in a live cluster, debugging a job or dashboard, or acting as QA
 read the relevant docs first** — start at `qa-knowledge/README.md` (index + the
 "corrected mental model"), then open only the doc you need (e.g. `03-data-flows.md`,
 `09-job-catalog.md`, `10-verification-toolbox.md`). Don't load every doc; pick by
-task. The KB is self-maintained by a weekly Action
-(`.github/workflows/qa-kb-maintenance.yml`); contributing guide in
+task. Refresh it after product changes with the `update-qa-knowledge` skill
+(manual, on-demand — opens a PR); contributing guide in
 `qa-knowledge/maintenance/MAINTENANCE.md`.
 
 ## Commits

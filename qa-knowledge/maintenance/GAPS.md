@@ -20,8 +20,8 @@ node-server@en-per-project-generic-workers (1b44e3bb), web-ui@c0afae07.
 Changed: all docs created (README, 01–10) + maintenance scaffolding.
 Open gaps:
 - **node-server baseline is a feature branch** (`en-per-project-generic-workers`),
-  not `master`. The first scheduled run should treat node-server-dependent docs as
-  full re-verify and reset the baseline to `master` HEAD.
+  not `master`. The first `update-qa-knowledge` refresh should treat
+  node-server-dependent docs as full re-verify and reset the baseline to `master` HEAD.
 - **Graph jobs** (`DRY_RUN_GRAPH` vs `ANALYZE_GRAPH`, and how "Graph Validate"
   maps to each within the PUSH flow) were slightly conflated across recon sources —
   confirm precise spawn behavior and k8s names on a live cluster (noted in
