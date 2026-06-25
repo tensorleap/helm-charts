@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-06-25 — manual refresh (node-server → master)
+Reviewed: node-server `1b44e3bb..9276bb7c` (now on `master`; baseline was an ancestor — 4 Population-Exploration commits #1757–#1760). Other repos not re-checked this run.
+Changed: 09-job-catalog.md — Population Exploration: (a) PE now blocks only until the prerequisite evaluate's `insights_analysis` step finishes/skips (#1758), not for the whole evaluate job; (b) the digest no longer hashes `sample_visualizers_revision` (#1760).
+Open gaps: none new. `storage.ts` changed the sample-visualizers folder `sample_visualizers_<N>` → `sample_visualizers/<N>` (#1757), but doc 09 uses the `sample_visualizers/*` glob so no edit was needed. node-server baseline bumped to `master` HEAD `9276bb7c`; the feature-branch caveat below is resolved.
+
 ## 2026-06-24 — initial
 Reviewed: KB authored from helm-charts@8cbe68cb, engine@9045cc33,
 node-server@en-per-project-generic-workers (1b44e3bb), web-ui@c0afae07.
