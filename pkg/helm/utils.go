@@ -37,6 +37,7 @@ type ServerHelmValuesParams struct {
 	Tls                    TLSParams         `json:"tls"`
 	HostName               string            `json:"hostname"`
 	DatadogEnv             map[string]string `json:"datadogEnv"`
+	ProxyEnv               map[string]string `json:"proxyEnv"`
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
 	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
@@ -255,6 +256,9 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 		"tensorleap-engine": Record{
 			"gpu":                  params.Gpu,
 			"localDataDirectories": params.LocalDataDirectories,
+			"http_proxy":           params.ProxyEnv["http_proxy"],
+			"https_proxy":          params.ProxyEnv["https_proxy"],
+			"no_proxy":             params.ProxyEnv["no_proxy"],
 		},
 		"tensorleap-node-server": Record{
 			"enableKeycloak":         params.KeycloakEnabled,

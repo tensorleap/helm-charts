@@ -11,6 +11,12 @@ target_repo: tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310
 
+# Outbound proxy for engine PUSH jobs (the pippin image-dependencies-builder dind).
+# Set by the installer from its own HTTP(S)_PROXY/NO_PROXY env; empty = no proxy.
+http_proxy: ""
+https_proxy: ""
+no_proxy: ""
+
 localDataDirectories: []
 gpu: false
 gpuTolerations: []

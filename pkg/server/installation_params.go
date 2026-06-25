@@ -838,6 +838,8 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 
 	datadogEnvs := params.GetDatadogEnvs()
 
+	proxyEnvs := params.GetEngineProxyEnv()
+
 	localBucketPath := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME, "minio", "session")
 
 	return &helm.ServerHelmValuesParams{
@@ -850,6 +852,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		ProxyUrl:               params.ProxyUrl,
 		Tls:                    *tlsParams,
 		DatadogEnv:             datadogEnvs,
+		ProxyEnv:               proxyEnvs,
 		KeycloakEnabled:        !params.DisabledAuth,
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
@@ -874,6 +877,48 @@ func (params *InstallationParams) GetDatadogEnvs() map[string]string {
 	}
 
 	return data
+}
+
+// engineJobNoProxyEntries are appended to the user's NO_PROXY so that engine PUSH
+// jobs reach in-cluster services (Zot registry, MinIO, k8s API/DNS) directly
+// instead of routing them through the corporate proxy.
+var engineJobNoProxyEntries = []string{
+	"tensorleap-registry",
+	"tensorleap-minio",
+	"localhost",
+	"127.0.0.1",
+	".svc",
+	".svc.cluster.local",
+	".cluster.local",
+	"10.42.0.0/16",
+	"10.43.0.0/16",
+}
+
+// GetEngineProxyEnv returns the outbound-proxy env to inject into engine PUSH jobs
+// (notably the pippin image-dependencies-builder dind, which runs its own daemon and
+// does not inherit the node's containerd proxy/mirror config). Values are captured
+// from the installer's own environment; returns nil when no proxy is configured.
+func (params *InstallationParams) GetEngineProxyEnv() map[string]string {
+	httpProxy := lookupFirstEnv("HTTP_PROXY", "http_proxy")
+	httpsProxy := lookupFirstEnv("HTTPS_PROXY", "https_proxy")
+	if httpProxy == "" && httpsProxy == "" {
+		return nil
+	}
+	noProxy := lookupFirstEnv("NO_PROXY", "no_proxy")
+	return map[string]string{
+		"http_proxy":  httpProxy,
+		"https_proxy": httpsProxy,
+		"no_proxy":    k3d.AddToNoProxy(noProxy, engineJobNoProxyEntries),
+	}
+}
+
+func lookupFirstEnv(keys ...string) string {
+	for _, key := range keys {
+		if value, ok := os.LookupEnv(key); ok && value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func (params *InstallationParams) GetInfraHelmValuesParams(syncRegistries []helm.ZotSyncRegistry, registryImage string) *helm.InfraHelmValuesParams {
