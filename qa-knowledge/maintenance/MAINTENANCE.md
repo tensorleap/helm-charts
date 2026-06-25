@@ -39,13 +39,12 @@ helm-charts (`../engine`, `../node-server`, `../web-ui`, `../leap-cli`,
 Invoke it in Claude Code with `/update-qa-knowledge` (or just ask "update the QA
 knowledge base").
 
-### First run caveat (node-server) — resolved 2026-06-25
-The KB was originally built partly from node-server's `en-per-project-generic-workers`
-branch. That branch has since merged to `master`; the baseline was reconciled to
-node-server `master` (HEAD `9276bb7c`) and the affected doc (`09-job-catalog.md`)
-updated — see [`GAPS.md`](GAPS.md). node-server now diffs incrementally like the other
-repos. (`leap-cli` + `code-loader` still carry null baselines — their first refresh
-full-verifies; see [`kb-state.json`](kb-state.json).)
+### Baselines (current)
+All four code repos are baselined at `master` and diff incrementally:
+node-server `9276bb7c`, engine `026729cf`, web-ui `f16249f1`, helm-charts `05643d36`
+(see [`kb-state.json`](kb-state.json) / [`GAPS.md`](GAPS.md)). `leap-cli` +
+`code-loader` still carry **null** baselines — their first `update-qa-knowledge`
+refresh full-verifies their docs and records real SHAs.
 
 ---
 

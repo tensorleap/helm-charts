@@ -26,12 +26,10 @@ Open gaps: none new. `storage.ts` changed the sample-visualizers folder `sample_
 
 ## 2026-06-24 — initial
 Reviewed: KB authored from helm-charts@8cbe68cb, engine@9045cc33,
-node-server@en-per-project-generic-workers (1b44e3bb), web-ui@c0afae07.
+node-server@1b44e3bb (since merged to master), web-ui@c0afae07.
 Changed: all docs created (README, 01–10) + maintenance scaffolding.
 Open gaps:
-- **node-server baseline is a feature branch** (`en-per-project-generic-workers`),
-  not `master`. The first `update-qa-knowledge` refresh should treat
-  node-server-dependent docs as full re-verify and reset the baseline to `master` HEAD.
+- ~~**node-server baseline was a feature branch**, not `master`.~~ **RESOLVED 2026-06-25** — reconciled to node-server `master` (HEAD `9276bb7c`); see the 2026-06-25 refresh entries above.
 - **Graph jobs** (`DRY_RUN_GRAPH` vs `ANALYZE_GRAPH`, and how "Graph Validate"
   maps to each within the PUSH flow) were slightly conflated across recon sources —
   confirm precise spawn behavior and k8s names on a live cluster (noted in
