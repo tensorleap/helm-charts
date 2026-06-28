@@ -1,0 +1,107 @@
+{
+  "_note": "Maps each KB doc to the source path globs it depends on. The maintenance agent uses this to decide which docs a changed source file may affect. Paths are repo-prefixed; the prefix maps to an env var path: helm-charts->$KB_SRC_HELM_CHARTS, engine->$KB_SRC_ENGINE, node-server->$KB_SRC_NODE_SERVER, web-ui->$KB_SRC_WEB_UI, leap-cli->$KB_SRC_LEAP_CLI, code-loader->$KB_SRC_CODE_LOADER. Globs are advisory hints, not a hard filter — when in doubt, re-verify. Add a new doc here when you add one to the KB.",
+  "docs": {
+    "01-architecture.md": [
+      "helm-charts/charts/**",
+      "helm-charts/pkg/server/**",
+      "helm-charts/pkg/k3d/**",
+      "helm-charts/images.txt"
+    ],
+    "02-components.md": [
+      "web-ui/src/**",
+      "node-server/src/**",
+      "engine/src_tensorleap/**",
+      "helm-charts/charts/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
+    ],
+    "03-data-flows.md": [
+      "engine/src_tensorleap/manager/**",
+      "engine/src_tensorleap/workers/**",
+      "engine/src_tensorleap/infrastructure/redis/**",
+      "engine/src_tensorleap/trainer/**",
+      "node-server/src/evaluate/**",
+      "node-server/src/utils/**",
+      "node-server/src/versions/**",
+      "node-server/src/modelmetrics/**",
+      "node-server/src/dashboards/**",
+      "web-ui/src/dashboard/**",
+      "web-ui/src/core/**",
+      "web-ui/src/auth/**",
+      "leap-cli/cmd/**"
+    ],
+    "04-job-types-and-lifecycle.md": [
+      "engine/src_tensorleap/contract/common/enums.py",
+      "engine/src_tensorleap/manager/**",
+      "node-server/src/jobs/**",
+      "node-server/src/utils/k8s.ts",
+      "node-server/src/utils/engine.ts"
+    ],
+    "05-testing-utils.md": [
+      "helm-charts/charts/**",
+      "helm-charts/pkg/**",
+      "helm-charts/cmd/server/**",
+      "node-server/src/utils/**",
+      "engine/src_tensorleap/infrastructure/redis/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
+    ],
+    "06-ui-inspection.md": [
+      "web-ui/src/tour/ToursConfig.tsx",
+      "web-ui/src/core/api-client.tsx",
+      "web-ui/src/core/useSocketIO.tsx",
+      "web-ui/src/test-ids.ts",
+      "web-ui/src/url/**",
+      "web-ui/src/dashboard/**"
+    ],
+    "07-failure-modes.md": [
+      "engine/src_tensorleap/manager/**",
+      "engine/src_tensorleap/workers/**",
+      "engine/src_tensorleap/deployment_manager/**",
+      "node-server/src/auth/**",
+      "node-server/src/jobs/**",
+      "node-server/src/utils/**",
+      "web-ui/src/auth/**",
+      "web-ui/src/core/**"
+    ],
+    "08-test-playbooks.md": [
+      "node-server/src/evaluate/**",
+      "node-server/src/versions/**",
+      "node-server/src/jobs/**",
+      "helm-charts/cmd/server/**",
+      "leap-cli/cmd/**",
+      "leap-cli/pkg/**",
+      "code-loader/code_loader/**"
+    ],
+    "09-job-catalog.md": [
+      "node-server/src/visualizations/**",
+      "node-server/src/insights/**",
+      "node-server/src/insightsSettings/**",
+      "node-server/src/dataset-curation/**",
+      "node-server/src/sampleCollections/**",
+      "node-server/src/validate-graph/**",
+      "node-server/src/projects/**",
+      "node-server/src/exportImportModel/**",
+      "node-server/src/codeSnapshots/**",
+      "node-server/src/jobs/**",
+      "engine/src_tensorleap/manager/**",
+      "engine/src_tensorleap/workers/**",
+      "engine/src_tensorleap/contract/common/enums.py",
+      "leap-cli/cmd/**",
+      "leap-cli/docs/**",
+      "code-loader/code_loader/**"
+    ],
+    "10-verification-toolbox.md": [
+      "helm-charts/charts/tensorleap/charts/engine/templates/**",
+      "helm-charts/charts/tensorleap/charts/node-server/templates/**",
+      "helm-charts/charts/tensorleap/values.yaml",
+      "web-ui/src/index.tsx",
+      "web-ui/vite.config.ts",
+      "web-ui/src/keycloak.ts",
+      "web-ui/package.json",
+      "node-server/src/tracer.ts"
+    ]
+  }
+}

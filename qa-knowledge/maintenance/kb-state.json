@@ -1,0 +1,44 @@
+{
+  "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
+  "last_verified_utc": "2026-06-25",
+  "repos": {
+    "helm-charts": {
+      "remote": "git@github.com:tensorleap/helm-charts.git",
+      "track_branch": "master",
+      "built_from_branch": "master",
+      "built_from_sha": "05643d366e8afb5a20403b49fc5745a3a5c73c9e"
+    },
+    "engine": {
+      "remote": "git@github.com:tensorleap/engine.git",
+      "track_branch": "master",
+      "built_from_branch": "master",
+      "built_from_sha": "026729cf530c5040b4aebb7aa3efba5280f5b28f"
+    },
+    "node-server": {
+      "remote": "git@github.com:tensorleap/node-server.git",
+      "track_branch": "master",
+      "built_from_branch": "master",
+      "built_from_sha": "9276bb7c470a5561a46ce2921d28a0f52097df34"
+    },
+    "web-ui": {
+      "remote": "git@github.com:tensorleap/web-ui.git",
+      "track_branch": "master",
+      "built_from_branch": "master",
+      "built_from_sha": "f16249f1f8fbff61c037f183cbd925e2bea604be"
+    },
+    "leap-cli": {
+      "remote": "git@github.com:tensorleap/leap-cli.git",
+      "track_branch": "master",
+      "built_from_branch": null,
+      "built_from_sha": null,
+      "_status": "newly tracked 2026-06-25; null baseline -> first refresh full-verifies its docs (02/03/05/08/09). Local checkout was on branch fix-default-client-proxy."
+    },
+    "code-loader": {
+      "remote": "git@github.com:tensorleap/code-loader.git",
+      "track_branch": "master",
+      "built_from_branch": null,
+      "built_from_sha": null,
+      "_status": "newly tracked 2026-06-25; null baseline -> first refresh full-verifies its docs (02/05/08/09)."
+    }
+  }
+}
