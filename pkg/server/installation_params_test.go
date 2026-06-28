@@ -91,3 +91,34 @@ func TestGetServerHelmValuesParams(t *testing.T) {
 		assert.False(t, helmParams.KeycloakEnabled, "Keycloak should be disabled when DisabledAuth is true")
 	})
 }
+
+func TestGetEngineProxyEnv(t *testing.T) {
+	params := &InstallationParams{}
+
+	t.Run("returns nil when no proxy is set", func(t *testing.T) {
+		t.Setenv("HTTP_PROXY", "")
+		t.Setenv("http_proxy", "")
+		t.Setenv("HTTPS_PROXY", "")
+		t.Setenv("https_proxy", "")
+		assert.Nil(t, params.GetEngineProxyEnv())
+	})
+
+	t.Run("captures proxy and augments no_proxy with in-cluster entries", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "http://proxy:3128")
+		t.Setenv("NO_PROXY", ".renault.fr")
+
+		env := params.GetEngineProxyEnv()
+		assert.Equal(t, "http://proxy:3128", env["https_proxy"])
+		assert.Contains(t, env["no_proxy"], ".renault.fr")
+		assert.Contains(t, env["no_proxy"], "tensorleap-registry")
+		assert.Contains(t, env["no_proxy"], "tensorleap-minio")
+		assert.Contains(t, env["no_proxy"], "10.43.0.0/16")
+	})
+
+	t.Run("prefers uppercase but falls back to lowercase", func(t *testing.T) {
+		t.Setenv("HTTP_PROXY", "")
+		t.Setenv("http_proxy", "http://lower:3128")
+		env := params.GetEngineProxyEnv()
+		assert.Equal(t, "http://lower:3128", env["http_proxy"])
+	})
+}

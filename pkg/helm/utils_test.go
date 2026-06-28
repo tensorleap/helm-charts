@@ -27,6 +27,9 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 			"tensorleap-engine": Record{
 				"gpu":                  params.Gpu,
 				"localDataDirectories": params.LocalDataDirectories,
+				"http_proxy":           "",
+				"https_proxy":          "",
+				"no_proxy":             "",
 			},
 			"tensorleap-node-server": Record{
 				"enableKeycloak":         params.KeycloakEnabled,
