@@ -35,5 +35,17 @@ data:
   GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
   GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
+{{- if .Values.http_proxy }}
+  HTTP_PROXY: {{ .Values.http_proxy | quote }}
+  http_proxy: {{ .Values.http_proxy | quote }}
+{{- end }}
+{{- if .Values.https_proxy }}
+  HTTPS_PROXY: {{ .Values.https_proxy | quote }}
+  https_proxy: {{ .Values.https_proxy | quote }}
+{{- end }}
+{{- if .Values.no_proxy }}
+  NO_PROXY: {{ .Values.no_proxy | quote }}
+  no_proxy: {{ .Values.no_proxy | quote }}
+{{- end }}
 
 
