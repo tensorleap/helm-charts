@@ -188,6 +188,7 @@ model graph renders in the version's network/graph view.
 - **Trigger:** auto (`createStreamingSamplesVisJob`, `trigger='Auto'`, `preferCpu=true`), deduped against a live k8s job. Per-sample requests are pushed to RabbitMQ queue `<visArtifactId>-streaming-samples-visualizations`.
 - **Spawns:** redis + generic-process(1), **no** streaming-handler, no autoscaler; the main pod is pinned tiny (1Gi / 100–500m).
 - **No persistence:** visualized items are computed **in memory** and pushed to the UI as `source='streaming-samples'`. The job ends on subscriber timeout.
+- **UI consumer:** backs the **collection sample-viewer grid** — the grid requests per-viewport visualizations via `generateStreamingSamplesVis` (debounced on scroll-stop, deduped against an in-memory FIFO cache) and receives them as `source='streaming-samples'` socket pushes. End-to-end: [Flow C in 03](03-data-flows.md#flow-c--collection-sample-viewer-grid).
 - **⚠️ vs Visualizers Calculation:** Streaming Samples Vis runs ONE visualizer on demand for an explicit `sample_identities` list, in-memory, single generic-process, no persistence. Visualizers Calculation is a *batch* job that scales generic-process replicas + streaming-handler + autoscaler and **persists** results.
 - **Failure (per-sample, has_error):** "Unknown visualizer"; "Sample X does not exist in this session run" (stale `visArtifactId` from a different run); "Visualization error: …".
 

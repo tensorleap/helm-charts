@@ -1,6 +1,6 @@
 # 03 · Data flows (step-by-step, with observables)
 
-The two flows a QA engineer must know cold. Each step lists **who acts**, **the
+The core flows a QA engineer must know cold. Each step lists **who acts**, **the
 mechanism**, and **the observable** (what you check to prove the step happened).
 Observables are the backbone of any test assertion.
 
@@ -102,3 +102,47 @@ Mongo/ES/bucket → rendered dashlet.
 
 A **rendered** dashlet = none of the above texts present **and** chart geometry
 (SVG/canvas, axis labels, series) inside the dashlet's `id` container.
+
+---
+
+## Flow C — Collection sample-viewer grid
+
+What happens when you open a collection (Collections drawer → a collection's
+**view**/grid icon) and scroll its sample grid with a visualizer selected. This is a
+**different** path from a dashlet (Flow B): samples are ordered by a per-collection
+Elasticsearch index and visualized on demand by a `STREAMING_SAMPLES_VIS` job (see
+[09](09-job-catalog.md#streaming-samples-vis-streaming_samples_vis)), with an
+in-memory client-side cache.
+
+> **Key distinction: rendering a cell ≠ requesting its visualization.** The grid
+> renders the visible cells *immediately* as you scroll; only the visualization
+> *fetch* is deferred until scrolling settles. A cell with no cached image renders a
+> spinner (`CellLoader`), not a blank or a `No data`.
+
+| # | Actor | Action | Observable (how QA verifies) |
+|---|---|---|---|
+| 1 | web-ui | Open the collection view (grid icon); pick a **model** (version) + a **visualizer** (e.g. `default_image_visualizer`) | URL has `panel=collections`; header `COLLECTION: <name> (<N> samples)` |
+| 2 | web-ui → node-server | `ensureCollectionIndex({projectId, collectionId, inferenceArtifactId})` builds/refreshes the per-(collection, model) ES index; while `status:'building'` it **polls every ~2s**, reporting `esIndexedCount/samplesCount` | POST `…/sample-collection/ensureCollectionIndex` 200; header badge **`Indexing… X / Y`** while building; the collection index appears in `GET <ES>/_cat/indices` |
+| 3 | web-ui → node-server | `getCollectionSampleOrder` returns **cursor-paginated** sample identities (`PAGE_SIZE=500`) with server-side **sort/filter**; `loadMore` rides `search_after` cursors | POST `…/sample-collection/getCollectionSampleOrder` 200 `{rows/samples, total, cursor}`; `total` drives the scrollbar |
+| 4 | web-ui (`VirtualizationGrid`) | Renders only the visible window **+ overscan**, re-rendering on **every scroll tick** (no debounce). Each `SampleCell` reads the vis cache reactively (`useVisStoreEntry` → `useSyncExternalStore`); a miss shows `CellLoader` | DOM: cells mount/unmount live while scrolling; uncached cells show a spinner, not a blank |
+| 5 | web-ui (debounced request) | ~300 ms **after scrolling stops**, two stacked trailing-only debounces (`VIEWPORT_DEBOUNCE_MS`→`VIS_REQUEST_DEBOUNCE_MS`, both 300) fire `requestVisualizations`. `sendVisRequest` **drops samples already cached** (`store.has`), **aborts the prior in-flight request**, re-ensures the job at most every **2 min** (`createStreamingSamplesVisJob`), then calls `generateStreamingSamplesVis(needed)` | POST `…/createStreamingSamplesVisJob` then `…/generateStreamingSamplesVis` fire **only after the scroll settles**; revisiting an already-loaded viewport issues **zero** `generateStreamingSamplesVis` calls (cache hit) |
+| 6 | engine (`STREAMING_SAMPLES_VIS`) | Renders the one visualizer **in memory** for the requested `sample_identities` (redis + generic-process, **no** streaming-handler — see [09](09-job-catalog.md#streaming-samples-vis-streaming_samples_vis)); pushes per-sample results back over RabbitMQ → node-server | `kubectl get pods` → `streaming-samples-vis-<jobId>`, `redis-<jobId>`, `generic-process-<jobId>`; queue `<visArtifactId>-streaming-samples-visualizations` |
+| 7 | node-server → socket.io → web-ui | Results arrive as a **websocket push** (`source='streaming-samples'`), **not** the REST response. `handlePushMessage` filters by `visArtifactId`+`visualizationType`, `store.setMany(entries)`, flips `jobStatus→'ready'` | DevTools WS: `serverMessage` frames; subscribed cells re-render (spinner → image) with no page reload |
+| 8 | web-ui (`StreamingSamplesVisStore`) | In-memory cache, **insertion-order / FIFO — not a true LRU** (`get()` doesn't bump recency); capacity `max(pageSize*5, 50)`, `pageSize=rows*cols`. `evictIfNeeded` **never evicts keys with active subscribers** (mounted cells ⊇ visible, via overscan) | Scroll far away then back → evicted samples re-stream (`generateStreamingSamplesVis` again); on-screen cells never blank due to eviction |
+
+### Collection-grid failure modes & gotchas
+- **`Loading visualizations…` never resolves / indexing stuck**: the collection ES
+  index isn't progressing — the badge `Indexing… 0 / N` stays at 0 and
+  `streaming-samples-vis-<jobId>` sits idle on its queue (front-end isn't driving
+  requests). See [07-failure-modes.md](07-failure-modes.md).
+- **Grid "keeps refreshing" while indexing (BF-1060, fixed):** while
+  `status:'building'`, the dialog folds the live `esIndexedCount` into the
+  sample-page key and polls every ~2s, so the first page reorders each tick. The grid
+  used to `store.clear()` on **every** visible-head change → blank + re-stream all
+  visible cells every 2s. Fixed so the cache is cleared **only on model/visualizer
+  change**, not on filter/sort/backfill reorder. **Verification:** returning to an
+  already-viewed sort order must issue **0** `generateStreamingSamplesVis` calls (a
+  cache hit); a re-stream on every head change is the regression.
+- **Stale visualizer/run**: per-sample `has_error` ("Sample X does not exist in this
+  session run") when `visArtifactId` is from a different run — see
+  [09](09-job-catalog.md#streaming-samples-vis-streaming_samples_vis).

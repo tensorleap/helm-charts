@@ -29,6 +29,9 @@
       "web-ui/src/dashboard/**",
       "web-ui/src/core/**",
       "web-ui/src/auth/**",
+      "web-ui/src/sample-collection/**",
+      "web-ui/src/ui/atoms/**",
+      "node-server/src/sampleCollections/**",
       "leap-cli/cmd/**"
     ],
     "04-job-types-and-lifecycle.md": [
@@ -54,7 +57,8 @@
       "web-ui/src/core/useSocketIO.tsx",
       "web-ui/src/test-ids.ts",
       "web-ui/src/url/**",
-      "web-ui/src/dashboard/**"
+      "web-ui/src/dashboard/**",
+      "web-ui/src/sample-collection/**"
     ],
     "07-failure-modes.md": [
       "engine/src_tensorleap/manager/**",
@@ -89,6 +93,7 @@
       "engine/src_tensorleap/manager/**",
       "engine/src_tensorleap/workers/**",
       "engine/src_tensorleap/contract/common/enums.py",
+      "web-ui/src/sample-collection/**",
       "leap-cli/cmd/**",
       "leap-cli/docs/**",
       "code-loader/code_loader/**"

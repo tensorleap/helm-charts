@@ -33,6 +33,11 @@ the rules here matter.
 | Collections | `collections-panel-button` |
 | Misc | `hub-gallery`, `import-project-dialog`, `recent-projects-table-id`, `run-and-processes-table-id` |
 
+> **Collection sample-viewer grid:** clicking a collection's **view**/grid icon opens
+> a sample grid with its own load path (per-collection ES index → cursor pages →
+> virtual scroll → on-demand streaming-vis cache), distinct from a dashlet — see
+> [Flow C in 03-data-flows.md](03-data-flows.md#flow-c--collection-sample-viewer-grid).
+
 ### `aria-label` selectors (version control)
 `Make this the active version`, `Different evaluation generation`,
 `Expand experiment` / `Collapse experiment`. (~25 files use `aria-label`.)
