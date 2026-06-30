@@ -6,11 +6,11 @@ docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 ghcr.io/project-zot/zot-linux-amd64:v2.1.15
 nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
-public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-b96a86d7-py310
-public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-b96a86d7-py312
-public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-b96a86d7-py38
-public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-b96a86d7-py39
-public.ecr.aws/tensorleap/engine:engine-metadata-revision-b96a86d7
+public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-d7aff4cc-py310
+public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-d7aff4cc-py312
+public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-d7aff4cc-py38
+public.ecr.aws/tensorleap/engine-generic:engine-metadata-revision-d7aff4cc-py39
+public.ecr.aws/tensorleap/engine:engine-metadata-revision-d7aff4cc
 public.ecr.aws/tensorleap/node-server:metadata-revision-update-evaluate-0c85ebf7
 public.ecr.aws/tensorleap/pippin:master-26a41e94
 public.ecr.aws/tensorleap/web-ui:update-metadata-update-evaluate-1d6fd9e3
