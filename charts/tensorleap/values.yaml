@@ -166,6 +166,12 @@ datadog:
     logs:
       enabled: true
       containerCollectAll: false
+    env:
+      # Drop high-volume, low-value logs at the Agent before ingestion to cut Datadog cost:
+      # per-request access logs ("request completed", incl. kube-probe healthChecks) and the
+      # expected 401 auth rejections logged at ERROR with full stack traces ("No token provided").
+      - name: DD_LOGS_CONFIG_PROCESSING_RULES
+        value: '[{"type":"exclude_at_match","name":"exclude_access_logs","pattern":"request completed"},{"type":"exclude_at_match","name":"exclude_no_token_errors","pattern":"No token provided"}]'
     apiKeyExistingSecret: datadog-secret
     appKeyExistingSecret: datadog-secret
     site: datadoghq.com
