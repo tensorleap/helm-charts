@@ -50,3 +50,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: engine-cm
+          # Redis->storage migration: mount the per-job shared-volume base so the
+          # orchestrator can prune dirs leaked by hard-killed jobs (k3d single-node hostPath).
+          volumeMounts:
+            - name: job-shared
+              mountPath: /job-shared
+      volumes:
+        - name: job-shared
+          hostPath:
+            path: /var/lib/tensorleap/standalone/storage/job-shared
+            type: DirectoryOrCreate
