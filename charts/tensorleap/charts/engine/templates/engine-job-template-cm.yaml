@@ -74,6 +74,9 @@ data:
                   mountPath: /usr/minio
                 - name: shared-logs
                   mountPath: /shared/logs
+                # Phase 1 (Redis->storage migration): per-job shared dir, k3d single-node hostPath
+                - name: job-shared
+                  mountPath: /job-shared
 {{- range .Values.additional_pvcs }}
                 - name: {{ .name  }}-vol
                   mountPath: {{ .mountPath }}
@@ -92,6 +95,13 @@ data:
                 claimName: tensorleap-minio
             - name: shared-logs
               emptyDir: {}  # Define shared-logs volume
+            # Phase 1 (Redis->storage migration): per-job shared dir.
+            # k3d is single-node, so this hostPath is effectively a ReadWriteMany
+            # volume shared by the main pod, generic-process and streaming-handler.
+            - name: job-shared
+              hostPath:
+                path: /var/lib/tensorleap/standalone/storage/job-shared
+                type: DirectoryOrCreate
 {{- range .Values.additional_pvcs }}
             - name: {{ .name  }}-vol
               persistentVolumeClaim:
