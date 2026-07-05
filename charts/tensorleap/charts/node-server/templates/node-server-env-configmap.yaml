@@ -27,7 +27,6 @@ data:
   KEYCLOAK_ADMIN_USER_NAME: "admin"
   KEYCLOAK_ADMIN_PASSWORD: "admin"
   DISABLE_DATADOG_METRICS: {{ .Values.disableDatadogMetrics | quote }}
-  ORCHESTRATOR_JOB_CREATION: {{ .Values.orchestratorJobCreation | quote }}
   INSTALLED_SERVER_VERSION: {{ .Values.installedServerVersion | quote }}
   TL_LOCAL_BUCKET_PATH: {{ .Values.localBucketPath | quote }}
   ELASTIC_HOST: {{ .Values.global.elasticsearch.url | default "http://tl-elasticsearch-es-master:9200" }}

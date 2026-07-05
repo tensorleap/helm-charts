@@ -3,7 +3,6 @@ image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
 disableAuth: false
-orchestratorJobCreation: false
 installedServerVersion: "unknown"
 
 ingress:
