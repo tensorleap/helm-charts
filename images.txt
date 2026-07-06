@@ -13,7 +13,7 @@ public.ecr.aws/tensorleap/engine-generic:master-2c133e0e-py38
 public.ecr.aws/tensorleap/engine-generic:master-2c133e0e-py39
 public.ecr.aws/tensorleap/engine:master-2c133e0e
 public.ecr.aws/tensorleap/node-server:master-620c4479
-public.ecr.aws/tensorleap/pippin:master-26a41e94
+public.ecr.aws/tensorleap/pippin:master-d88fb971
 public.ecr.aws/tensorleap/web-ui:master-d89faea2
 quay.io/keycloak/keycloak:26.3.2
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
