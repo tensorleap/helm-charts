@@ -12,6 +12,9 @@ spec:
       labels:
         app: tensorleap-node-server
       annotations:
+        # Roll the pods when the env configmap changes — env vars are only
+        # read at pod start.
+        checksum/env-configmap: {{ include (print $.Template.BasePath "/node-server-env-configmap.yaml") . | sha256sum }}
         ad.datadoghq.com/tensorleap-node-server.logs: '[{"source": "nodejs", "service": "node-server"}]'
         ad.datadoghq.com/db-migration.logs: '[{"source": "mongodb", "service": "node-server-db-migration"}]'
         ad.datadoghq.com/migrate-sessions-to-versions.logs: '[{"source": "nodejs", "service": "node-server-migrate-sessions"}]'
