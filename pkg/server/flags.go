@@ -101,6 +101,11 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 
 	deprecatedFlag_datasetDir(cmd)
 
+	// Shell completion: these flags take local directory paths, so let the shell
+	// complete directories (enable with `leap completion zsh` — see README).
+	_ = cmd.MarkFlagDirname("data-dir")
+	_ = cmd.MarkFlagDirname("dataset-volume")
+
 	flags.TLSFlags.SetFlags(cmd)
 }
 
