@@ -702,12 +702,8 @@ func addDatasetVolumes(datasetVolumes *[]string) error {
 		return nil
 	}
 	for {
-		var path string
-		prompt := survey.Input{
-			Message: "Enter dataset volume:",
-			Default: GetDefaultDataVolume(),
-		}
-		if err := survey.AskOne(&prompt, &path); err != nil {
+		path, err := selectLocalDir("Enter dataset volume", GetDefaultDataVolume())
+		if err != nil {
 			return err
 		}
 		path = strings.TrimSpace(path)
