@@ -38,12 +38,24 @@ func EnsureDirExists(path string) error {
 		return nil
 	}
 
+	useSudo := !status.CanCreateOnParentDirectory
 	mkDirArgs := []string{"mkdir", "-p", path}
-	if !status.CanCreateOnParentDirectory {
+	if useSudo {
 		mkDirArgs = append([]string{"sudo"}, mkDirArgs...)
 	}
 	if err := RunCommand(mkDirArgs...); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	// Make world-writable so a different (non-sudo) user can also use the dir.
+	// mkdir honors umask, so an explicit chmod is required. ponytail: 0777 by
+	// design — this tree is shared across local users on a single-node install.
+	chmodArgs := []string{"chmod", "777", path}
+	if useSudo {
+		chmodArgs = append([]string{"sudo"}, chmodArgs...)
+	}
+	if err := RunCommand(chmodArgs...); err != nil {
+		return fmt.Errorf("failed to set directory permissions: %v", err)
 	}
 
 	return nil
