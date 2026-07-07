@@ -19,6 +19,8 @@ spec:
   template:
     metadata:
       annotations:
+        # Roll the pod when engine-cm changes — env vars are only read at pod start.
+        checksum/env-configmap: {{ include (print $.Template.BasePath "/engine-cm.yaml") . | sha256sum }}
         ad.datadoghq.com/orchestrator.logs: '[{"source": "python", "service": "orchestrator"}]'
       labels:
         app: engine
