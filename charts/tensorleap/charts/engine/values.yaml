@@ -18,6 +18,8 @@ https_proxy: ""
 no_proxy: ""
 
 localDataDirectories: []
+total_memory_bytes: ""
+total_storage_bytes: ""
 gpu: false
 gpuTolerations: []
 

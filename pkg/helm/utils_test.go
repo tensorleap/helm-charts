@@ -30,6 +30,8 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"http_proxy":           "",
 				"https_proxy":          "",
 				"no_proxy":             "",
+				"total_memory_bytes":   "",
+				"total_storage_bytes":  "",
 			},
 			"tensorleap-node-server": Record{
 				"enableKeycloak":         params.KeycloakEnabled,
