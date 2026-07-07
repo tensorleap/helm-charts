@@ -655,7 +655,7 @@ func validateAndNormalizeDatasetVolumePath(path string) (string, error) {
 
 	isContainerAndHostIsTheSame := hostPath == containerPath
 
-	if err := os.MkdirAll(hostPath, 0777); err != nil {
+	if err := local.EnsureDirExists(hostPath); err != nil {
 		return "", fmt.Errorf("failed to create dataset volume directory: %v", err)
 	}
 	realDataPath, err := local.RealPath(hostPath)
