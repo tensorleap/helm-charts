@@ -45,6 +45,7 @@ type ServerHelmValuesParams struct {
 	LocalBucketPath        string            `json:"localBucketPath"`
 	TotalMemoryBytes       int64             `json:"totalMemoryBytes"`
 	TotalStorageBytes      int64             `json:"totalStorageBytes"`
+	TotalMemorySource      string            `json:"totalMemorySource"`
 }
 
 type ZotSyncRegistry struct {
@@ -271,6 +272,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"no_proxy":             params.ProxyEnv["no_proxy"],
 			"total_memory_bytes":   formatBytesValue(params.TotalMemoryBytes),
 			"total_storage_bytes":  formatBytesValue(params.TotalStorageBytes),
+			"total_memory_source":  params.TotalMemorySource,
 		},
 		"tensorleap-node-server": Record{
 			"enableKeycloak":         params.KeycloakEnabled,
