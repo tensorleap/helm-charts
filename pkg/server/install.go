@@ -177,20 +177,25 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 	return
 }
 
-func detectInstallationResources(ctx context.Context) (memoryBytes, storageBytes int64) {
-	dockerClient, err := docker.NewClient()
-	if err == nil {
-		info, infoErr := dockerClient.Info(ctx)
-		if infoErr == nil {
-			memoryBytes = info.MemTotal
-		} else {
-			log.Warnf("Failed detecting docker total memory: %v", infoErr)
-		}
+func detectInstallationResources(ctx context.Context, clusterMemoryGb uint) (memoryBytes, storageBytes int64) {
+	if clusterMemoryGb > 0 {
+		memoryBytes = int64(clusterMemoryGb) * 1024 * 1024 * 1024
+		log.Printf("Using cluster memory budget from --cluster-memory-gb: %d GiB\n", clusterMemoryGb)
 	} else {
-		log.Warnf("Failed detecting docker total memory: %v", err)
+		dockerClient, err := docker.NewClient()
+		if err == nil {
+			info, infoErr := dockerClient.Info(ctx)
+			if infoErr == nil {
+				memoryBytes = info.MemTotal
+			} else {
+				log.Warnf("Failed detecting docker total memory: %v", infoErr)
+			}
+		} else {
+			log.Warnf("Failed detecting docker total memory: %v", err)
+		}
 	}
 
-	storageBytes, err = local.DiskTotalBytes(local.GetServerDataDir())
+	storageBytes, err := local.DiskTotalBytes(local.GetServerDataDir())
 	if err != nil {
 		log.Warnf("Failed detecting total storage of data dir: %v", err)
 		storageBytes = 0
@@ -262,7 +267,7 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		return err
 	}
 	serverHelmParams := installationParams.GetServerHelmValuesParams(mnf.Tag)
-	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalStorageBytes = detectInstallationResources(ctx)
+	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalStorageBytes = detectInstallationResources(ctx, installationParams.ClusterMemoryGb)
 	serverValues, err := helm.CreateTensorleapChartValues(serverHelmParams)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",
