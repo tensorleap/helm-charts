@@ -37,6 +37,7 @@ type InstallationParams struct {
 	DatasetDirectory_DEPRECATED string                 `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
 	DatasetVolumes              []string               `json:"datasetVolumes"`
 	CpuLimit                    string                 `json:"cpuLimit,omitempty"`
+	ClusterMemoryGb             uint                   `json:"clusterMemoryGb,omitempty"`
 	ClearInstallationImages     bool                   `json:"removeInstallationImages,omitempty"`
 	DisabledAuth                bool                   `json:"disabledAuth,omitempty"`
 	IsAirgap                    bool                   `json:"isAirgap,omitempty"`
@@ -267,6 +268,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		PipIndexUrl:             flags.PipIndexUrl,
 		PipExtraIndexUrl:        flags.PipExtraIndexUrl,
 		CpuLimit:                flags.CpuLimit,
+		ClusterMemoryGb:         flags.ClusterMemoryGb,
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
 		DisabledAuth:            *flags.DisableAuth,
