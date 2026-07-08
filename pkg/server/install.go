@@ -177,11 +177,13 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 	return
 }
 
-func detectInstallationResources(ctx context.Context, clusterMemoryGb uint) (memoryBytes, storageBytes int64) {
+func detectInstallationResources(ctx context.Context, clusterMemoryGb uint) (memoryBytes, storageBytes int64, memorySource string) {
 	if clusterMemoryGb > 0 {
 		memoryBytes = int64(clusterMemoryGb) * 1024 * 1024 * 1024
+		memorySource = "flag"
 		log.Printf("Using cluster memory budget from --cluster-memory-gb: %d GiB\n", clusterMemoryGb)
 	} else {
+		memorySource = "auto"
 		dockerClient, err := docker.NewClient()
 		if err == nil {
 			info, infoErr := dockerClient.Info(ctx)
@@ -267,7 +269,7 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		return err
 	}
 	serverHelmParams := installationParams.GetServerHelmValuesParams(mnf.Tag)
-	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalStorageBytes = detectInstallationResources(ctx, installationParams.ClusterMemoryGb)
+	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalStorageBytes, serverHelmParams.TotalMemorySource = detectInstallationResources(ctx, installationParams.ClusterMemoryGb)
 	serverValues, err := helm.CreateTensorleapChartValues(serverHelmParams)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",

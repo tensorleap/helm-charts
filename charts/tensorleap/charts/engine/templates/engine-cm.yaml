@@ -41,6 +41,9 @@ data:
 {{- if .Values.total_storage_bytes }}
   TOTAL_INSTALLATION_STORAGE_BYTES: {{ .Values.total_storage_bytes | quote }}
 {{- end }}
+{{- if .Values.total_memory_source }}
+  TOTAL_INSTALLATION_MEMORY_SOURCE: {{ .Values.total_memory_source | quote }}
+{{- end }}
   ORCHESTRATOR_MEMORY_ADMISSION: {{ .Values.orchestrator_memory_admission | quote }}
 {{- if .Values.installation_memory_reserve_bytes }}
   INSTALLATION_MEMORY_RESERVE_BYTES: {{ .Values.installation_memory_reserve_bytes | quote }}
