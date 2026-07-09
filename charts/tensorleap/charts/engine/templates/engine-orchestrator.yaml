@@ -9,10 +9,11 @@ metadata:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/sync-wave: "3"
 spec:
+  # Recreate: two orchestrators must never consume the job-creation queue at once —
+  # a terminating pod with stale env raced the new one and admitted jobs ungated.
+  # The seconds of downtime are safe: the admission queue is persisted and recovered.
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
+    type: Recreate
   selector:
     matchLabels:
       app: engine
@@ -28,6 +29,7 @@ spec:
         tags.datadoghq.com/service: {{ .Release.Name }}
     spec:
       serviceAccountName: deployment-manager
+      terminationGracePeriodSeconds: 10
       containers:
         - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
           imagePullPolicy: IfNotPresent
