@@ -122,10 +122,6 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		log.Infof("CPU limit applied to all k3d containers: %d\n", cpuLimit)
 	}
 
-	if err := applyNodeSysctls(); err != nil {
-		log.Printf("Failed to apply node sysctls: %v", err)
-	}
-
 	cluster, err = GetCluster(ctx)
 	return
 }
@@ -394,19 +390,6 @@ func buildK3sExtraArgs() []conf.K3sArgWithNodeFilters {
 		},
 		{
 			Arg:         fmt.Sprintf("--kubelet-arg=eviction-hard=nodefs.available<%s,imagefs.available<%s", evictionThreshold, evictionThreshold),
-			NodeFilters: []string{"server:*"},
-		},
-		{
-			Arg:         "--kubelet-arg=max-pods=500",
-			NodeFilters: []string{"server:*"},
-		},
-		{
-			// Single-node k3d: one containerd handles all pod lifecycle. A burst of
-			// container starts saturates its gRPC socket, and the kubelet's default 2m
-			// runtime-request-timeout then expires -> RunContainerError (context
-			// deadline exceeded) and a self-sustaining teardown jam. Give containerd
-			// more time to drain the backlog so a slow start doesn't become a failure.
-			Arg:         "--kubelet-arg=runtime-request-timeout=5m",
 			NodeFilters: []string{"server:*"},
 		},
 	}
