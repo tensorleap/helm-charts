@@ -38,9 +38,6 @@ data:
 {{- if .Values.total_memory_bytes }}
   TOTAL_INSTALLATION_MEMORY_BYTES: {{ .Values.total_memory_bytes | quote }}
 {{- end }}
-{{- if .Values.total_storage_bytes }}
-  TOTAL_INSTALLATION_STORAGE_BYTES: {{ .Values.total_storage_bytes | quote }}
-{{- end }}
 {{- if .Values.total_memory_source }}
   TOTAL_INSTALLATION_MEMORY_SOURCE: {{ .Values.total_memory_source | quote }}
 {{- end }}
@@ -48,7 +45,6 @@ data:
 {{- if .Values.installation_memory_reserve_bytes }}
   INSTALLATION_MEMORY_RESERVE_BYTES: {{ .Values.installation_memory_reserve_bytes | quote }}
 {{- end }}
-  STREAMING_HANDLER_MAX_REPLICAS: {{ .Values.streaming_handler_max_replicas | quote }}
 {{- if .Values.http_proxy }}
   HTTP_PROXY: {{ .Values.http_proxy | quote }}
   http_proxy: {{ .Values.http_proxy | quote }}

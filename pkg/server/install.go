@@ -177,33 +177,26 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 	return
 }
 
-func detectInstallationResources(ctx context.Context, clusterMemoryGb uint) (memoryBytes, storageBytes int64, memorySource string) {
+func detectClusterMemory(ctx context.Context, clusterMemoryGb uint) (memoryBytes int64, memorySource string) {
 	if clusterMemoryGb > 0 {
 		memoryBytes = int64(clusterMemoryGb) * 1024 * 1024 * 1024
 		memorySource = "flag"
 		log.Printf("Using cluster memory budget from --cluster-memory-gb: %d GiB\n", clusterMemoryGb)
-	} else {
-		memorySource = "auto"
-		dockerClient, err := docker.NewClient()
-		if err == nil {
-			info, infoErr := dockerClient.Info(ctx)
-			if infoErr == nil {
-				memoryBytes = info.MemTotal
-			} else {
-				log.Warnf("Failed detecting docker total memory: %v", infoErr)
-			}
+		return
+	}
+	memorySource = "auto"
+	dockerClient, err := docker.NewClient()
+	if err == nil {
+		info, infoErr := dockerClient.Info(ctx)
+		if infoErr == nil {
+			memoryBytes = info.MemTotal
 		} else {
-			log.Warnf("Failed detecting docker total memory: %v", err)
+			log.Warnf("Failed detecting docker total memory: %v", infoErr)
 		}
+	} else {
+		log.Warnf("Failed detecting docker total memory: %v", err)
 	}
-
-	storageBytes, err := local.DiskTotalBytes(local.GetServerDataDir())
-	if err != nil {
-		log.Warnf("Failed detecting total storage of data dir: %v", err)
-		storageBytes = 0
-	}
-
-	log.Infof("Detected installation resources: total memory %d bytes, total storage %d bytes", memoryBytes, storageBytes)
+	log.Infof("Auto-detected cluster memory: %d bytes", memoryBytes)
 	return
 }
 
@@ -269,7 +262,7 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		return err
 	}
 	serverHelmParams := installationParams.GetServerHelmValuesParams(mnf.Tag)
-	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalStorageBytes, serverHelmParams.TotalMemorySource = detectInstallationResources(ctx, installationParams.ClusterMemoryGb)
+	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalMemorySource = detectClusterMemory(ctx, installationParams.ClusterMemoryGb)
 	serverValues, err := helm.CreateTensorleapChartValues(serverHelmParams)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",
