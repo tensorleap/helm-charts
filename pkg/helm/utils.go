@@ -44,7 +44,6 @@ type ServerHelmValuesParams struct {
 	InstalledServerVersion string            `json:"installedServerVersion"`
 	LocalBucketPath        string            `json:"localBucketPath"`
 	TotalMemoryBytes       int64             `json:"totalMemoryBytes"`
-	TotalStorageBytes      int64             `json:"totalStorageBytes"`
 	TotalMemorySource      string            `json:"totalMemorySource"`
 }
 
@@ -271,7 +270,6 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"https_proxy":          params.ProxyEnv["https_proxy"],
 			"no_proxy":             params.ProxyEnv["no_proxy"],
 			"total_memory_bytes":   formatBytesValue(params.TotalMemoryBytes),
-			"total_storage_bytes":  formatBytesValue(params.TotalStorageBytes),
 			"total_memory_source":  params.TotalMemorySource,
 		},
 		"tensorleap-node-server": Record{

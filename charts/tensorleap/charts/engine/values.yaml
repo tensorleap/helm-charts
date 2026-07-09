@@ -24,14 +24,12 @@ no_proxy: ""
 
 localDataDirectories: []
 total_memory_bytes: ""
-total_storage_bytes: ""
 # auto | flag. The orchestrator subtracts the reserve buffer only from auto-detected totals;
 # a user-provided total (install flag / settings override) is used verbatim.
 total_memory_source: ""
 # off | warn | enforce. warn computes and logs admission decisions without blocking.
 orchestrator_memory_admission: "off"
 installation_memory_reserve_bytes: ""
-streaming_handler_max_replicas: 10
 gpu: false
 gpuTolerations: []
 

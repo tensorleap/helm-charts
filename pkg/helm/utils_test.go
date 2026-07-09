@@ -31,7 +31,6 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"https_proxy":          "",
 				"no_proxy":             "",
 				"total_memory_bytes":   "",
-				"total_storage_bytes":  "",
 				"total_memory_source":  "",
 			},
 			"tensorleap-node-server": Record{
