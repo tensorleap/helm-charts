@@ -1,4 +1,4 @@
-image_tag: master-2c133e0e
+image_tag: master-2dcd2673
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
@@ -6,7 +6,7 @@ metrics_activate_nfs: false
 samples_generator_nfs: false
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: master-26a41e94
+dependencies_image_tag: master-d88fb971
 target_repo: tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310, py311, py312
