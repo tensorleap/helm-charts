@@ -4,13 +4,7 @@ redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
-# Hybrid Redis->storage data plane: redis (default) | blob (payloads on shared volume)
-payload_store: blob
-# Phase 5 blob-mode capacity tuning (only used when payload_store=blob). Disk-bound
-# queue-cap budget = free_disk x fraction / max_concurrent_jobs / 4. Raise concurrency on
-# bigger nodes. min_free_gb is the shared-volume disk-free guard floor.
-job_shared_max_concurrent_jobs: 2
-job_shared_disk_fraction: 0.6
+# Blob mode: shared-volume disk-free guard floor.
 job_shared_disk_min_free_gb: 2
 # Static per-job Redis sizing in blob mode (default; per-job pod_memory_override still wins)
 redis_blob_pod_gb: 1

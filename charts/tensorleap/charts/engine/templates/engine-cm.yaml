@@ -47,16 +47,8 @@ data:
   NO_PROXY: {{ .Values.no_proxy | quote }}
   no_proxy: {{ .Values.no_proxy | quote }}
 {{- end }}
-  # Hybrid Redis->storage migration: redis (default) keeps payloads in Redis;
-  # blob moves payloads to the per-job shared volume, Redis carries references.
-  PAYLOAD_STORE: "{{ .Values.payload_store }}"
-  # Phase 5 (blob mode only) capacity tuning. The per-queue length-cap budget is
-  # disk-bound: per_queue_gb = free_disk x fraction / max_concurrent_jobs / 4 (heavy queues).
-  # Raise max_concurrent_jobs on bigger nodes that run more jobs at once. min_free_gb is the
-  # shared-volume disk-free guard floor (the hard ceiling that replaces Redis noeviction OOM).
-  # All have in-code defaults; set here only to tune.
-  JOB_SHARED_MAX_CONCURRENT_JOBS: "{{ .Values.job_shared_max_concurrent_jobs }}"
-  JOB_SHARED_DISK_FRACTION: "{{ .Values.job_shared_disk_fraction }}"
+  # Blob mode: shared-volume disk-free guard floor (the hard ceiling that replaces Redis
+  # noeviction OOM). In-code default; set here only to tune.
   JOB_SHARED_DISK_MIN_FREE_GB: "{{ .Values.job_shared_disk_min_free_gb }}"
   # Static per-job Redis sizing in blob mode (cluster default; a per-job pod_memory_override
   # written via node-server's engine-redis-settings still takes precedence).
