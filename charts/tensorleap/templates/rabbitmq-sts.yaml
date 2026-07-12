@@ -22,7 +22,15 @@ spec:
           image: docker.io/library/rabbitmq:3.9.22
           imagePullPolicy: IfNotPresent
           resources:
+            # A CPU request (no limit) gives rabbitmq guaranteed cgroup shares
+            # under node-wide contention without capping it — critical on a
+            # single-node dev cluster where a busy `make deploy-local` build
+            # can otherwise starve every unreserved pod equally and trip
+            # liveness probes that have nothing to do with rabbitmq itself.
             requests:
+              cpu: "250m"
+              memory: "500Mi"
+            limits:
               memory: "500Mi"
           lifecycle:
             preStop:
@@ -48,15 +56,24 @@ spec:
             - name: http
               containerPort: 15672
           livenessProbe:
-            failureThreshold: 6
+            # `rabbitmq-diagnostics status` enumerates full node state (memory,
+            # alarms, listeners, etc.) — expensive to schedule and compute, so
+            # under CPU contention it's the probe most likely to itself miss
+            # its timeout and trigger a spurious kill. `ping` is a minimal
+            # Erlang RPC round-trip (same check readiness already uses) that
+            # still catches a genuinely dead/wedged broker. failureThreshold
+            # and timeoutSeconds are also raised as defense in depth against
+            # brief node-wide stalls.
+            failureThreshold: 10
             initialDelaySeconds: 120
             periodSeconds: 30
             successThreshold: 1
-            timeoutSeconds: 20
+            timeoutSeconds: 30
             exec:
               command:
                 - rabbitmq-diagnostics
-                - status
+                - -q
+                - ping
           readinessProbe:
             failureThreshold: 3
             initialDelaySeconds: 10
