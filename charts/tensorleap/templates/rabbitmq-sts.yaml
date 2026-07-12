@@ -23,10 +23,9 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             # A CPU request (no limit) gives rabbitmq guaranteed cgroup shares
-            # under node-wide contention without capping it — critical on a
-            # single-node dev cluster where a busy `make deploy-local` build
-            # can otherwise starve every unreserved pod equally and trip
-            # liveness probes that have nothing to do with rabbitmq itself.
+            # under node-wide contention without capping it — without this,
+            # rabbitmq is starved equally with every other unreserved pod
+            # during a CPU spike, which can trip its liveness probe.
             requests:
               cpu: "250m"
               memory: "500Mi"
