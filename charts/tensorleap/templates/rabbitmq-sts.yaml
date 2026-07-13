@@ -23,6 +23,7 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             requests:
+              cpu: "50m"
               memory: "500Mi"
           lifecycle:
             preStop:
