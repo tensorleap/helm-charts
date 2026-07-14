@@ -17,6 +17,7 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	k3d "github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/tensorleap/helm-charts/pkg/docker"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server/manifest"
 )
@@ -105,12 +106,12 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	log.Printf("Cluster '%s' created successfully!\n", clusterConfig.Cluster.Name)
 	log.SendCloudReport("info", "Created cluster successfully", "Running", nil)
 
-	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, &clusterConfig.Cluster, "", &k3dCluster.WriteKubeConfigOptions{
-		UpdateExisting:       true,
-		OverwriteExisting:    false,
-		UpdateCurrentContext: true,
-	}); err != nil {
-		log.Println(err)
+	// ClusterRun already wrote the installing user's ~/.kube/config
+	// (UpdateDefaultKubeconfig above). Write a second copy to the shared data
+	// dir and export it system-wide so kubectl/helm work for every local user,
+	// not just the one who ran the install.
+	if err := writeSharedKubeConfig(ctx, &clusterConfig.Cluster); err != nil {
+		log.Printf("failed writing shared kubeconfig: %v", err)
 	}
 
 	if params.CpuLimit != "" {
@@ -165,6 +166,40 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 		return fmt.Errorf("failed to update container %s: %w", containerID, err)
 	}
 	return nil
+}
+
+// writeSharedKubeConfig writes the cluster kubeconfig to the shared data dir
+// (world-readable) and drops a /etc/profile.d entry exporting KUBECONFIG, so
+// every local user's kubectl/helm can reach the single-node cluster. Both
+// tools honor $KUBECONFIG, so this one mechanism covers both.
+// ponytail: profile.d is the whole multi-user fix; the kubeconfig holds
+// cluster-admin creds, so 644 = any local user is cluster-admin. Fine on a
+// shared dev box (data dir is already 777); switch to a group + 640 if not.
+func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
+	// Multi-user story is Linux-only; on mac the single user already has ~/.kube/config.
+	if runtime.GOOS != "linux" {
+		return nil
+	}
+	sharedPath := local.GetKubeConfigPath()
+	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
+		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
+		return err
+	}
+	if err := local.RunCommand("sudo", "chmod", "644", sharedPath); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp("", "tl-kubeconfig-*.sh")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString("export KUBECONFIG=" + sharedPath + "\n"); err != nil {
+		tmp.Close()
+		return err
+	}
+	tmp.Close()
+	return local.RunCommand("sudo", "mv", tmp.Name(), "/etc/profile.d/tensorleap-kubeconfig.sh")
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {
