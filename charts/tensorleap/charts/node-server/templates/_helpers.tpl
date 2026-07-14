@@ -1,20 +1,14 @@
 {{/*
-Bash body for the regular `.js` db-migration loop. Used by both the
-db-migration-pre and db-migration-post init containers; the two passes
-differ only in their MIGRATION_FROM / MIGRATION_TO env vars, which
-slice this same loop into a "before the special migration" pass and
-an "after the special migration" pass.
+Bash body for the `.js` db-migration init container.
 
 Reads:
   MONGO_URI          (from configmap)
   POD_NAME           (downward API)
-  MIGRATION_FROM     (optional, defaults to 1 = no lower bound)
-  MIGRATION_TO       (optional, defaults to 99999 = no upper bound)
 
 Behavior:
   * Loops migrations in /mnt/shared/migrations/*.js sorted by filename.
-  * Only runs files whose version is in [FROM, TO] AND strictly greater
-    than the current db_metadata.schemaVersion.
+  * Only runs files whose version is strictly greater than the current
+    db_metadata.schemaVersion.
   * Uses db_metadata.lock to serialize against concurrent pods.
   * Fresh-install fast path (schemaVersion missing): stamp the global
     LATEST_VERSION and exit, skipping every migration. Skipping is safe
@@ -23,11 +17,7 @@ Behavior:
 {{- define "node-server.dbMigrationScript" -}}
 set -euo pipefail
 
-FROM=${MIGRATION_FROM:-1}
-TO=${MIGRATION_TO:-99999}
-
 echo 'Verifying db schema version...'
-echo "Migration window for this pass: [$FROM..$TO]"
 
 CURRNET_VERSION=$(mongosh $MONGO_URI --eval 'print((db.db_metadata.findOne({ _id: 1 }) || { schemaVersion: 0 }).schemaVersion); process.exit(0);' --quiet)
 echo "Current schemaVersion: $CURRNET_VERSION"
@@ -36,8 +26,6 @@ LATEST_VERSION=$(ls *.js | sed 's/-.*$//' | sort -r | head -1 | sed 's/^0*//')
 echo "Latest schemaVersion (all files): $LATEST_VERSION"
 
 TARGET_VERSION=$LATEST_VERSION
-if [ $TO -lt $TARGET_VERSION ]; then TARGET_VERSION=$TO; fi
-echo "Target schemaVersion for this pass: $TARGET_VERSION"
 
 test $CURRNET_VERSION -ge $TARGET_VERSION && { echo "Already at or above target — nothing to do."; exit 0; }
 
@@ -68,7 +56,7 @@ fi
 
 for file in $(ls *.js | sort); do
   VERSION=$(echo $file | sed 's/-.*$//' | sed 's/^0*//')
-  if [ $VERSION -gt $CURRNET_VERSION ] && [ $VERSION -ge $FROM ] && [ $VERSION -le $TO ]
+  if [ $VERSION -gt $CURRNET_VERSION ]
   then
     echo "Updating lock description..."
     mongosh $MONGO_URI --eval "db.db_metadata.findOneAndUpdate({_id: 1}, { \$set: { lock: 'Migration from $CURRNET_VERSION to $TARGET_VERSION: $file' }}) == null" --quiet
