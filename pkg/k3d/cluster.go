@@ -106,10 +106,17 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	log.Printf("Cluster '%s' created successfully!\n", clusterConfig.Cluster.Name)
 	log.SendCloudReport("info", "Created cluster successfully", "Running", nil)
 
-	// ClusterRun already wrote the installing user's ~/.kube/config
-	// (UpdateDefaultKubeconfig above). Write a second copy to the shared data
-	// dir and export it system-wide so kubectl/helm work for every local user,
-	// not just the one who ran the install.
+	// Update the installing user's ~/.kube/config (original behavior).
+	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, &clusterConfig.Cluster, "", &k3dCluster.WriteKubeConfigOptions{
+		UpdateExisting:       true,
+		OverwriteExisting:    false,
+		UpdateCurrentContext: true,
+	}); err != nil {
+		log.Println(err)
+	}
+
+	// Additionally write a shared copy in the data dir and export it system-wide,
+	// so kubectl/helm work for every local user, not just the one who installed.
 	if err := writeSharedKubeConfig(ctx, &clusterConfig.Cluster); err != nil {
 		log.Printf("failed writing shared kubeconfig: %v", err)
 	}
@@ -174,34 +181,27 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 // /etc/profile.d entry exporting KUBECONFIG so login shells pick it up
 // automatically; macOS has no equivalent drop-in, so mac users export it from
 // their shell rc (see MULTI-USER.md).
-// ponytail: the kubeconfig holds cluster-admin creds, so 644 = any local user
-// is cluster-admin. Fine on a shared dev box (data dir is already 777); switch
-// to a group + 640 if not.
+// ponytail: the kubeconfig holds cluster-admin creds, so world-readable = any
+// local user is cluster-admin. Fine on a shared dev box (data dir is already
+// 777); switch to a group + 640 if not.
 func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
 	sharedPath := local.GetKubeConfigPath()
 	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
 		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
 		return err
 	}
-	// We own the file we just wrote, so no sudo needed to relax its perms.
-	if err := os.Chmod(sharedPath, 0644); err != nil {
+	// World-accessible so any local user can read it (matches the 777 data dir).
+	if err := os.Chmod(sharedPath, 0777); err != nil {
 		return err
 	}
 
 	if runtime.GOOS != "linux" {
 		return nil
 	}
-	tmp, err := os.CreateTemp("", "tl-kubeconfig-*.sh")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.WriteString("export KUBECONFIG=" + sharedPath + "\n"); err != nil {
-		tmp.Close()
-		return err
-	}
-	tmp.Close()
-	return local.RunCommand("sudo", "mv", tmp.Name(), "/etc/profile.d/tensorleap-kubeconfig.sh")
+	// Drop a login-shell export so KUBECONFIG points at the shared file. sharedPath
+	// is a plain filesystem path (no shell metachars), so this is safe to quote.
+	return local.RunCommand("sudo", "sh", "-c",
+		"echo 'export KUBECONFIG="+sharedPath+"' > /etc/profile.d/tensorleap-kubeconfig.sh")
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {

@@ -60,8 +60,9 @@ source ~/.bashrc
 ## Security note
 
 The kubeconfig carries **cluster-admin** credentials, and the shared file is
-world-readable (`644`). On a single-node local dev box this matches the existing
-trust model (the data dir is already world-writable). If your box needs
+world-accessible (`777`, matching the data dir). On a single-node local dev box
+this matches the existing trust model (the data dir is already world-writable).
+If your box needs
 tighter isolation, restrict the file to a shared group instead:
 
 ```bash
