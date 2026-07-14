@@ -15,10 +15,13 @@ system-wide, and `kubectl`/`helm` work for everyone.
 | `TL_DATA_DIR` | `/var/lib/tensorleap/standalone` (or your `--data-dir`) | Where Tensorleap stores its data; the CLI reads this to find the install. |
 | `KUBECONFIG`  | `$TL_DATA_DIR/manifests/kubeconfig.yaml`            | Shared kubeconfig. Both `kubectl` and `helm` honor `$KUBECONFIG`. |
 
-The installer already drops `/etc/profile.d/tensorleap-kubeconfig.sh` exporting
-`KUBECONFIG` on Linux, so on a fresh login `kubectl` usually just works. The
-steps below are the manual version — use them if that file is missing, if you
-installed to a custom `--data-dir`, or to make the setup explicit.
+The installer writes the shared kubeconfig on both Linux and mac. On **Linux**
+it also drops `/etc/profile.d/tensorleap-kubeconfig.sh` exporting `KUBECONFIG`,
+so on a fresh login `kubectl` usually just works. On **mac** there's no
+equivalent system-wide drop-in, so add the export to your shell rc (see
+[Per-user](#per-user-alternative) below). The manual steps are also useful if
+that file is missing, if you installed to a custom `--data-dir`, or to make the
+setup explicit.
 
 ## Set it system-wide (recommended)
 

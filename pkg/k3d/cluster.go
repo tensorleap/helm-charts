@@ -168,27 +168,29 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 	return nil
 }
 
-// writeSharedKubeConfig writes the cluster kubeconfig to the shared data dir
-// (world-readable) and drops a /etc/profile.d entry exporting KUBECONFIG, so
-// every local user's kubectl/helm can reach the single-node cluster. Both
-// tools honor $KUBECONFIG, so this one mechanism covers both.
-// ponytail: profile.d is the whole multi-user fix; the kubeconfig holds
-// cluster-admin creds, so 644 = any local user is cluster-admin. Fine on a
-// shared dev box (data dir is already 777); switch to a group + 640 if not.
+// writeSharedKubeConfig writes the cluster kubeconfig to a stable, world-
+// readable path in the data dir so any local user's kubectl/helm can point at
+// it via $KUBECONFIG (both tools honor it). On Linux it also drops a
+// /etc/profile.d entry exporting KUBECONFIG so login shells pick it up
+// automatically; macOS has no equivalent drop-in, so mac users export it from
+// their shell rc (see MULTI-USER.md).
+// ponytail: the kubeconfig holds cluster-admin creds, so 644 = any local user
+// is cluster-admin. Fine on a shared dev box (data dir is already 777); switch
+// to a group + 640 if not.
 func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
-	// Multi-user story is Linux-only; on mac the single user already has ~/.kube/config.
-	if runtime.GOOS != "linux" {
-		return nil
-	}
 	sharedPath := local.GetKubeConfigPath()
 	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
 		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
 		return err
 	}
-	if err := local.RunCommand("sudo", "chmod", "644", sharedPath); err != nil {
+	// We own the file we just wrote, so no sudo needed to relax its perms.
+	if err := os.Chmod(sharedPath, 0644); err != nil {
 		return err
 	}
 
+	if runtime.GOOS != "linux" {
+		return nil
+	}
 	tmp, err := os.CreateTemp("", "tl-kubeconfig-*.sh")
 	if err != nil {
 		return err
