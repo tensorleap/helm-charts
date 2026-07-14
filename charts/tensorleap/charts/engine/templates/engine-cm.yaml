@@ -47,5 +47,12 @@ data:
   NO_PROXY: {{ .Values.no_proxy | quote }}
   no_proxy: {{ .Values.no_proxy | quote }}
 {{- end }}
+  # Blob mode: shared-volume disk-free guard floor (the hard ceiling that replaces Redis
+  # noeviction OOM). In-code default; set here only to tune.
+  JOB_SHARED_DISK_MIN_FREE_GB: "{{ .Values.job_shared_disk_min_free_gb }}"
+  # Static per-job Redis sizing in blob mode (cluster default; a per-job pod_memory_override
+  # written via node-server's engine-redis-settings still takes precedence).
+  REDIS_BLOB_POD_GB: "{{ .Values.redis_blob_pod_gb }}"
+  REDIS_BLOB_MAXMEMORY_MB: "{{ .Values.redis_blob_maxmemory_mb }}"
 
 

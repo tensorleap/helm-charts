@@ -1,15 +1,20 @@
-image_tag: master-dd041d0f
+image_tag: master-f46acb40
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
 metrics_activate_nfs: false
 samples_generator_nfs: false
+# Blob mode: shared-volume disk-free guard floor.
+job_shared_disk_min_free_gb: 2
+# Static per-job Redis sizing in blob mode (default; per-job pod_memory_override still wins)
+redis_blob_pod_gb: 1
+redis_blob_maxmemory_mb: 768
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: master-26a41e94
+dependencies_image_tag: master-d88fb971
 target_repo: tensorleap-registry:5000
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
-generic_py_ver: py38 #select from: py38, py39, py310
+generic_py_ver: py38 #select from: py38, py39, py310, py311, py312
 
 # Outbound proxy for engine PUSH jobs (the pippin image-dependencies-builder dind).
 # Set by the installer from its own HTTP(S)_PROXY/NO_PROXY env; empty = no proxy.

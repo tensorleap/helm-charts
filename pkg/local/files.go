@@ -38,15 +38,42 @@ func EnsureDirExists(path string) error {
 		return nil
 	}
 
-	mkDirArgs := []string{"mkdir", "-p", path}
-	if !status.CanCreateOnParentDirectory {
-		mkDirArgs = append([]string{"sudo"}, mkDirArgs...)
+	createdWithSudo := false
+	if !status.Exists {
+		mkDirArgs := []string{"mkdir", "-p", path}
+		if !status.CanCreateOnParentDirectory {
+			createdWithSudo = true
+			mkDirArgs = append([]string{"sudo"}, mkDirArgs...)
+		}
+		if err := RunCommand(mkDirArgs...); err != nil {
+			return fmt.Errorf("failed to create directory: %v", err)
+		}
+	} else if isWorldWritable(path) {
+		// Already shared — nothing to do.
+		return nil
 	}
-	if err := RunCommand(mkDirArgs...); err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
+
+	// Ensure the dir is world-writable so another local user (without sudo) can
+	// also use it. mkdir honors umask, and a dir left by a previous user may be
+	// 0755 — either way a second user can't write into it. chmod needs
+	// ownership or root, so use sudo when the dir isn't ours. A non-owner
+	// without sudo can't fix this (Unix rule) and gets a clear error; the perms
+	// must then be repaired once by the owner or an admin.
+	chmodArgs := []string{"chmod", "777", path}
+	if createdWithSudo || !status.CanWrite {
+		chmodArgs = append([]string{"sudo"}, chmodArgs...)
+	}
+	if err := RunCommand(chmodArgs...); err != nil {
+		return fmt.Errorf("failed to set directory permissions on %s: %v", path, err)
 	}
 
 	return nil
+}
+
+// isWorldWritable reports whether path exists and has the other-write bit set.
+func isWorldWritable(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().Perm()&0002 != 0
 }
 
 // MoveOrCopyDirectory tries to rename the directory, on failure tries to copy
