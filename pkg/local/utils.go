@@ -27,6 +27,7 @@ const (
 	MANIFEST_DIR_NAME               = "manifests"
 	INSTALLATION_PARAMS_FILE_NAME   = "params.yaml"
 	INSTALLATION_MANIFEST_FILE_NAME = "manifest.yaml"
+	KUBECONFIG_FILE_NAME            = "kubeconfig.yaml"
 	CONTAINERD_DIR_NAME             = "containerd"
 	HELM_CACHE_DIR_NAME             = "helm-cache"
 )
@@ -257,6 +258,13 @@ func GetInstallationHostnamePath() string {
 
 func GetInstallationParamsPath() string {
 	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, INSTALLATION_PARAMS_FILE_NAME)
+}
+
+// GetKubeConfigPath is the shared kubeconfig any local user's kubectl/helm can
+// point at via $KUBECONFIG. Lives in the manifest dir alongside the other
+// install artifacts.
+func GetKubeConfigPath() string {
+	return path.Join(GetServerDataDir(), MANIFEST_DIR_NAME, KUBECONFIG_FILE_NAME)
 }
 
 func GetContainerdDataDir() string {
