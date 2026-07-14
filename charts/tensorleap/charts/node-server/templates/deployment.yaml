@@ -238,35 +238,6 @@ spec:
                 secretKeyRef:
                   name: minio-secret
                   key: rootPassword
-        # Backfill visualizers_manifest.json for versions that predate the
-        # engine writing it (EN-2370). Idempotent — skips versions that already
-        # have a manifest. Runs after db-migration-post so the sessions-to-
-        # versions file moves have drained and vis assets are at the new layout.
-        - name: backfill-visualizers-manifest
-          image: {{ .Values.image }}:{{ .Values.image_tag }}
-          imagePullPolicy: IfNotPresent
-          command: ["npx", "ts-node", "scripts/backfill-visualizers-manifest.ts"]
-          envFrom:
-            - configMapRef:
-                name: tensorleap-node-server-env-configmap
-          env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: HMAC_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: rootUser
-            - name: HMAC_ACCESS_KEY_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: rootPassword
-          volumeMounts:
-            - name: minio
-              mountPath: /usr/minio
       containers:
         - name: tensorleap-node-server
           image: {{ .Values.image }}:{{ .Values.image_tag }}
