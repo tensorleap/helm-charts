@@ -1,3 +1,4 @@
 # This file meant to declare helper images that does not exists directly in the helm charts templates manifests
 
 docker.io/moby/buildkit:buildx-stable-1 # pippin using this image for the builder that use to build an dynamic images
+docker.io/library/redis:8.6-alpine # engine spawns redis dynamically via REDIS_IMAGE cm value, not an image: field in templates

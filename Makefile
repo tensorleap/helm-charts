@@ -74,7 +74,7 @@ update-images:
 			| grep 'image: ' \
 			| sed 's/.*: //' \
 			| sed 's/\"//g'; \
-		grep -v '^\s*#' external-images.txt | grep -v '^\s*$$' | sed 's/\s*#.*//'; \
+		grep -v '^[[:space:]]*#' external-images.txt | grep -v '^[[:space:]]*$$' | sed 's/[[:space:]]*#.*//'; \
 	} | sort | uniq > images.txt
 
 .PHONY: validate-images
