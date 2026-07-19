@@ -28,60 +28,72 @@ func RunCommand(args ...string) error {
 	return nil
 }
 
-// EnsureDirExists checks if a directory exists, and if not, creates it with sudo if needed.
+// EnsureDirExists makes sure path exists as a world-writable directory so any
+// local user can use the shared single-node install tree. A freshly created
+// dir is chmod'ed 0777 (with sudo if the parent needed it). An already-existing
+// dir is only healed when we can do it ourselves (os.Chmod, i.e. we own it);
+// we never sudo-chmod a pre-existing dir. That path is reachable with
+// operator- or attacker-supplied paths (dataset volumes, or symlinks planted
+// in the world-writable cache tree), so blanket sudo-chmod-777 there would let
+// a non-owner make arbitrary directories world-writable. When we can't heal an
+// existing dir, we warn and continue — it may still be usable, and failing
+// would break installs that work today.
 func EnsureDirExists(path string) error {
 	status, err := CheckDirectoryStatus(path)
 	if err != nil {
 		return err
 	}
-	if status.Exists {
-		return nil
-	}
 
-	createdWithSudo := false
 	if !status.Exists {
-		mkDirArgs := []string{"mkdir", "-p", path}
-		if !status.CanCreateOnParentDirectory {
-			createdWithSudo = true
-			mkDirArgs = append([]string{"sudo"}, mkDirArgs...)
-		}
-		if err := RunCommand(mkDirArgs...); err != nil {
+		createdWithSudo := !status.CanCreateOnParentDirectory
+		if err := runMaybeSudo(createdWithSudo, "mkdir", "-p", path); err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
-	} else if isWorldWritable(path) {
-		// Already shared — nothing to do.
+		if err := runMaybeSudo(createdWithSudo, "chmod", "777", path); err != nil {
+			return fmt.Errorf("failed to set directory permissions on %s: %v", path, err)
+		}
 		return nil
 	}
 
-	// Ensure the dir is world-writable so another local user (without sudo) can
-	// also use it. mkdir honors umask, and a dir left by a previous user may be
-	// 0755 — either way a second user can't write into it. chmod needs
-	// ownership or root, so use sudo when the dir isn't ours. A non-owner
-	// without sudo can't fix this (Unix rule) and gets a clear error; the perms
-	// must then be repaired once by the owner or an admin.
-	chmodArgs := []string{"chmod", "777", path}
-	if createdWithSudo || !status.CanWrite {
-		chmodArgs = append([]string{"sudo"}, chmodArgs...)
+	// Only heal a real directory, and never follow a symlink: os.Chmod would
+	// chmod the link target, which could be anywhere.
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
 	}
-	if err := RunCommand(chmodArgs...); err != nil {
-		return fmt.Errorf("failed to set directory permissions on %s: %v", path, err)
+	if !info.IsDir() {
+		return nil
 	}
-
+	if info.Mode().Perm()&0o002 != 0 {
+		return nil // already world-writable
+	}
+	if err := os.Chmod(path, 0o777); err != nil {
+		log.Warnf("Could not make %s world-writable: %v. Other local users may be unable to use it; have its owner run: chmod 777 %s", path, err, path)
+	}
 	return nil
 }
 
-// isWorldWritable reports whether path exists and has the other-write bit set.
-func isWorldWritable(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.Mode().Perm()&0002 != 0
+func runMaybeSudo(useSudo bool, args ...string) error {
+	if useSudo {
+		args = append([]string{"sudo"}, args...)
+	}
+	return RunCommand(args...)
 }
 
 // MoveOrCopyDirectory tries to rename the directory, on failure tries to copy
 func MoveOrCopyDirectory(srcStatus, dstStatus FileSystemStatus) error {
-	// Ensure the parent directory of the destination exists
+	// Ensure the parent directory of the destination exists. Only create it
+	// when missing — an existing parent may be a system dir (/opt, /var/lib,
+	// a home dir) that must not be made world-writable.
 	dstParent := filepath.Dir(dstStatus.Path)
-	if err := EnsureDirExists(dstParent); err != nil {
+	parentStatus, err := CheckDirectoryStatus(dstParent)
+	if err != nil {
 		return err
+	}
+	if !parentStatus.Exists {
+		if err := EnsureDirExists(dstParent); err != nil {
+			return err
+		}
 	}
 
 	if !srcStatus.Exists {
