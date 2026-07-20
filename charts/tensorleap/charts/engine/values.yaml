@@ -8,11 +8,6 @@ env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
 dependencies_image_tag: master-26a41e94
 target_repo: tensorleap-registry:5000
-# buildkit_registry_host is the host-accessible address for Zot used by
-# BuildKit (which runs in host-Docker network namespace and cannot resolve
-# the k8s-DNS name "tensorleap-registry"). Set by the installer to
-# "127.0.0.1:<registryPort>". Default covers the standard port 5699.
-buildkit_registry_host: "127.0.0.1:5699"
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310, py311, py312
 

@@ -176,13 +176,6 @@ func CacheImage(ctx context.Context, dockerClient docker.Client, image string, r
 		}
 
 		if !imageAlreadyInRegistry {
-			// Manifest-list images fail Docker push with "does not provide any platform".
-			// Fall back to extracting the linux/amd64 manifest directly from docker save
-			// and pushing it to Zot via the OCI HTTP API.
-			if strings.Contains(string(pushImageOutput), "does not provide any platform") {
-				log.Infof("Manifest-list push failed; falling back to direct amd64 OCI push for %s\n", image)
-				return pushAmd64ManifestToRegistry(ctx, image, regPort)
-			}
 
 			if retry > 0 {
 				retry--
@@ -318,59 +311,6 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 		if err := askToContinueWithStorageIssue("Docker resources are below recommended levels. Do you want to continue anyway?"); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-// pushAmd64ManifestToRegistry handles manifest-list images that Docker's
-// ImagePush rejects with "does not provide any platform".  It uses
-// `docker buildx imagetools inspect --raw` to find the linux/amd64 digest
-// and then `docker buildx imagetools create` to copy only that manifest
-// (and its blobs) from the local containerd image store to Zot.
-func pushAmd64ManifestToRegistry(ctx context.Context, image, regPort string) error {
-	// Get the raw manifest JSON so we can find the amd64 platform digest.
-	rawOut, err := exec.CommandContext(ctx,
-		"docker", "buildx", "imagetools", "inspect", "--raw", image).Output()
-	if err != nil {
-		return fmt.Errorf("imagetools inspect failed for %s: %w", image, err)
-	}
-
-	var manifestList struct {
-		Manifests []struct {
-			Digest   string `json:"digest"`
-			Platform struct {
-				Architecture string `json:"architecture"`
-				OS           string `json:"os"`
-			} `json:"platform"`
-		} `json:"manifests"`
-	}
-	if err := json.Unmarshal(rawOut, &manifestList); err != nil {
-		return fmt.Errorf("parsing manifest list for %s: %w", image, err)
-	}
-
-	var amd64Digest string
-	for _, m := range manifestList.Manifests {
-		if m.Platform.Architecture == "amd64" && m.Platform.OS == "linux" {
-			amd64Digest = m.Digest
-			break
-		}
-	}
-	if amd64Digest == "" {
-		return fmt.Errorf("no linux/amd64 manifest found in image %s", image)
-	}
-
-	targetImage := fmt.Sprintf("127.0.0.1:%s%s", regPort,
-		strings.TrimLeftFunc(image, func(r rune) bool { return r != '/' }))
-	sourceRef := image + "@" + amd64Digest
-
-	log.Infof("Copying amd64 manifest %s → %s via imagetools\n", sourceRef, targetImage)
-	out, err := exec.CommandContext(ctx,
-		"docker", "buildx", "imagetools", "create",
-		"--tag", targetImage, sourceRef).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("imagetools create failed for %s: %w\noutput: %s",
-			image, err, string(out))
 	}
 
 	return nil
