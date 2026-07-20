@@ -42,6 +42,11 @@ type ServerHelmValuesParams struct {
 	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
 	LocalBucketPath        string            `json:"localBucketPath"`
+	// BuildkitRegistryHost is the host-accessible address for the in-cluster Zot
+	// registry, used by BuildKit (which runs in the host Docker daemon's network
+	// namespace and cannot resolve the k8s-internal "tensorleap-registry:5000" name).
+	// Format: "127.0.0.1:<registryPort>" (e.g. "127.0.0.1:5699").
+	BuildkitRegistryHost string `json:"buildkitRegistryHost"`
 }
 
 type ZotSyncRegistry struct {
@@ -254,11 +259,12 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 
 	return Record{
 		"tensorleap-engine": Record{
-			"gpu":                  params.Gpu,
-			"localDataDirectories": params.LocalDataDirectories,
-			"http_proxy":           params.ProxyEnv["http_proxy"],
-			"https_proxy":          params.ProxyEnv["https_proxy"],
-			"no_proxy":             params.ProxyEnv["no_proxy"],
+			"gpu":                    params.Gpu,
+			"localDataDirectories":   params.LocalDataDirectories,
+			"http_proxy":             params.ProxyEnv["http_proxy"],
+			"https_proxy":            params.ProxyEnv["https_proxy"],
+			"no_proxy":               params.ProxyEnv["no_proxy"],
+			"buildkit_registry_host": params.BuildkitRegistryHost,
 		},
 		"tensorleap-node-server": Record{
 			"enableKeycloak":         params.KeycloakEnabled,
