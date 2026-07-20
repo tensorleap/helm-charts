@@ -15,6 +15,7 @@ func NewPackInstallationCmd() *cobra.Command {
 	var tag string
 	var local bool
 	var localDir string
+	var builtImagesRegistry string
 
 	cmd := &cobra.Command{
 		Use:     "pack-installation [installConfigPath]",
@@ -43,6 +44,13 @@ func NewPackInstallationCmd() *cobra.Command {
 					return err
 				}
 			}
+			if builtImagesRegistry != "" {
+				mnf.Images.BuiltImages = airgap.CollectBuiltImages(builtImagesRegistry)
+				if len(mnf.Images.BuiltImages) > 0 {
+					log.Infof("Including %d built dependency images from %s", len(mnf.Images.BuiltImages), builtImagesRegistry)
+				}
+			}
+
 			err = os.MkdirAll(path.Dir(output), 0755)
 			if err != nil {
 				return err
@@ -67,6 +75,7 @@ func NewPackInstallationCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "pack.tar", "Output file path")
 	cmd.Flags().BoolVarP(&local, "local", "l", false, "Build manifest from local helm charts (current directory)")
 	cmd.Flags().StringVar(&localDir, "local-dir", "", "Build manifest from local helm charts at the specified directory path")
+	cmd.Flags().StringVar(&builtImagesRegistry, "built-images-registry", "127.0.0.1:5699", "Local registry to collect pippin-built dependency images from (empty to disable)")
 	return cmd
 }
 

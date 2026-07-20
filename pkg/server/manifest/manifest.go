@@ -27,6 +27,10 @@ type ManifestImages struct {
 	K3sImages          []string `yaml:"k3sImages"`
 	K3sGpuImages       []string `yaml:"k3sGpuImages"`
 	ServerImages       []string `yaml:"serverImages"`
+	// BuiltImages are pippin-built dependency images collected from a local
+	// registry at pack time, seeded into Zot on airgap installs so the first
+	// engine job needs no PyPI access.
+	BuiltImages []string `yaml:"builtImages,omitempty"`
 }
 
 type HelmChartMeta struct {
@@ -137,6 +141,7 @@ func (mnf *InstallationManifest) Save(path string) error {
 func (mnf *InstallationManifest) GetAllImages() []string {
 	images := mnf.GetRunningOnMachineImages()
 	images = append(images, mnf.GetRegisterImages()...)
+	images = append(images, mnf.Images.BuiltImages...)
 	return images
 }
 

@@ -235,6 +235,7 @@ func CalcWhichImagesToCache(mnf *manifest.InstallationManifest, useGpu bool, isA
 
 	allImages := []string{}
 	allImages = append(allImages, mnf.Images.ServerImages...)
+	allImages = append(allImages, mnf.Images.BuiltImages...)
 	if useGpu {
 		allImages = append(allImages, mnf.Images.K3sGpuImages...)
 	} else {
