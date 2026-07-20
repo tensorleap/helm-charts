@@ -857,6 +857,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
 		LocalBucketPath:        localBucketPath,
+		BuildkitRegistryHost:   fmt.Sprintf("127.0.0.1:%d", params.RegistryPort),
 	}
 }
 
@@ -957,6 +958,7 @@ func (params *InstallationParams) GetCreateK3sClusterParams() *k3d.CreateK3sClus
 	standaloneDir := local.GetServerDataDir()
 	volumes := []string{
 		fmt.Sprintf("%v:%v", standaloneDir, local.DEFAULT_DATA_DIR),
+		"/var/run/docker.sock:/var/run/docker.sock",
 	}
 	volumes = append(volumes, params.DatasetVolumes...)
 
