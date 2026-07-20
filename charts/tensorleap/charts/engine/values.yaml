@@ -1,4 +1,4 @@
-image_tag: master-f46acb40
+image_tag: master-2c133e0e
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
@@ -11,8 +11,13 @@ redis_blob_pod_gb: 1
 redis_blob_maxmemory_mb: 768
 env_name: "on-prem"
 dependencies_image_name: public.ecr.aws/tensorleap/pippin
-dependencies_image_tag: master-d88fb971
+dependencies_image_tag: master-26a41e94
 target_repo: tensorleap-registry:5000
+# buildkit_registry_host is the host-accessible address for Zot used by
+# BuildKit (which runs in host-Docker network namespace and cannot resolve
+# the k8s-DNS name "tensorleap-registry"). Set by the installer to
+# "127.0.0.1:<registryPort>". Default covers the standard port 5699.
+buildkit_registry_host: "127.0.0.1:5699"
 generic_calculator_image: "public.ecr.aws/tensorleap/engine-generic"
 generic_py_ver: py38 #select from: py38, py39, py310, py311, py312
 

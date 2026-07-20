@@ -1,8 +1,10 @@
 package k3d
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -578,12 +580,72 @@ func FixDockerDns() {
 // ImportImagesIntoCluster imports images from the host Docker daemon into the
 // k3s containerd store. Used during airgap bootstrap to load the Zot registry
 // image and k3s system images before any in-cluster registry is available.
+//
+// Images are imported one at a time via a direct docker-save | ctr-import pipeline
+// with --platform linux/amd64, bypassing multi-arch manifest list issues that cause
+// "content digest not found" errors when ctr tries to resolve arm64/arm manifests
+// that are referenced in the OCI index but not present in the docker save archive.
 func ImportImagesIntoCluster(ctx context.Context, cluster *Cluster, images []string) error {
 	if len(images) == 0 {
 		return nil
 	}
-	log.Infof("Importing %d images into cluster containerd...", len(images))
-	return k3dCluster.ImageImportIntoClusterMulti(ctx, runtimes.SelectedRuntime, images, cluster, k3d.ImageImportOpts{})
+	// Find the first server node name (k3d-tensorleap-server-0)
+	nodeName := ""
+	for _, node := range cluster.Nodes {
+		if node.Role == k3d.ServerRole {
+			nodeName = node.Name
+			break
+		}
+	}
+	if nodeName == "" {
+		return fmt.Errorf("no server node found in cluster %s", cluster.Name)
+	}
+
+	log.Infof("Importing %d images into cluster containerd (node: %s)...", len(images), nodeName)
+	for _, img := range images {
+		log.Infof("Importing image into containerd: %s", img)
+		if err := importImageWithPlatformFilter(ctx, nodeName, img); err != nil {
+			return fmt.Errorf("failed to import image %s: %w", img, err)
+		}
+	}
+	return nil
+}
+
+// importImageWithPlatformFilter pipes docker save → ctr image import with
+// --platform linux/amd64 to avoid multi-arch manifest list resolution errors.
+// Multi-arch images include manifests for arm64/arm/s390x in their OCI index,
+// but docker save only includes the current-platform (amd64) layers; ctr's
+// default import tries to resolve all referenced manifests and fails on the
+// missing non-amd64 ones.
+func importImageWithPlatformFilter(ctx context.Context, nodeName, image string) error {
+	pr, pw := io.Pipe()
+
+	saveCmd := exec.CommandContext(ctx, "docker", "save", image)
+	saveCmd.Stdout = pw
+
+	var importStdout, importStderr bytes.Buffer
+	importCmd := exec.CommandContext(ctx, "docker", "exec", "-i", nodeName,
+		"ctr", "image", "import", "--platform", "linux/amd64", "-")
+	importCmd.Stdin = pr
+	importCmd.Stdout = &importStdout
+	importCmd.Stderr = &importStderr
+
+	if err := importCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start ctr import: %w", err)
+	}
+
+	if err := saveCmd.Run(); err != nil {
+		pw.CloseWithError(err)
+		importCmd.Wait()
+		return fmt.Errorf("docker save failed for %s: %w", image, err)
+	}
+	pw.Close()
+
+	if err := importCmd.Wait(); err != nil {
+		return fmt.Errorf("ctr image import failed for %s: %w\nstdout: %s\nstderr: %s",
+			image, err, importStdout.String(), importStderr.String())
+	}
+	return nil
 }
 
 // isGpuDevicesUUIDs checks if gpuDevices contains GPU UUIDs (vs old-style indexes).
