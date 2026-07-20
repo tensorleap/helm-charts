@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: buildkit-helper-override-cm
+{{- if .Values.global.target_namespace }}
+  namespace: {{ .Values.global.target_namespace }}
+{{- else if .Values.global.namespacedInstall }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+data:
+  buildkit_helper.py: |
+    # buildkit_helper.py — override for airgap/k3d: routes BuildKit registry
+    # operations to BUILDKIT_REGISTRY_HOST (127.0.0.1:<port>) instead of the
+    # k8s-internal "tensorleap-registry:5000" name, which is not resolvable
+    # from the host-Docker network namespace where BuildKit runs.
+    import logging
+    import os
+    import subprocess
+    import time
+    from typing import Optional, Tuple, List
+
+    logger = logging.getLogger(__name__)
+
+    BUILDER_NAME = "pippin-builder"
+    CACHE_TAG = "buildcache"
+    BUILDKITD_CONFIG_PATH = "/tmp/buildkitd.toml"
+
+    # When set, BuildKit push/pull targets use this address instead of target_repo.
+    # This allows BuildKit (running in host-Docker network) to reach Zot via the
+    # host-mapped port (e.g. 127.0.0.1:5699) while pod-level registry checks still
+    # use the k8s-DNS name (tensorleap-registry:5000).
+    BUILDKIT_REGISTRY_HOST = os.environ.get("BUILDKIT_REGISTRY_HOST", "")
+
+
+    class BuildKitError(Exception):
+        pass
+
+
+    def create_buildkitd_config(insecure_registries: List[str] = None) -> str:
+        config_content = ""
+        # When BUILDKIT_REGISTRY_HOST is set, mirror tensorleap-registry:5000
+        # to it so BuildKit (running in host-Docker network) can resolve the
+        # FROM image in the generated Dockerfile.  We must NOT emit a plain
+        # [registry."tensorleap-registry:5000"] block AND the mirror block — TOML
+        # forbids duplicate table headers, so we combine them into one entry.
+        mirror_registries = {"tensorleap-registry:5000"} if BUILDKIT_REGISTRY_HOST else set()
+        if insecure_registries:
+            for registry in insecure_registries:
+                if registry in mirror_registries:
+                    continue  # handled below with mirror config
+                config_content += f'''
+    [registry."{registry}"]
+      http = true
+      insecure = true
+    '''
+        if BUILDKIT_REGISTRY_HOST:
+            config_content += f'''
+    [registry."tensorleap-registry:5000"]
+      mirrors = ["{BUILDKIT_REGISTRY_HOST}"]
+      http = true
+      insecure = true
+    '''
+        with open(BUILDKITD_CONFIG_PATH, "w") as f:
+            f.write(config_content)
+        logger.debug(f"Created buildkitd config at {BUILDKITD_CONFIG_PATH}")
+        return BUILDKITD_CONFIG_PATH
+
+
+    def is_buildx_available() -> bool:
+        try:
+            result = subprocess.run(
+                ["docker", "buildx", "version"],
+                capture_output=True, text=True, timeout=10
+            )
+            return result.returncode == 0
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
+
+
+    def get_existing_builders() -> List[str]:
+        try:
+            result = subprocess.run(
+                ["docker", "buildx", "ls", "--format", "{{.Name}}"],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode == 0:
+                return [n.strip() for n in result.stdout.strip().split("\n") if n.strip()]
+            return []
+        except subprocess.SubprocessError:
+            return []
+
+
+    def setup_buildx_builder(
+        builder_name: str = BUILDER_NAME,
+        insecure_registries: List[str] = None,
+        force_recreate: bool = False,
+    ) -> str:
+        if not is_buildx_available():
+            raise BuildKitError("docker buildx is not available.")
+
+        # Also mark BUILDKIT_REGISTRY_HOST as insecure so BuildKit can reach it.
+        all_insecure = list(insecure_registries or [])
+        if BUILDKIT_REGISTRY_HOST and BUILDKIT_REGISTRY_HOST not in all_insecure:
+            all_insecure.append(BUILDKIT_REGISTRY_HOST)
+        insecure_registries = all_insecure if all_insecure else None
+
+        existing_builders = get_existing_builders()
+
+        if force_recreate and builder_name in existing_builders:
+            logger.info(f"Force recreating builder: {builder_name}")
+            cleanup_builder(builder_name)
+            existing_builders = get_existing_builders()
+
+        if builder_name in existing_builders:
+            logger.info(f"Using existing buildx builder: {builder_name}")
+            try:
+                subprocess.run(
+                    ["docker", "buildx", "inspect", builder_name, "--bootstrap"],
+                    capture_output=True, text=True, timeout=60
+                )
+            except subprocess.SubprocessError as e:
+                logger.warning(f"Failed to bootstrap existing builder: {e}")
+            return builder_name
+
+        logger.info(f"Creating new buildx builder: {builder_name}")
+        config_path = None
+        if insecure_registries:
+            config_path = create_buildkitd_config(insecure_registries)
+            logger.info(f"Using buildkitd config with insecure registries: {insecure_registries}")
+
+        create_cmd = [
+            "docker", "buildx", "create",
+            "--name", builder_name,
+            "--driver", "docker-container",
+            "--driver-opt", "network=host",
+        ]
+        if config_path:
+            create_cmd.extend(["--config", config_path])
+        create_cmd.append("--bootstrap")
+
+        try:
+            result = subprocess.run(create_cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                raise BuildKitError(f"Failed to create builder: {result.stderr}")
+            logger.info(f"Successfully created buildx builder: {builder_name}")
+            return builder_name
+        except subprocess.TimeoutExpired:
+            raise BuildKitError("Timeout while creating buildx builder")
+        except subprocess.SubprocessError as e:
+            raise BuildKitError(f"Failed to create buildx builder: {e}")
+
+
+    def get_cache_refs(target_repo: str, is_k3d: bool) -> Tuple[str, str]:
+        if is_k3d:
+            buildkit_repo = BUILDKIT_REGISTRY_HOST if BUILDKIT_REGISTRY_HOST else target_repo
+            cache_ref = f"{buildkit_repo}/tensorleap/engine-generic:{CACHE_TAG}"
+        else:
+            cache_ref = f"{target_repo}:{CACHE_TAG}"
+        cache_from = f"type=registry,ref={cache_ref}"
+        cache_to = f"type=registry,ref={cache_ref},mode=max"
+        return cache_from, cache_to
+
+
+    def build_with_cache(
+        context_dir: str,
+        target_repo: str,
+        tag: str,
+        is_k3d: bool,
+        builder_name: str = BUILDER_NAME,
+        push: bool = True,
+        log_file_path: Optional[str] = None,
+    ) -> Tuple[bool, str, List[str]]:
+        cache_from, cache_to = get_cache_refs(target_repo, is_k3d)
+
+        if is_k3d:
+            buildkit_repo = BUILDKIT_REGISTRY_HOST if BUILDKIT_REGISTRY_HOST else target_repo
+            full_image_name = f"{buildkit_repo}/tensorleap/engine-generic:{tag}"
+        else:
+            full_image_name = f"{target_repo}:{tag}"
+
+        # When BUILDKIT_REGISTRY_HOST is set, rewrite the Dockerfile's FROM line
+        # to use the host-accessible address instead of the k8s-internal service
+        # name (tensorleap-registry:5000), which is unreachable from the host-Docker
+        # network where BuildKit runs.  We patch the file in-place; the context dir
+        # is a temp directory so this is safe to do.
+        if is_k3d and BUILDKIT_REGISTRY_HOST:
+            dockerfile_path = os.path.join(context_dir, "Dockerfile")
+            if os.path.exists(dockerfile_path):
+                with open(dockerfile_path, "r") as _f:
+                    _content = _f.read()
+                _new_content = _content.replace("tensorleap-registry:5000", BUILDKIT_REGISTRY_HOST)
+                if _new_content != _content:
+                    with open(dockerfile_path, "w") as _f:
+                        _f.write(_new_content)
+                    logger.info(f"Rewrote Dockerfile FROM: tensorleap-registry:5000 → {BUILDKIT_REGISTRY_HOST}")
+
+        build_cmd = [
+            "docker", "buildx", "build",
+            "--builder", builder_name,
+            "--cache-from", cache_from,
+            "--cache-to", cache_to,
+            "--tag", full_image_name,
+            "--progress", "plain",
+        ]
+        if push:
+            build_cmd.append("--push")
+        else:
+            build_cmd.append("--load")
+        build_cmd.append(context_dir)
+
+        logger.info(f"Running BuildKit build: {' '.join(build_cmd)}")
+
+        error_lines = []
+        log_lines = []
+
+        try:
+            process = subprocess.Popen(
+                build_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+
+            _LOG_LINE_OVERHEAD = 45
+            _RATE_LIMIT_BYTES = 100 * 1024
+            _RATE_WINDOW_SEC = 1.0
+            _rate_window_start = time.monotonic()
+            _rate_window_bytes = 0
+            _suppressed_count = 0
+
+            for line in process.stdout:
+                line = line.rstrip()
+                log_lines.append(line)
+                lower_line = line.lower()
+                if "error" in lower_line or "failed" in lower_line:
+                    error_lines.append(line)
+                now = time.monotonic()
+                msg = f"[BuildKit] {line}"
+                msg_bytes = len(msg.encode("utf-8", errors="replace")) + _LOG_LINE_OVERHEAD
+                if now - _rate_window_start >= _RATE_WINDOW_SEC:
+                    if _suppressed_count > 0:
+                        logger.info(f"[BuildKit] ... {_suppressed_count} lines suppressed (log rate limit) ...")
+                    _rate_window_start = now
+                    _rate_window_bytes = 0
+                    _suppressed_count = 0
+                is_important = "error" in lower_line or "failed" in lower_line
+                if is_important or _rate_window_bytes + msg_bytes <= _RATE_LIMIT_BYTES:
+                    logger.info(msg)
+                    _rate_window_bytes += msg_bytes
+                else:
+                    _suppressed_count += 1
+
+            if _suppressed_count > 0:
+                logger.info(f"[BuildKit] ... {_suppressed_count} lines suppressed (log rate limit) ...")
+
+            process.wait()
+
+            if log_file_path:
+                with open(log_file_path, "w") as f:
+                    f.write("\n".join(log_lines))
+                    if process.returncode == 0:
+                        f.write("\n\nSUMMARY: Build succeeded with BuildKit\n")
+                    else:
+                        f.write(f"\n\nSUMMARY: Build failed with exit code {process.returncode}\n")
+
+            if process.returncode == 0:
+                logger.info(f"Successfully built image: {full_image_name}")
+                return True, full_image_name, []
+            else:
+                logger.error(f"Build failed with exit code {process.returncode}")
+                return False, "", error_lines
+
+        except subprocess.SubprocessError as e:
+            error_msg = f"BuildKit build subprocess error: {e}"
+            logger.error(error_msg)
+            error_lines.append(error_msg)
+            return False, "", error_lines
+
+
+    def cleanup_builder(builder_name: str = BUILDER_NAME) -> bool:
+        try:
+            result = subprocess.run(
+                ["docker", "buildx", "rm", builder_name],
+                capture_output=True, text=True, timeout=30
+            )
+            return result.returncode == 0
+        except subprocess.SubprocessError:
+            return False

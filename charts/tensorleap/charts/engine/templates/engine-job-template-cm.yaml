@@ -57,9 +57,18 @@ data:
                 - name: no_proxy
                   value: {{ .Values.no_proxy | quote }}
               {{- end }}
+              {{- if .Values.buildkit_registry_host }}
+                - name: BUILDKIT_REGISTRY_HOST
+                  value: {{ .Values.buildkit_registry_host | quote }}
+              {{- end }}
               volumeMounts:
                 - name: shared-logs
                   mountPath: /shared/logs
+                - name: docker-sock
+                  mountPath: /var/run/docker.sock
+                - name: buildkit-helper-override
+                  mountPath: /app/buildkit_helper.py
+                  subPath: buildkit_helper.py
           containers:
             - image: {{ .Values.image_name }}:{{ .Values.image_tag }}
               imagePullPolicy: IfNotPresent
@@ -113,3 +122,10 @@ data:
                 path: {{ $dir }}
                 type: DirectoryOrCreate
 {{ end }}
+            - name: docker-sock
+              hostPath:
+                path: /var/run/docker.sock
+                type: Socket
+            - name: buildkit-helper-override
+              configMap:
+                name: buildkit-helper-override-cm
