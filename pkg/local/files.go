@@ -29,15 +29,17 @@ func RunCommand(args ...string) error {
 }
 
 // EnsureDirExists makes sure path exists as a world-writable directory so any
-// local user can use the shared single-node install tree. A freshly created
-// dir is chmod'ed 0777 (with sudo if the parent needed it). An already-existing
-// dir is only healed when we can do it ourselves (os.Chmod, i.e. we own it);
-// we never sudo-chmod a pre-existing dir. That path is reachable with
-// operator- or attacker-supplied paths (dataset volumes, or symlinks planted
-// in the world-writable cache tree), so blanket sudo-chmod-777 there would let
-// a non-owner make arbitrary directories world-writable. When we can't heal an
-// existing dir, we warn and continue — it may still be usable, and failing
-// would break installs that work today.
+// local user can use the shared single-node install tree (e.g. a second
+// operator reinstalling: ubuntu installs, ssm-user maintains). A freshly
+// created dir is chmod'ed 0777 (with sudo if the parent needed it). An
+// already-existing dir is healed via os.Chmod when we own it; when we don't,
+// sudo is used only for real directories that resolve to inside the Tensorleap
+// data dir. Arbitrary paths reach this function (user-supplied dataset
+// volumes), and the data dir tree is world-writable so another local user can
+// plant a symlink in it — an unconditional sudo chmod would let either trick a
+// sudo-capable operator into making any directory on the host world-writable.
+// When an existing dir can't be healed, warn and continue — it may still be
+// usable as-is, and failing would break installs that work today.
 func EnsureDirExists(path string) error {
 	status, err := CheckDirectoryStatus(path)
 	if err != nil {
@@ -67,10 +69,40 @@ func EnsureDirExists(path string) error {
 	if info.Mode().Perm()&0o002 != 0 {
 		return nil // already world-writable
 	}
-	if err := os.Chmod(path, 0o777); err != nil {
-		log.Warnf("Could not make %s world-writable: %v. Other local users may be unable to use it; have its owner run: chmod 777 %s", path, err, path)
+	if err := os.Chmod(path, 0o777); err == nil {
+		return nil
 	}
+	// Not ours. Escalate only inside the data dir, on the symlink-resolved
+	// path so a planted link can't redirect the chmod outside it.
+	if resolved, ok := resolveInsideDataDir(path); ok {
+		if err := RunCommand("sudo", "chmod", "777", resolved); err == nil {
+			return nil
+		}
+	}
+	log.Warnf("Could not make %s world-writable. Other local users may be unable to use it; have its owner or an admin run: sudo chmod 777 %s", path, path)
 	return nil
+}
+
+// resolveInsideDataDir resolves symlinks in path and reports whether it is an
+// existing directory within the Tensorleap data dir (inclusive).
+func resolveInsideDataDir(path string) (string, bool) {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return "", false
+	}
+	dataDir, err := filepath.EvalSymlinks(GetServerDataDir())
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(dataDir, resolved)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	info, err := os.Lstat(resolved)
+	if err != nil || !info.IsDir() {
+		return "", false
+	}
+	return resolved, true
 }
 
 func runMaybeSudo(useSudo bool, args ...string) error {
