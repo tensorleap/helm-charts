@@ -185,13 +185,8 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 // local user is cluster-admin. Fine on a shared dev box (data dir is already
 // 777); switch to a group + 640 if not.
 func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
-	sharedPath := local.GetKubeConfigPath()
-	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
-		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
-		return err
-	}
-	// World-accessible so any local user can read it (matches the 777 data dir).
-	if err := os.Chmod(sharedPath, 0777); err != nil {
+	sharedPath, err := writeSharedKubeConfigFile(ctx, cluster)
+	if err != nil {
 		return err
 	}
 
@@ -202,6 +197,52 @@ func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
 	// is a plain filesystem path (no shell metachars), so this is safe to quote.
 	return local.RunCommand("sudo", "sh", "-c",
 		"echo 'export KUBECONFIG="+sharedPath+"' > /etc/profile.d/tensorleap-kubeconfig.sh")
+}
+
+// writeSharedKubeConfigFile writes the cluster kubeconfig to the stable shared
+// path in the data dir and makes it world-readable, returning that path. Unlike
+// writeSharedKubeConfig it does NOT touch shell profiles — that login-shell
+// wiring is install-only, whereas this file write is also used to self-heal a
+// missing shared kubeconfig at kubectl time (see ResolveSharedKubeConfig).
+func writeSharedKubeConfigFile(ctx context.Context, cluster *Cluster) (string, error) {
+	sharedPath := local.GetKubeConfigPath()
+	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
+		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
+		return "", err
+	}
+	// World-accessible so any local user can read it (matches the 777 data dir).
+	if err := os.Chmod(sharedPath, 0777); err != nil {
+		return "", err
+	}
+	return sharedPath, nil
+}
+
+// ResolveSharedKubeConfig returns the path to the shared standalone kubeconfig
+// used by `leap server tools kubectl`, or "" (with no error) when it cannot be
+// resolved and the caller should fall back to kubectl's default resolution
+// (~/.kube/config).
+//
+// Fast path: if the shared file already exists it is returned as-is, with no
+// Docker interaction — the common case, since the installer writes and keeps it
+// current (with the live API port) on every (re)install.
+//
+// Self-heal path: if the file is missing but the tensorleap cluster is running,
+// it is regenerated from the live cluster so it reflects the current API port.
+// Docker is only touched in that rare case, keeping the hot path cheap.
+func ResolveSharedKubeConfig(ctx context.Context) (string, error) {
+	sharedPath := local.GetKubeConfigPath()
+	if _, err := os.Stat(sharedPath); err == nil {
+		return sharedPath, nil
+	}
+
+	cluster, err := GetCluster(ctx)
+	if err != nil {
+		return "", fmt.Errorf("detecting running cluster to regenerate kubeconfig: %w", err)
+	}
+	if cluster == nil {
+		return "", nil
+	}
+	return writeSharedKubeConfigFile(ctx, cluster)
 }
 
 func CreateTmpClusterKubeConfig(ctx context.Context, cluster *Cluster) (string, func(), error) {
