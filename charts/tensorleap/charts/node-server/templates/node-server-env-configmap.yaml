@@ -50,3 +50,9 @@ data:
 {{- else if .Values.global.namespacedInstall }}
   TARGET_NAMESPACE: {{ .Release.Namespace }}
 {{- end }}
+{{- if .Values.pipIndexUrl }}
+  PIP_INDEX_URL: {{ .Values.pipIndexUrl | quote }}
+{{- end }}
+{{- if .Values.pipExtraIndexUrl }}
+  PIP_EXTRA_INDEX_URL: {{ .Values.pipExtraIndexUrl | quote }}
+{{- end }}
