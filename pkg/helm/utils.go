@@ -38,6 +38,8 @@ type ServerHelmValuesParams struct {
 	HostName               string            `json:"hostname"`
 	DatadogEnv             map[string]string `json:"datadogEnv"`
 	ProxyEnv               map[string]string `json:"proxyEnv"`
+	PipIndexUrl            string            `json:"pipIndexUrl"`
+	PipExtraIndexUrl       string            `json:"pipExtraIndexUrl"`
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
 	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
@@ -266,6 +268,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"disableDatadogMetrics":  params.DisableDatadogMetrics,
 			"installedServerVersion": params.InstalledServerVersion,
 			"localBucketPath":        params.LocalBucketPath,
+			"pipIndexUrl":            params.PipIndexUrl,
+			"pipExtraIndexUrl":       params.PipExtraIndexUrl,
 		},
 		"global": Record{
 			"domain":               params.Domain,
