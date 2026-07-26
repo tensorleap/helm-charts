@@ -2,6 +2,7 @@ docker.elastic.co/eck/eck-operator:2.8.0
 docker.io/library/elasticsearch:8.10.1
 docker.io/library/mongo:6.0.5
 docker.io/library/rabbitmq:3.9.22
+docker.io/library/redis:8.6-alpine
 docker.io/moby/buildkit:buildx-stable-1
 gcr.io/datadoghq/agent:7.52.0
 ghcr.io/project-zot/zot-linux-amd64:v2.1.15
@@ -14,7 +15,7 @@ public.ecr.aws/tensorleap/engine-generic:master-8b6de9cc-py39
 public.ecr.aws/tensorleap/engine:master-8b6de9cc
 public.ecr.aws/tensorleap/node-server:master-e43ac6b2
 public.ecr.aws/tensorleap/pippin:master-d88fb971
-public.ecr.aws/tensorleap/web-ui:master-a95e7994
+public.ecr.aws/tensorleap/web-ui:master-ff0ce619
 quay.io/keycloak/keycloak:26.3.2
 quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 registry.k8s.io/ingress-nginx/controller:v1.10.0
