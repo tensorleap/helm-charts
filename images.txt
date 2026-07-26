@@ -12,7 +12,7 @@ public.ecr.aws/tensorleap/engine-generic:master-8b6de9cc-py312
 public.ecr.aws/tensorleap/engine-generic:master-8b6de9cc-py38
 public.ecr.aws/tensorleap/engine-generic:master-8b6de9cc-py39
 public.ecr.aws/tensorleap/engine:master-8b6de9cc
-public.ecr.aws/tensorleap/node-server:master-d2cff6a6
+public.ecr.aws/tensorleap/node-server:master-e43ac6b2
 public.ecr.aws/tensorleap/pippin:master-d88fb971
 public.ecr.aws/tensorleap/web-ui:master-a95e7994
 quay.io/keycloak/keycloak:26.3.2
