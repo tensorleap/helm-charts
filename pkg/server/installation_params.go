@@ -30,6 +30,8 @@ type InstallationParams struct {
 	Port                        uint                   `json:"clusterPort"`
 	Domain                      string                 `json:"domain"`
 	ProxyUrl                    string                 `json:"proxyUrl"`
+	PipIndexUrl                 string                 `json:"pipIndexUrl,omitempty"`
+	PipExtraIndexUrl            string                 `json:"pipExtraIndexUrl,omitempty"`
 	RegistryPort                uint                   `json:"registryPort"`
 	DisableMetrics              bool                   `json:"disableMetrics"`
 	DatasetDirectory_DEPRECATED string                 `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
@@ -176,6 +178,13 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		return nil, fmt.Errorf("failed to get TLS params: %v", err)
 	}
 
+	if flags.PipIndexUrl == "" {
+		flags.PipIndexUrl = lookupFirstEnv("PIP_INDEX_URL")
+	}
+	if flags.PipExtraIndexUrl == "" {
+		flags.PipExtraIndexUrl = lookupFirstEnv("PIP_EXTRA_INDEX_URL")
+	}
+
 	if hasInstallationParams {
 		shouldAskForPreviousTLSConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
 		if shouldAskForPreviousTLSConfig {
@@ -214,6 +223,13 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 			}
 		}
 
+		if flags.PipIndexUrl == "" {
+			flags.PipIndexUrl = previousParams.PipIndexUrl
+		}
+		if flags.PipExtraIndexUrl == "" {
+			flags.PipExtraIndexUrl = previousParams.PipExtraIndexUrl
+		}
+
 		isRemoveInstallationNotSet := flags.ClearInstallationImages == nil
 		if isRemoveInstallationNotSet {
 			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
@@ -248,6 +264,8 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		DatasetVolumes:          flags.DatasetVolumes,
 		Domain:                  flags.Domain,
 		ProxyUrl:                flags.ProxyUrl,
+		PipIndexUrl:             flags.PipIndexUrl,
+		PipExtraIndexUrl:        flags.PipExtraIndexUrl,
 		CpuLimit:                flags.CpuLimit,
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
@@ -849,6 +867,8 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		Tls:                    *tlsParams,
 		DatadogEnv:             datadogEnvs,
 		ProxyEnv:               proxyEnvs,
+		PipIndexUrl:            params.PipIndexUrl,
+		PipExtraIndexUrl:       params.PipExtraIndexUrl,
 		KeycloakEnabled:        !params.DisabledAuth,
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,

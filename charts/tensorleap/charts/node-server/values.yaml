@@ -14,4 +14,10 @@ mongodb:
 
 localBucketPath: ""
 
+# Install-time default pip index for dependency builds (e.g. internal PyPI
+# mirror on airgap installs); set by the installer. Empty = public PyPI.
+# Editable per-installation via the web UI engine settings.
+pipIndexUrl: ""
+pipExtraIndexUrl: ""
+
 mongodb_image: docker.io/library/mongo:6.0.5

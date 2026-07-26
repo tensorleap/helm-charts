@@ -76,6 +76,8 @@ type InstallFlags struct {
 	Domain                  string   `json:"domain"`
 	DataDir                 string   `json:"dataDir"`
 	ProxyUrl                string   `json:"ProxyUrl"`
+	PipIndexUrl             string   `json:"pipIndexUrl,omitempty"`
+	PipExtraIndexUrl        string   `json:"pipExtraIndexUrl,omitempty"`
 	CpuLimit                string   `json:"cpuLimit,omitempty"`
 	DisableAuth             *bool    `json:"disableAuth,omitempty"`
 	ClearInstallationImages *bool    `json:"removeInstallationImages,omitempty"`
@@ -93,6 +95,8 @@ func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&flags.DisableMetrics, "disable-metrics", false, "Disable metrics collection")
 	cmd.Flags().StringVar(&flags.Domain, "domain", "localhost", "Domain to be used for tensorleap server")
 	cmd.Flags().StringVar(&flags.ProxyUrl, "proxy-url", "", "Proxy URL to be used for tensorleap server")
+	cmd.Flags().StringVar(&flags.PipIndexUrl, "pip-index-url", "", "Pip index URL used as the default for dependency builds (e.g. internal PyPI mirror on airgap); falls back to PIP_INDEX_URL env, then previous installation")
+	cmd.Flags().StringVar(&flags.PipExtraIndexUrl, "pip-extra-index-url", "", "Extra pip index URL for dependency builds; falls back to PIP_EXTRA_INDEX_URL env, then previous installation")
 	cmd.Flags().StringVarP(&flags.DataDir, "data-dir", "d", "", "Directory to store tensorleap data, by default using /var/lib/tensorleap/standalone or previous data directory")
 	cmd.Flags().StringVar(&flags.CpuLimit, "cpu-limit", "", "Limit the CPU resources for the k3d cluster (e.g. 2 for 2 cores)")
 	setNilBoolFlag(cmd, &flags.DisableAuth, "disable-auth", "Disable authentication for the tensorleap server")
