@@ -33,7 +33,10 @@ jobs:
         id: checkout_rc_branch
         run: |
           set -euo pipefail
-          BRANCH="$(make -s checkout-rc-branch)"
+          # checkout-rc-branch prints the branch name on the first line and the
+          # is_new_branch flag on the second; take only the first line.
+          OUTPUT="$(make -s checkout-rc-branch)"
+          BRANCH="$(echo "$OUTPUT" | head -1)"
           if [ -z "$BRANCH" ]; then
             echo "Error: Failed to get branch name from checkout-rc-branch" >&2
             exit 1
