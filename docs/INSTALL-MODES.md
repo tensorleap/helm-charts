@@ -451,6 +451,14 @@ flowchart TD
 
 ---
 
+## Platform Mode: Production Monitor
+
+Orthogonal to the install target (k3d / existing cluster), the platform can be installed in **production monitor mode**: the UI becomes a live monitoring dashboard for a deployed model instead of the regular workbench.
+
+- CLI: `leap server install --production-monitor` (sticky across `leap server upgrade`, like `--disable-auth`; persisted in `params.yaml`)
+- Plain Helm: set `global.productionMonitor: true` in your values file
+- Propagation: `global.productionMonitor` → node-server env configmap (`PRODUCTION_MONITOR`) → `getEnvironmentInfo` → web-ui layout switch. Engine consumption is planned via the same global value in `engine-cm.yaml`.
+
 ## Not Yet In Scope
 
 The following are explicitly **not addressed** in this epic and remain Go-installer-only features:

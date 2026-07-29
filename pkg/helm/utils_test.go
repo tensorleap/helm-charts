@@ -49,6 +49,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"basePath":             "",
 				"create_local_volumes": true,
 				"storageClassName":     "",
+				"productionMonitor":    params.ProductionMonitor,
 				"keycloakx": Record{
 					"enabled": true,
 				},

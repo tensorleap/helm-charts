@@ -39,6 +39,7 @@ type InstallationParams struct {
 	CpuLimit                    string                 `json:"cpuLimit,omitempty"`
 	ClearInstallationImages     bool                   `json:"removeInstallationImages,omitempty"`
 	DisabledAuth                bool                   `json:"disabledAuth,omitempty"`
+	ProductionMonitor           bool                   `json:"productionMonitor,omitempty"`
 	IsAirgap                    bool                   `json:"isAirgap,omitempty"`
 	ImageCachingMethod          k3d.ImageCachingMethod `json:"imageCachingMethod,omitempty"`
 	TLSParams
@@ -238,6 +239,10 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		if isDisabledAuthNotSet {
 			flags.DisableAuth = &previousParams.DisabledAuth
 		}
+		isProductionMonitorNotSet := flags.ProductionMonitor == nil
+		if isProductionMonitorNotSet {
+			flags.ProductionMonitor = &previousParams.ProductionMonitor
+		}
 	}
 	if flags.ClearInstallationImages == nil {
 		flags.ClearInstallationImages = new(bool)
@@ -245,6 +250,10 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 
 	if flags.DisableAuth == nil {
 		flags.DisableAuth = new(bool)
+	}
+
+	if flags.ProductionMonitor == nil {
+		flags.ProductionMonitor = new(bool)
 	}
 
 	warnIfPlaintextOnRealDomain(flags.Domain, tlsParams.Enabled)
@@ -270,6 +279,7 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
 		DisabledAuth:            *flags.DisableAuth,
+		ProductionMonitor:       *flags.ProductionMonitor,
 		IsAirgap:                isAirgap,
 		ImageCachingMethod:      imageCachingMethod,
 	}, nil
@@ -871,6 +881,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		PipExtraIndexUrl:       params.PipExtraIndexUrl,
 		KeycloakEnabled:        !params.DisabledAuth,
 		DisableAuth:            params.DisabledAuth,
+		ProductionMonitor:      params.ProductionMonitor,
 		InstalledServerVersion: versionTag,
 		LocalBucketPath:        localBucketPath,
 	}

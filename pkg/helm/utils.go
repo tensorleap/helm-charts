@@ -42,6 +42,7 @@ type ServerHelmValuesParams struct {
 	PipExtraIndexUrl       string            `json:"pipExtraIndexUrl"`
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
 	DisableAuth            bool              `json:"disableAuth"`
+	ProductionMonitor      bool              `json:"productionMonitor"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
 	LocalBucketPath        string            `json:"localBucketPath"`
 }
@@ -278,6 +279,7 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"basePath":             params.BasePath,
 			"create_local_volumes": true,
 			"storageClassName":     "",
+			"productionMonitor":    params.ProductionMonitor,
 			"keycloakx": Record{
 				"enabled": params.KeycloakEnabled,
 			},

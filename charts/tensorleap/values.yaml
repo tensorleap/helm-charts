@@ -32,6 +32,11 @@ global:
   storageClassName: ""
   create_local_volumes: true
   disable_auth: false
+  # Set to true to run the platform in production monitor mode: the UI becomes
+  # a live monitoring dashboard for a deployed model. Set at install time with
+  # `leap server install --production-monitor`; consumed by node-server (and
+  # later engine) via their env configmaps.
+  productionMonitor: false
   domain: "localhost"
   basePath: ""
   url: "http://localhost"
