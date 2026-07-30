@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,6 +45,8 @@ type ServerHelmValuesParams struct {
 	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
 	LocalBucketPath        string            `json:"localBucketPath"`
+	TotalMemoryBytes       int64             `json:"totalMemoryBytes"`
+	TotalMemorySource      string            `json:"totalMemorySource"`
 }
 
 type ZotSyncRegistry struct {
@@ -234,6 +237,13 @@ func readOrGenerateHostname() (string, error) {
 	}
 }
 
+func formatBytesValue(v int64) string {
+	if v <= 0 {
+		return ""
+	}
+	return strconv.FormatInt(v, 10)
+}
+
 func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error) {
 	var hostname string
 	var err error
@@ -261,6 +271,8 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"http_proxy":           params.ProxyEnv["http_proxy"],
 			"https_proxy":          params.ProxyEnv["https_proxy"],
 			"no_proxy":             params.ProxyEnv["no_proxy"],
+			"total_memory_bytes":   formatBytesValue(params.TotalMemoryBytes),
+			"total_memory_source":  params.TotalMemorySource,
 		},
 		"tensorleap-node-server": Record{
 			"enableKeycloak":         params.KeycloakEnabled,

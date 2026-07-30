@@ -23,6 +23,11 @@ https_proxy: ""
 no_proxy: ""
 
 localDataDirectories: []
+total_memory_bytes: ""
+# auto | flag. The orchestrator subtracts the reserve buffer only from auto-detected totals;
+# a user-provided total (install flag / settings override) is used verbatim.
+total_memory_source: ""
+installation_memory_reserve_bytes: ""
 gpu: false
 gpuTolerations: []
 

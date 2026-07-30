@@ -35,6 +35,15 @@ data:
   GENERIC_CALCULATOR_ENTRY_POINT: {{ .Values.entry_point }}
   GENERIC_ACTIVATE_NFS: "{{ .Values.metrics_activate_nfs }}"
   GENERIC_HOST_PATH: {{ .Values.localDataDirectories | join ":" }}
+{{- if .Values.total_memory_bytes }}
+  TOTAL_INSTALLATION_MEMORY_BYTES: {{ .Values.total_memory_bytes | quote }}
+{{- end }}
+{{- if .Values.total_memory_source }}
+  TOTAL_INSTALLATION_MEMORY_SOURCE: {{ .Values.total_memory_source | quote }}
+{{- end }}
+{{- if .Values.installation_memory_reserve_bytes }}
+  INSTALLATION_MEMORY_RESERVE_BYTES: {{ .Values.installation_memory_reserve_bytes | quote }}
+{{- end }}
 {{- if .Values.http_proxy }}
   HTTP_PROXY: {{ .Values.http_proxy | quote }}
   http_proxy: {{ .Values.http_proxy | quote }}

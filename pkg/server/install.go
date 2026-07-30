@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
@@ -176,6 +177,29 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 	return
 }
 
+func detectClusterMemory(ctx context.Context, clusterMemoryGb uint) (memoryBytes int64, memorySource string) {
+	if clusterMemoryGb > 0 {
+		memoryBytes = int64(clusterMemoryGb) * 1024 * 1024 * 1024
+		memorySource = "flag"
+		log.Printf("Using cluster memory budget from --cluster-memory-gb: %d GiB\n", clusterMemoryGb)
+		return
+	}
+	memorySource = "auto"
+	dockerClient, err := docker.NewClient()
+	if err == nil {
+		info, infoErr := dockerClient.Info(ctx)
+		if infoErr == nil {
+			memoryBytes = info.MemTotal
+		} else {
+			log.Warnf("Failed detecting docker total memory: %v", infoErr)
+		}
+	} else {
+		log.Warnf("Failed detecting docker total memory: %v", err)
+	}
+	log.Infof("Auto-detected cluster memory: %d bytes", memoryBytes)
+	return
+}
+
 func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
 	log.SendCloudReport("info", "Installing helm", "Running", nil)
 
@@ -237,7 +261,9 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
 		return err
 	}
-	serverValues, err := helm.CreateTensorleapChartValues(installationParams.GetServerHelmValuesParams(mnf.Tag))
+	serverHelmParams := installationParams.GetServerHelmValuesParams(mnf.Tag)
+	serverHelmParams.TotalMemoryBytes, serverHelmParams.TotalMemorySource = detectClusterMemory(ctx, installationParams.ClusterMemoryGb)
+	serverValues, err := helm.CreateTensorleapChartValues(serverHelmParams)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
