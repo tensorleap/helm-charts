@@ -1,0 +1,37 @@
+name: Daily Showstoppers
+
+on:
+  schedule:
+    # 06:00 UTC = 09:00 Israel (IDT), Sunday–Thursday
+    - cron: '0 6 * * 0-4'
+  workflow_dispatch:
+
+jobs:
+  showstoppers:
+    name: Post open showstoppers to Slack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Collect open showstoppers from Jira
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_EMAIL: omri.yonatani@tensorleap.ai
+          JIRA_DOMAIN: https://tensorleap.atlassian.net
+          SLACK_CHANNEL_ID: C05KWMJ0EJE
+          SHOWSTOPPER_PROJECTS: BF
+        run: make showstoppers
+
+      - name: Notify Slack - Open Showstoppers
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          errors: true
+          payload-file-path: slack-showstoppers.json
