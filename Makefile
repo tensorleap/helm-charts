@@ -274,3 +274,14 @@ release-notes:
 	@echo "Running release note generator..."
 	@venv/bin/python scripts/jira-release-integration.py
 
+.PHONY: showstoppers
+showstoppers:
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@echo "Installing dependencies..."
+	@venv/bin/pip install --quiet jira
+	@echo "Collecting open showstoppers..."
+	@venv/bin/python scripts/jira-showstoppers.py
+
