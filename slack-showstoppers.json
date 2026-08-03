@@ -1,0 +1,58 @@
+{
+  "channel": "C05KWMJ0EJE",
+  "text": "🛑 2 open showstoppers",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "🛑 Open Showstoppers (2)",
+        "emoji": true
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "2026-08-02 · priority *Highest* · label *showstopper* · <https://tensorleap.atlassian.net/issues/?jql=project%20in%20%28BF%29%20AND%20priority%20%3D%20Highest%20AND%20labels%20%3D%20showstopper%20AND%20statusCategory%20%21%3D%20Done%20ORDER%20BY%20created%20ASC|open in Jira>"
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*<https://tensorleap.atlassian.net/browse/BF-1124|BF-1124>* — Sony Eval process stuck in build model stage"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "*Status:* In Review   *Assignee:* idan.yogev   *Age:* 0d old"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*<https://tensorleap.atlassian.net/browse/BF-1129|BF-1129>* — Population Explorer missing when insights are skipped in DSO evaluate job"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "*Status:* acknowledged   *Assignee:* idan.yogev   *Age:* 0d old"
+        }
+      ]
+    }
+  ]
+}
