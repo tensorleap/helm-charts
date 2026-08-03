@@ -1,4 +1,4 @@
-image_tag: master-e43ac6b2
+image_tag: feature-production-monitor-4e7d7e93
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
