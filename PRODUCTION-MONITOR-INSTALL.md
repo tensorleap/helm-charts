@@ -9,7 +9,7 @@ with Docker. Verified end-to-end on 2026-08-02.
 | --- | --- | --- | --- |
 | helm-charts (installer + charts) | `feature-production-monitor-flag` | this branch | — |
 | node-server | `feature-production-monitor` | `4e7d7e93` | `public.ecr.aws/tensorleap/node-server:feature-production-monitor-4e7d7e93` (on ECR, CI-built) |
-| web-ui | `feature-production-monitor-mode` | `072a989ea` | `public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-072a989e` (**NOT on ECR** — see step 1) |
+| web-ui | `feature-production-monitor-mode` | `44638f942` | `public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-44638f94` (**NOT on ECR** — see step 1) |
 
 The chart values in this branch already pin both image tags — no flags needed
 beyond `--production-monitor`.
@@ -44,10 +44,10 @@ FROM public.ecr.aws/tensorleap/web-ui-router:latest-amd
 COPY LICENSE.md /LICENSE.md
 COPY build /public
 DOCKER
-docker build -t public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-072a989e /tmp/webui-img
+docker build -t public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-44638f94 /tmp/webui-img
 ```
 
-To hand the image to someone else: `docker save -o web-ui-feature-production-monitor.tar public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-072a989e`
+To hand the image to someone else: `docker save -o web-ui-feature-production-monitor.tar public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-44638f94`
 
 ## 2. Install
 
@@ -66,7 +66,7 @@ your Docker daemon (do this right after the install finishes — on a fresh
 machine the web-ui pod will sit in `ImagePullBackOff` until you do):
 
 ```bash
-docker save public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-072a989e \
+docker save public.ecr.aws/tensorleap/web-ui:feature-production-monitor-mode-44638f94 \
   | docker exec -i k3d-tensorleap-server-0 ctr images import -
 kubectl delete pod -n tensorleap -l app.kubernetes.io/name=web-ui   # only if it was ImagePullBackOff
 ```

@@ -1,4 +1,4 @@
-image_tag: feature-production-monitor-mode-072a989e
+image_tag: feature-production-monitor-mode-44638f94
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
