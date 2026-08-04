@@ -104,7 +104,24 @@ build-helm:
 	helm dependency build ./charts/tensorleap-infra
 	rm ./charts/tensorleap-infra/Chart.lock
 
-
+# One-shot local dev install: pull chart deps, regenerate + validate images.txt,
+# then run the installer against the local charts. build-helm runs first because
+# update-images calls `helm template`, which needs the dependency tarballs.
+# Any installer flag is forwarded verbatim via ARGS, e.g.
+#   make run-local
+#   make run-local ARGS="--yes"
+#   make run-local ARGS="--cpu --gpus 1 --domain localhost --yes"
+# is equivalent to: go run . install --local $(ARGS)
+# Run `go run . install --help` for the full flag list.
+# .ONESHELL is in effect for this Makefile, so `set -e` is what stops the chain
+# on a failed step instead of falling through to the install.
+.PHONY: run-local
+run-local:
+	@set -euo pipefail
+	$(MAKE) build-helm
+	$(MAKE) update-images
+	$(MAKE) validate-images
+	go run . install --local $(ARGS)
 
 .PHONY: checkout-rc-branch
 .ONESHELL:
