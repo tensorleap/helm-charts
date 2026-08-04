@@ -239,10 +239,12 @@ def print_preview(issues: List[Issue]) -> None:
 def main():
     load_env_file()
 
-    JIRA_DOMAIN = os.getenv('JIRA_DOMAIN', 'https://tensorleap.atlassian.net').rstrip('/')
-    JIRA_EMAIL = os.getenv('JIRA_EMAIL', 'omri.yonatani@tensorleap.ai')
-    JIRA_API_TOKEN = os.getenv('JIRA_API_TOKEN', '')
-    SLACK_CHANNEL_ID = os.getenv('SLACK_CHANNEL_ID', DEFAULT_SLACK_CHANNEL)
+    # strip(): a secret pasted with a trailing newline breaks basic auth with a
+    # 401 that looks identical to a revoked token.
+    JIRA_DOMAIN = os.getenv('JIRA_DOMAIN', 'https://tensorleap.atlassian.net').strip().rstrip('/')
+    JIRA_EMAIL = os.getenv('JIRA_EMAIL', 'omri.yonatani@tensorleap.ai').strip()
+    JIRA_API_TOKEN = os.getenv('JIRA_API_TOKEN', '').strip()
+    SLACK_CHANNEL_ID = os.getenv('SLACK_CHANNEL_ID', DEFAULT_SLACK_CHANNEL).strip()
 
     if not JIRA_API_TOKEN:
         print("ERROR: JIRA_API_TOKEN not set.")
