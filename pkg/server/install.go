@@ -204,6 +204,10 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		defer monitor.Stop()
 	}
 
+	if err := k3d.PatchCoreDnsResources(ctx, kubeConfigPath, KUBE_CONTEXT); err != nil {
+		log.Warnf("Could not patch coredns resources: %v", err)
+	}
+
 	infraChartMeta := mnf.InfraHelmChart
 	isInfraReleaseExisted, err := helm.IsHelmReleaseExists(helmConfig, infraChartMeta.ReleaseName)
 	if err != nil {
