@@ -1,4 +1,4 @@
-image_tag: master-b4118421
+image_tag: master-91a0436b
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
