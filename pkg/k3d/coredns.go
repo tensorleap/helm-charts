@@ -8,8 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/tensorleap/helm-charts/pkg/log"
 )
 
 const (
@@ -46,6 +44,5 @@ func PatchCoreDnsResources(ctx context.Context, kubeConfigPath, kubeContext stri
 		return fmt.Errorf("failed to patch coredns resources: %w", err)
 	}
 
-	log.Infof("Patched coredns resources to Guaranteed QoS (cpu %s, memory %s)", corednsCpu, corednsMemory)
 	return nil
 }
