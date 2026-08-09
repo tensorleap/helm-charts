@@ -29,19 +29,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
-      - name: Checkout RC branch
-        id: checkout_rc_branch
+      - name: Bump patch version and checkout patch branch
+        id: checkout_patch_branch
         run: |
           set -euo pipefail
-          # checkout-rc-branch prints the branch name on the first line and the
-          # is_new_branch flag on the second; take only the first line.
-          OUTPUT="$(make -s checkout-rc-branch)"
-          BRANCH="$(echo "$OUTPUT" | head -1)"
+          # checkout-patch-branch bumps the patch version (1.6.57* -> 1.6.58-rc.0) and prints
+          # the branch name on the first line, the is_new_branch flag on the second and the
+          # branch it was cut from on the third.
+          OUTPUT="$(make -s checkout-patch-branch)"
+          BRANCH="$(echo "$OUTPUT" | sed -n 1p)"
+          IS_NEW_BRANCH="$(echo "$OUTPUT" | sed -n 2p)"
+          BASE_BRANCH="$(echo "$OUTPUT" | sed -n 3p)"
           if [ -z "$BRANCH" ]; then
-            echo "Error: Failed to get branch name from checkout-rc-branch" >&2
+            echo "Error: Failed to get branch name from checkout-patch-branch" >&2
             exit 1
           fi
-          echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "patch_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "is_new_branch=$IS_NEW_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "base_branch=$BASE_BRANCH" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Get new version
@@ -51,10 +56,43 @@ jobs:
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
         shell: bash
 
+      # Cut the same version branch in engine/node-server/web-ui, off the branch this
+      # patch is based on (e.g. 1.6.58 from 1.6.57) so the patch carries the version
+      # branch state and not master. Idempotent - existing branches are left as is.
+      - name: Create external patch branches
+        run: |
+          make create-external-rc-branches
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
+          BASE_BRANCH: ${{ steps.checkout_patch_branch.outputs.base_branch }}
+
+      - name: Notify Slack about new patch branches
+        if: steps.checkout_patch_branch.outputs.is_new_branch == 'true'
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          errors: true
+          payload: |
+            channel: C0AAMFVFYM6
+            text: "🩹 New Patch Branch Created: ${{ steps.checkout_patch_branch.outputs.patch_branch }}"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "🩹 New Patch Branch Created: ${{ steps.checkout_patch_branch.outputs.patch_branch }}"
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Patched from:* `${{ steps.checkout_patch_branch.outputs.base_branch }}`\n*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|web-ui>"
+
       - name: Update charts with branch images
         uses: ./.github/actions/update-images-from-branch
         with:
-          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
+          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
       - name: Set up Helm
@@ -88,21 +126,21 @@ jobs:
       - name: Commit version changes
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Bump rc version to ${{ steps.get_version.outputs.version }} and update images.txt"
+          message: "Bump patch version to ${{ steps.get_version.outputs.version }} and update images.txt"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
       - name: Release Charts
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
+          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
 
       - name: Release Manifest
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
-          branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
+          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
 
   install-server:
     needs: patch
