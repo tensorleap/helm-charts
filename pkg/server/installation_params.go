@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -845,6 +846,11 @@ func (params *InstallationParams) CalcUrl() string {
 }
 
 func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *helm.ServerHelmValuesParams {
+	// Detection lives here, not at the call site: a caller that builds params
+	// without it silently ships an inert memory-admission feature (the engine
+	// fails open on an empty TOTAL_INSTALLATION_MEMORY_BYTES).
+	totalMemoryBytes, totalMemorySource := detectClusterMemory(context.Background(), params.ClusterMemoryGb)
+
 	dataContainerPaths := []string{}
 	for _, path := range params.DatasetVolumes {
 		dataContainerPaths = append(dataContainerPaths, strings.Split(path, ":")[1])
@@ -875,6 +881,8 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
 		LocalBucketPath:        localBucketPath,
+		TotalMemoryBytes:       totalMemoryBytes,
+		TotalMemorySource:      totalMemorySource,
 	}
 }
 
