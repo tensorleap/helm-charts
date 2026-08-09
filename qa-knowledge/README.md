@@ -95,11 +95,15 @@ a bad test or misdiagnose a failure. Each is verified against code.
    named **`evaluate-<jobId>`**. (`node-server/src/evaluate/logic.ts`,
    `engine/.../manager/manager.py`)
 
-2. **Jobs are created DIRECTLY via the Kubernetes API, not over RabbitMQ.**
-   node-server renders the `engine-job-template-cm` ConfigMap and calls
-   `BatchV1Api.createNamespacedJob`. RabbitMQ carries only the **reverse**
-   direction (engine → node-server feedback) and **control** messages (stop /
-   terminate). (`node-server/src/utils/engine.ts`, `src/utils/k8s.ts`)
+2. **Engine jobs are created BY THE ORCHESTRATOR, over RabbitMQ** (since server
+   1.6.60). node-server renders the `engine-job-template-cm` ConfigMap and
+   publishes the manifest on the `engine-job-creation` queue; the orchestrator
+   (engine scheduler) creates the k8s Job — or holds it `QUEUED` when the
+   cluster lacks memory (admission). The same queue carries `cancel` and
+   `release` ops; feedback still flows engine → node-server. Only **node jobs**
+   (e.g. IMPORT_PROJECT) are still created directly via `BatchV1Api`.
+   (`node-server/src/utils/engine.ts`,
+   `engine/.../workerenginescheduler/job_creation_consumer.py`)
 
 3. **The MAIN engine pod creates the extra runtime resources** — per-job Redis
    pod+service, the streaming-handler Deployment, and the generic-process
