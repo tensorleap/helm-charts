@@ -42,6 +42,9 @@ jobs:
       - name: Install Tensorleap server
         env:
           TAG: ${{ inputs.tag }}
+          # With no tag the installer resolves the latest manifest through the
+          # GitHub API, which is rate limited per runner IP when anonymous.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -e
           LOG=$(mktemp)
