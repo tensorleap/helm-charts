@@ -173,12 +173,13 @@ checkout-rc-branch:
 	echo "$$IS_NEW_BRANCH"
 
 # Bump the patch version and checkout/create the matching version branch.
-# BUMP (default true) selects what gets bumped:
-#   true  - the patch component is bumped BEFORE the rc suffix, which is reset from the
-#           existing tags of the new version (1.6.57-rc.0 / 1.6.57-rc.1 / 1.6.57 -> 1.6.58-rc.0).
+# BUMP (default true) selects which number gets bumped:
+#   true  - the version number: the patch component is bumped BEFORE the rc suffix, which is
+#           reset from the existing tags of the new version
+#           (1.6.57-rc.0 / 1.6.57-rc.1 / 1.6.57 -> 1.6.58-rc.0).
 #           The new branch (e.g. 1.6.58) is cut from the branch the target runs on, so the
 #           patch is built on top of the previous version branch and not on top of master.
-#   false - the patch component is kept and only the rc suffix advances
+#   false - the rc number only: the patch component is kept and just the rc suffix advances
 #           (1.6.57-rc.0 -> 1.6.57-rc.1, 1.6.57-rc.1 -> 1.6.57-rc.2), so the release stays
 #           on the current version branch (1.6.57).
 # Prints three lines for use in workflows: branch name, is_new_branch flag, base branch name.

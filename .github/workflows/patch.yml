@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Bump the patch version (1.6.57-rc.1 -> 1.6.58-rc.0). Uncheck to only bump the rc suffix (1.6.57-rc.1 -> 1.6.57-rc.2) and stay on the current version branch"
+        description: "checked = bump the version number: 1.6.57-rc.1 → 1.6.58-rc.0, cuts branch 1.6.58 | unchecked = bump the rc number only: 1.6.57-rc.1 → 1.6.57-rc.2, stays on branch 1.6.57"
         required: false
         type: boolean
         default: true

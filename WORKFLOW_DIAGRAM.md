@@ -172,9 +172,9 @@ This document describes all GitHub Actions workflows and reusable actions in the
 - `workflow_dispatch` (manual)
 
 **Inputs:**
-- `bump` (checkbox, default checked): Bump the patch version (`1.6.57-rc.1` → `1.6.58-rc.0`) and cut
-  the matching `1.6.58` branch. Unchecked, only the rc suffix advances (`1.6.57-rc.1` → `1.6.57-rc.2`)
-  and the release stays on the current version branch.
+- `bump` (checkbox, default checked): which number gets bumped.
+  - checked — the **version number**: `1.6.57-rc.1` → `1.6.58-rc.0`, cutting branch `1.6.58`
+  - unchecked — the **rc number** only: `1.6.57-rc.1` → `1.6.57-rc.2`, staying on branch `1.6.57`
 - `custom_tag_prefix` (optional): Custom tag prefix for manifest
 
 **Flow:**
