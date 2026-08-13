@@ -62,6 +62,11 @@ runs:
       shell: bash
 
     - name: Create installation manifest
+      env:
+        # create-manifest reads images.txt through the GitHub API. Without a token
+        # the call is capped at 60 requests/hour per runner IP, which is shared
+        # across tenants and regularly already spent - the API then answers 403.
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         echo "📦 Tensorleap chart version: ${{ steps.get_tensorleap_chart_version.outputs.version }}"
         echo "📦 Tensorleap infra chart version: ${{ steps.get_tensorleap_infra_chart_version.outputs.version }}"
