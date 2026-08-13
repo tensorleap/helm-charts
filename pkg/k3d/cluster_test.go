@@ -57,6 +57,16 @@ docker.io/rancher/klipper-helm:v0.7.7-build20230403     application/vnd.oci.imag
 			images:  []string{"rancher/mirrored-pause:3.6"},
 			want:    []string{"rancher/mirrored-pause:3.6"},
 		},
+		{
+			// Regression: a naive substring check would false-positive-match
+			// requested "rancher/mirrored-pause:3.6" against a listed
+			// "...pause:3.60" row (no exact "...pause:3.6" row present here),
+			// wrongly treating the requested image as present.
+			name:    "tag-prefix collision is not a false match",
+			listing: "docker.io/rancher/mirrored-pause:3.60                   application/vnd.oci.image.manifest.v1+json sha256:aaaaaa... linux/amd64\n",
+			images:  []string{"rancher/mirrored-pause:3.6"},
+			want:    []string{"rancher/mirrored-pause:3.6"},
+		},
 	}
 
 	for _, tt := range tests {
