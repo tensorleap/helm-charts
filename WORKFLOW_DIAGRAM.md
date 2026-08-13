@@ -9,7 +9,7 @@ This document describes all GitHub Actions workflows and reusable actions in the
 ### Main Release Workflows
 - **`release_candidate.yml`** - Creates RC branch, bumps version, releases charts and RC manifest
 - **`release_production.yml`** - Removes RC suffix, releases charts, releases production manifest, generates release notes, notifies Slack
-- **`patch.yml`** - Manual patch workflow: Bumps RC version, releases charts and manifest
+- **`patch.yml`** - Manual patch workflow: Bumps the patch version (or only the RC suffix when `bump` is unchecked), releases charts and manifest
 
 ### Supporting Workflows
 - **`_install_server.yml`** - Reusable workflow to install Tensorleap server using leap-cli
@@ -166,12 +166,15 @@ This document describes all GitHub Actions workflows and reusable actions in the
 
 ## Workflow: `patch.yml`
 
-**Purpose:** Bump RC version for patching after test failures.
+**Purpose:** Release a patch of the version branch it is dispatched from, after test failures.
 
 **Triggers:**
 - `workflow_dispatch` (manual)
 
 **Inputs:**
+- `bump` (checkbox, default checked): Bump the patch version (`1.6.57-rc.1` → `1.6.58-rc.0`) and cut
+  the matching `1.6.58` branch. Unchecked, only the rc suffix advances (`1.6.57-rc.1` → `1.6.57-rc.2`)
+  and the release stays on the current version branch.
 - `custom_tag_prefix` (optional): Custom tag prefix for manifest
 
 **Flow:**
@@ -187,14 +190,16 @@ This document describes all GitHub Actions workflows and reusable actions in the
 │ Job: patch                                                      │
 │   ├─ Checkout repository                                        │
 │   ├─ Configure Git identity                                     │
-│   ├─ Checkout RC branch (make checkout-rc-branch)               │
-│   │   └─ Bumps version: X.X.X-rc.0 → X.X.X-rc.1                │
+│   ├─ Checkout patch branch (make checkout-patch-branch)         │
+│   │   ├─ bump:    X.X.57-rc.* → X.X.58-rc.0, branch X.X.58     │
+│   │   └─ no bump: X.X.57-rc.1 → X.X.57-rc.2, branch X.X.57     │
 │   ├─ Get new version                                            │
+│   ├─ Create external patch branches (engine/node-server/web-ui) │
+│   ├─ Notify Slack (only when the branch was just created)       │
+│   ├─ Update charts with branch images                           │
 │   ├─ Set up Helm                                                │
 │   ├─ Extract image names                                        │
 │   ├─ Validate images.txt (make validate-images)                 │
-│   ├─ Helm Chart Validation (tensorleap)                         │
-│   ├─ Helm Chart Validation (tensorleap-infra)                   │
 │   ├─ Commit version changes                                     │
 │   ├─ Release Charts (release-chart action)                      │
 │   └─ Release Manifest (release-manifest action)                 │
@@ -449,7 +454,7 @@ graph TD
     end
 
     subgraph "Patch Flow"
-        Patch[patch.yml] --> P1[Bump X.X.X-rc.0 → rc.1]
+        Patch[patch.yml] --> P1[bump: X.X.57-rc.* → X.X.58-rc.0<br/>no bump: X.X.57-rc.1 → rc.2]
         P1 --> P2[Release Charts]
         P2 --> P3[Release Manifest]
         P3 --> P4[Install Server Test]
