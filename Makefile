@@ -173,15 +173,25 @@ checkout-rc-branch:
 	echo "$$IS_NEW_BRANCH"
 
 # Bump the patch version and checkout/create the matching version branch.
-# The patch component is bumped BEFORE the rc suffix, which is reset from the
-# existing tags of the new version (e.g. 1.6.57-rc.0 / 1.6.57-rc.1 / 1.6.57 -> 1.6.58-rc.0).
-# The new branch (e.g. 1.6.58) is cut from the branch the target runs on, so the
-# patch is built on top of the previous version branch and not on top of master.
+# BUMP (default true) selects which number gets bumped:
+#   true  - the version number: the patch component is bumped BEFORE the rc suffix, which is
+#           reset from the existing tags of the new version
+#           (1.6.57-rc.0 / 1.6.57-rc.1 / 1.6.57 -> 1.6.58-rc.0).
+#           The new branch (e.g. 1.6.58) is cut from the branch the target runs on, so the
+#           patch is built on top of the previous version branch and not on top of master.
+#   false - the rc number only: the patch component is kept and just the rc suffix advances
+#           (1.6.57-rc.0 -> 1.6.57-rc.1, 1.6.57-rc.1 -> 1.6.57-rc.2), so the release stays
+#           on the current version branch (1.6.57).
 # Prints three lines for use in workflows: branch name, is_new_branch flag, base branch name.
 .PHONY: checkout-patch-branch
 .ONESHELL:
 checkout-patch-branch:
 	@set -euo pipefail
+	BUMP="$${BUMP:-true}"
+	if [ "$$BUMP" != "true" ] && [ "$$BUMP" != "false" ]; then
+	  echo "❌ BUMP must be 'true' or 'false', got: $$BUMP" >&2
+	  exit 1
+	fi
 	if [ ! -f charts/tensorleap/Chart.yaml ]; then
 	  echo "❌ charts/tensorleap/Chart.yaml not found" >&2
 	  exit 1
@@ -200,13 +210,18 @@ checkout-patch-branch:
 	MAJOR="$$(echo "$$VERSION" | cut -d. -f1)"
 	MINOR="$$(echo "$$VERSION" | cut -d. -f2)"
 	PATCH="$$(echo "$$VERSION" | cut -d. -f3)"
-	NEW_VERSION="$$MAJOR.$$MINOR.$$((PATCH+1))"
+	if [ "$$BUMP" = "true" ]; then
+	  NEW_VERSION="$$MAJOR.$$MINOR.$$((PATCH+1))"
+	else
+	  NEW_VERSION="$$VERSION"
+	fi
+	echo "checkout-patch-branch: $$VERSION_FULL -> version $$NEW_VERSION (BUMP=$$BUMP)" >&2
 	BASE_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
 	if [ "$$BASE_BRANCH" = "HEAD" ]; then
 	  echo "❌ detached HEAD - checkout the version branch to patch before running this target" >&2
 	  exit 1
 	fi
-	# Branch name is just the new base version (e.g., 1.6.58)
+	# Branch name is just the base version (e.g., 1.6.58 when bumping, 1.6.57 when not)
 	BRANCH="$$NEW_VERSION"
 	IS_NEW_BRANCH="false"
 	git fetch origin --prune >/dev/null 2>&1
@@ -231,7 +246,17 @@ checkout-patch-branch:
 	  MAX_RC="$$(printf "%s\n" "$$EXISTING_TAGS" | sort -n | tail -1)"
 	  NEXT=$$((MAX_RC+1))
 	fi
-	# Update Chart.yaml version to the bumped patch version plus RC suffix (matches tag)
+	if [ "$$BUMP" = "false" ]; then
+	  # Without a patch bump the rc suffix is the only thing that moves, so it must advance
+	  # past the version already committed on the branch even when its tag is missing
+	  # (e.g. the previous run released under a custom_tag_prefix).
+	  CURRENT_FULL="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
+	  CURRENT_RC="$$(echo "$$CURRENT_FULL" | sed -nE "s/^$${NEW_VERSION}-rc\.([0-9]+)$$/\1/p")"
+	  if [ -n "$$CURRENT_RC" ] && [ "$$NEXT" -le "$$CURRENT_RC" ]; then
+	    NEXT=$$((CURRENT_RC+1))
+	  fi
+	fi
+	# Update Chart.yaml version to the target patch version plus RC suffix (matches tag)
 	VERSION_WITH_RC="$${NEW_VERSION}-rc.$${NEXT}"
 	sed -i.bak "s/^version: .*/version: $$VERSION_WITH_RC/" charts/tensorleap/Chart.yaml
 	rm -f charts/tensorleap/Chart.yaml.bak

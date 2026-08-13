@@ -3,6 +3,11 @@ name: Patch
 on:
   workflow_dispatch:
     inputs:
+      bump:
+        description: "checked = bump the version number: 1.6.57-rc.1 → 1.6.58-rc.0, cuts branch 1.6.58 | unchecked = bump the rc number only: 1.6.57-rc.1 → 1.6.57-rc.2, stays on branch 1.6.57"
+        required: false
+        type: boolean
+        default: true
       custom_tag_prefix:
         description: "Custom tag prefix for manifest"
         required: false
@@ -31,11 +36,14 @@ jobs:
 
       - name: Bump patch version and checkout patch branch
         id: checkout_patch_branch
+        env:
+          BUMP: ${{ inputs.bump }}
         run: |
           set -euo pipefail
-          # checkout-patch-branch bumps the patch version (1.6.57* -> 1.6.58-rc.0) and prints
-          # the branch name on the first line, the is_new_branch flag on the second and the
-          # branch it was cut from on the third.
+          # checkout-patch-branch bumps the patch version (1.6.57* -> 1.6.58-rc.0), or with
+          # BUMP=false only the rc suffix (1.6.57-rc.1 -> 1.6.57-rc.2). It prints the branch
+          # name on the first line, the is_new_branch flag on the second and the branch it was
+          # cut from on the third.
           OUTPUT="$(make -s checkout-patch-branch)"
           BRANCH="$(echo "$OUTPUT" | sed -n 1p)"
           IS_NEW_BRANCH="$(echo "$OUTPUT" | sed -n 2p)"
