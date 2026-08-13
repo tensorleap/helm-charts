@@ -623,13 +623,30 @@ func findMissingImagesInContainerd(clusterName string, images []string) ([]strin
 	return filterMissingImages(string(out), images), nil
 }
 
-// filterMissingImages returns the subset of images not present (by name:tag, with or
-// without the "docker.io/" prefix `ctr images ls` normally adds) in a containerd
-// image listing. Split out from findMissingImagesInContainerd for unit testing.
+// filterMissingImages returns the subset of images not present in a `ctr images ls`
+// listing. Compares the listing's REF column (first whitespace-separated field per
+// row) against each requested image by exact reference, not substring containment —
+// a substring check would false-positive e.g. requested "rancher/mirrored-pause:3.6"
+// against a listed "rancher/mirrored-pause:3.60". Split out from
+// findMissingImagesInContainerd for unit testing.
 func filterMissingImages(listing string, images []string) []string {
+	present := make(map[string]bool)
+	for _, line := range strings.Split(listing, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		ref := fields[0]
+		if ref == "REF" { // header row
+			continue
+		}
+		present[ref] = true
+		present[strings.TrimPrefix(ref, "docker.io/")] = true
+	}
+
 	var missing []string
 	for _, image := range images {
-		if strings.Contains(listing, image) || strings.Contains(listing, "docker.io/"+image) {
+		if present[image] || present["docker.io/"+image] {
 			continue
 		}
 		missing = append(missing, image)
