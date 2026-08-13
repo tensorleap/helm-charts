@@ -23,6 +23,11 @@ spec:
       serviceAccountName: minio-sa
       containers:
         - name: minio
+          # This pin is load-bearing: it is the last-generation legacy single-drive "fs" backend,
+          # where an object is a plain file at /export/<bucket>/<key>. Engine (STORAGE_DIRECT_FS_ROOT,
+          # MOUNTHPATH) and node-server (STORAGE_MOUNT_PATH) read/write that layout directly through
+          # the shared PVC. Newer MinIO releases use the xl format (object = directory + xl.meta),
+          # which breaks all direct filesystem access — do not bump without removing those paths.
           image: "quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z"
           imagePullPolicy: IfNotPresent
           command:
