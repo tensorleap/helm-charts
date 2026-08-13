@@ -624,7 +624,58 @@ func ImportImagesIntoCluster(ctx context.Context, cluster *Cluster, images []str
 		return nil
 	}
 	log.Infof("Importing %d images into cluster containerd...", len(images))
-	return k3dCluster.ImageImportIntoClusterMulti(ctx, runtimes.SelectedRuntime, images, cluster, k3d.ImageImportOpts{})
+	importErr := k3dCluster.ImageImportIntoClusterMulti(ctx, runtimes.SelectedRuntime, images, cluster, k3d.ImageImportOpts{})
+	if importErr == nil {
+		return nil
+	}
+	// k3d's own multi-image tools-node import can surface a spurious "content
+	// digest ... not found" error for an internal aggregate manifest artifact
+	// even when every requested image imported successfully — verified: the
+	// plain `k3d image import` CLI hits the identical error on the same image
+	// set yet exits 0, and every image lands correctly in containerd
+	// afterward. Don't trust the aggregate error blindly: verify each
+	// requested image actually exists in containerd before failing the whole
+	// airgap bootstrap over it.
+	if !strings.Contains(importErr.Error(), "content digest") || !strings.Contains(importErr.Error(), "not found") {
+		return importErr
+	}
+	log.Warnf("k3d image import reported an error; verifying actual image presence in containerd before failing: %v", importErr)
+	missing, verifyErr := findMissingImagesInContainerd(cluster.Name, images)
+	if verifyErr != nil {
+		// Verification itself failed; don't mask the original problem.
+		return importErr
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%w (confirmed missing after verification: %v)", importErr, missing)
+	}
+	log.Infof("All %d bootstrap image(s) confirmed present in containerd despite import warning; continuing", len(images))
+	return nil
+}
+
+// findMissingImagesInContainerd lists images in the cluster's server-0 node containerd
+// store and returns which of the requested images are NOT actually present there.
+func findMissingImagesInContainerd(clusterName string, images []string) ([]string, error) {
+	serverContainer := fmt.Sprintf("k3d-%s-server-0", clusterName)
+	cmd := exec.Command("docker", "exec", serverContainer, "ctr", "-n", "k8s.io", "images", "ls")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containerd images for verification: %w (output: %s)", err, string(out))
+	}
+	return filterMissingImages(string(out), images), nil
+}
+
+// filterMissingImages returns the subset of images not present (by name:tag, with or
+// without the "docker.io/" prefix `ctr images ls` normally adds) in a containerd
+// image listing. Split out from findMissingImagesInContainerd for unit testing.
+func filterMissingImages(listing string, images []string) []string {
+	var missing []string
+	for _, image := range images {
+		if strings.Contains(listing, image) || strings.Contains(listing, "docker.io/"+image) {
+			continue
+		}
+		missing = append(missing, image)
+	}
+	return missing
 }
 
 // isGpuDevicesUUIDs checks if gpuDevices contains GPU UUIDs (vs old-style indexes).
