@@ -19,8 +19,10 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				Cert:    "",
 				Key:     "",
 			},
-			HostName:        "nsa.gov",
-			KeycloakEnabled: true,
+			HostName:         "nsa.gov",
+			KeycloakEnabled:  true,
+			PipIndexUrl:      "http://pypi.local/simple",
+			PipExtraIndexUrl: "http://pypi2.local/simple",
 		}
 
 		expected := Record{
@@ -30,6 +32,8 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"http_proxy":           "",
 				"https_proxy":          "",
 				"no_proxy":             "",
+				"total_memory_bytes":   "",
+				"total_memory_source":  "",
 			},
 			"tensorleap-node-server": Record{
 				"enableKeycloak":         params.KeycloakEnabled,
@@ -37,6 +41,8 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"disableDatadogMetrics":  params.DisableDatadogMetrics,
 				"installedServerVersion": params.InstalledServerVersion,
 				"localBucketPath":        params.LocalBucketPath,
+				"pipIndexUrl":            "http://pypi.local/simple",
+				"pipExtraIndexUrl":       "http://pypi2.local/simple",
 			},
 			"global": Record{
 				"domain":               "",

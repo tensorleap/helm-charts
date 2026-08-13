@@ -97,6 +97,7 @@ jobs:
           python-version: '3.12'
 
       - name: Generate Release Notes & Update Jira fixVersion
+        id: release_notes
         continue-on-error: true
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
@@ -197,6 +198,32 @@ jobs:
           if ! echo "$COMPLETE_RESP" | grep -q '"ok":true'; then
             echo "$COMPLETE_RESP" && exit 1
           fi
+
+      # Release notes are best-effort (continue-on-error above) so a Jira outage
+      # never blocks a release. Surface the failure in the release thread instead,
+      # otherwise it goes unnoticed while the job still reports success.
+      - name: Notify Slack - Release notes generation failed
+        if: steps.release_notes.outcome == 'failure'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          payload: >
+            {
+              "channel": "C0A2J51FBPD",
+              "thread_ts": "${{ steps.slack_release.outputs.ts }}",
+              "text": "⚠️ Release notes generation failed for v${{ steps.get_version.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "⚠️ *Release notes were not generated for v${{ steps.get_version.outputs.version }}*\nThe release itself completed — only the Jira release notes step failed, so no `RELEASE_NOTES.md` was committed and no Jira `fixVersion` was set.\n\n*Most likely cause:* the `JIRA_API_TOKEN` secret expired or was revoked (Atlassian API tokens expire).\n• *Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\n• *Rotate:* <https://id.atlassian.com/manage-profile/security/api-tokens|Atlassian API tokens> → then update the `JIRA_API_TOKEN` repo secret"
+                  }
+                }
+              ]
+            }
 
   release-airgap:
     name: Release Airgap Pack

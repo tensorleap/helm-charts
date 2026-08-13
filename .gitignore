@@ -17,6 +17,9 @@ Chart.lock
 # Python virtual environment
 venv/
 
+# Generated Slack payload for the daily showstoppers message
+slack-showstoppers.json
+
 .idea/
 
 .cursor/

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -30,11 +31,14 @@ type InstallationParams struct {
 	Port                        uint                   `json:"clusterPort"`
 	Domain                      string                 `json:"domain"`
 	ProxyUrl                    string                 `json:"proxyUrl"`
+	PipIndexUrl                 string                 `json:"pipIndexUrl,omitempty"`
+	PipExtraIndexUrl            string                 `json:"pipExtraIndexUrl,omitempty"`
 	RegistryPort                uint                   `json:"registryPort"`
 	DisableMetrics              bool                   `json:"disableMetrics"`
 	DatasetDirectory_DEPRECATED string                 `json:"datasetDirectory,omitempty" yaml:"datasetDirectory,omitempty"`
 	DatasetVolumes              []string               `json:"datasetVolumes"`
 	CpuLimit                    string                 `json:"cpuLimit,omitempty"`
+	ClusterMemoryGb             uint                   `json:"clusterMemoryGb,omitempty"`
 	ClearInstallationImages     bool                   `json:"removeInstallationImages,omitempty"`
 	DisabledAuth                bool                   `json:"disabledAuth,omitempty"`
 	IsAirgap                    bool                   `json:"isAirgap,omitempty"`
@@ -176,6 +180,13 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		return nil, fmt.Errorf("failed to get TLS params: %v", err)
 	}
 
+	if flags.PipIndexUrl == "" {
+		flags.PipIndexUrl = lookupFirstEnv("PIP_INDEX_URL")
+	}
+	if flags.PipExtraIndexUrl == "" {
+		flags.PipExtraIndexUrl = lookupFirstEnv("PIP_EXTRA_INDEX_URL")
+	}
+
 	if hasInstallationParams {
 		shouldAskForPreviousTLSConfig := previousParams.TLSParams.Enabled && !tlsParams.Enabled
 		if shouldAskForPreviousTLSConfig {
@@ -214,6 +225,13 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 			}
 		}
 
+		if flags.PipIndexUrl == "" {
+			flags.PipIndexUrl = previousParams.PipIndexUrl
+		}
+		if flags.PipExtraIndexUrl == "" {
+			flags.PipExtraIndexUrl = previousParams.PipExtraIndexUrl
+		}
+
 		isRemoveInstallationNotSet := flags.ClearInstallationImages == nil
 		if isRemoveInstallationNotSet {
 			flags.ClearInstallationImages = &previousParams.ClearInstallationImages
@@ -248,7 +266,10 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 		DatasetVolumes:          flags.DatasetVolumes,
 		Domain:                  flags.Domain,
 		ProxyUrl:                flags.ProxyUrl,
+		PipIndexUrl:             flags.PipIndexUrl,
+		PipExtraIndexUrl:        flags.PipExtraIndexUrl,
 		CpuLimit:                flags.CpuLimit,
+		ClusterMemoryGb:         flags.ClusterMemoryGb,
 		TLSParams:               *tlsParams,
 		ClearInstallationImages: *flags.ClearInstallationImages,
 		DisabledAuth:            *flags.DisableAuth,
@@ -825,6 +846,11 @@ func (params *InstallationParams) CalcUrl() string {
 }
 
 func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *helm.ServerHelmValuesParams {
+	// Detection lives here, not at the call site: a caller that builds params
+	// without it silently ships an inert memory-admission feature (the engine
+	// fails open on an empty TOTAL_INSTALLATION_MEMORY_BYTES).
+	totalMemoryBytes, totalMemorySource := detectClusterMemory(context.Background(), params.ClusterMemoryGb)
+
 	dataContainerPaths := []string{}
 	for _, path := range params.DatasetVolumes {
 		dataContainerPaths = append(dataContainerPaths, strings.Split(path, ":")[1])
@@ -849,10 +875,14 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		Tls:                    *tlsParams,
 		DatadogEnv:             datadogEnvs,
 		ProxyEnv:               proxyEnvs,
+		PipIndexUrl:            params.PipIndexUrl,
+		PipExtraIndexUrl:       params.PipExtraIndexUrl,
 		KeycloakEnabled:        !params.DisabledAuth,
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
 		LocalBucketPath:        localBucketPath,
+		TotalMemoryBytes:       totalMemoryBytes,
+		TotalMemorySource:      totalMemorySource,
 	}
 }
 

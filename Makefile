@@ -1,4 +1,4 @@
-.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env release-notes create-external-rc-branches
+.PHONY: create-cluster drop-cluster helm-install helm-uninstall helm-reinstall helm-deps-up validate-k-env release-notes create-external-rc-branches checkout-patch-branch
 
 SHELL := /bin/bash
 CLUSTER_NAME ?= tensorleap
@@ -74,7 +74,7 @@ update-images:
 			| grep 'image: ' \
 			| sed 's/.*: //' \
 			| sed 's/\"//g'; \
-		grep -v '^\s*#' external-images.txt | grep -v '^\s*$$' | sed 's/\s*#.*//'; \
+		grep -v '^[[:space:]]*#' external-images.txt | grep -v '^[[:space:]]*$$' | sed 's/[[:space:]]*#.*//'; \
 	} | sort | uniq > images.txt
 
 .PHONY: validate-images
@@ -104,7 +104,24 @@ build-helm:
 	helm dependency build ./charts/tensorleap-infra
 	rm ./charts/tensorleap-infra/Chart.lock
 
-
+# One-shot local dev install: pull chart deps, regenerate + validate images.txt,
+# then run the installer against the local charts. build-helm runs first because
+# update-images calls `helm template`, which needs the dependency tarballs.
+# Any installer flag is forwarded verbatim via ARGS, e.g.
+#   make run-local
+#   make run-local ARGS="--yes"
+#   make run-local ARGS="--cpu --gpus 1 --domain localhost --yes"
+# is equivalent to: go run . install --local $(ARGS)
+# Run `go run . install --help` for the full flag list.
+# .ONESHELL is in effect for this Makefile, so `set -e` is what stops the chain
+# on a failed step instead of falling through to the install.
+.PHONY: run-local
+run-local:
+	@set -euo pipefail
+	$(MAKE) build-helm
+	$(MAKE) update-images
+	$(MAKE) validate-images
+	go run . install --local $(ARGS)
 
 .PHONY: checkout-rc-branch
 .ONESHELL:
@@ -155,8 +172,77 @@ checkout-rc-branch:
 	echo "$$BRANCH"
 	echo "$$IS_NEW_BRANCH"
 
-# Create version branches in external repositories (engine, node-server, web-ui)
+# Bump the patch version and checkout/create the matching version branch.
+# The patch component is bumped BEFORE the rc suffix, which is reset from the
+# existing tags of the new version (e.g. 1.6.57-rc.0 / 1.6.57-rc.1 / 1.6.57 -> 1.6.58-rc.0).
+# The new branch (e.g. 1.6.58) is cut from the branch the target runs on, so the
+# patch is built on top of the previous version branch and not on top of master.
+# Prints three lines for use in workflows: branch name, is_new_branch flag, base branch name.
+.PHONY: checkout-patch-branch
+.ONESHELL:
+checkout-patch-branch:
+	@set -euo pipefail
+	if [ ! -f charts/tensorleap/Chart.yaml ]; then
+	  echo "❌ charts/tensorleap/Chart.yaml not found" >&2
+	  exit 1
+	fi
+	VERSION_FULL="$$(awk '/^version:/{print $$2}' charts/tensorleap/Chart.yaml)"
+	if [ -z "$$VERSION_FULL" ]; then
+	  echo "❌ version not found in charts/tensorleap/Chart.yaml" >&2
+	  exit 1
+	fi
+	# Remove -rc.* suffix if present to get base version
+	VERSION="$$(echo "$$VERSION_FULL" | sed 's/-rc\.[0-9]*$$//')"
+	if ! echo "$$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$'; then
+	  echo "❌ unexpected version format in charts/tensorleap/Chart.yaml: $$VERSION_FULL" >&2
+	  exit 1
+	fi
+	MAJOR="$$(echo "$$VERSION" | cut -d. -f1)"
+	MINOR="$$(echo "$$VERSION" | cut -d. -f2)"
+	PATCH="$$(echo "$$VERSION" | cut -d. -f3)"
+	NEW_VERSION="$$MAJOR.$$MINOR.$$((PATCH+1))"
+	BASE_BRANCH="$$(git rev-parse --abbrev-ref HEAD)"
+	if [ "$$BASE_BRANCH" = "HEAD" ]; then
+	  echo "❌ detached HEAD - checkout the version branch to patch before running this target" >&2
+	  exit 1
+	fi
+	# Branch name is just the new base version (e.g., 1.6.58)
+	BRANCH="$$NEW_VERSION"
+	IS_NEW_BRANCH="false"
+	git fetch origin --prune >/dev/null 2>&1
+	# Check if we're already on the new version branch
+	if [ "$$BASE_BRANCH" != "$$BRANCH" ]; then
+	  # Checkout the version branch, or cut it from the branch we're currently on
+	  if git ls-remote --exit-code --heads origin "$$BRANCH" >/dev/null 2>&1; then
+	    git fetch origin "$$BRANCH" >/dev/null 2>&1
+	    git switch "$$BRANCH" >/dev/null 2>&1
+	  else
+	    git switch -c "$$BRANCH" >/dev/null 2>&1
+	    git push -u origin "$$BRANCH" >/dev/null 2>&1
+	    IS_NEW_BRANCH="true"
+	  fi
+	fi
+	# Find the next RC number by checking existing tags (fetch tags first)
+	git fetch origin --tags >/dev/null 2>&1
+	EXISTING_TAGS="$$(git tag -l "$${NEW_VERSION}-rc.*" 2>/dev/null | sed -nE "s/^$${NEW_VERSION}-rc\.([0-9]+)$$/\1/p")"
+	if [ -z "$$EXISTING_TAGS" ]; then
+	  NEXT=0
+	else
+	  MAX_RC="$$(printf "%s\n" "$$EXISTING_TAGS" | sort -n | tail -1)"
+	  NEXT=$$((MAX_RC+1))
+	fi
+	# Update Chart.yaml version to the bumped patch version plus RC suffix (matches tag)
+	VERSION_WITH_RC="$${NEW_VERSION}-rc.$${NEXT}"
+	sed -i.bak "s/^version: .*/version: $$VERSION_WITH_RC/" charts/tensorleap/Chart.yaml
+	rm -f charts/tensorleap/Chart.yaml.bak
+	# Output branch name, whether it's new, and the branch it was cut from (for use in workflows)
+	echo "$$BRANCH"
+	echo "$$IS_NEW_BRANCH"
+	echo "$$BASE_BRANCH"
+
+# Create version branches in external repositories (engine, node-server, web-ui, leap-cli)
 # Requires: GITHUB_TOKEN and BRANCH_NAME environment variables
+# Optional: BASE_BRANCH - branch to cut from in each repo (defaults to master)
 .PHONY: create-external-rc-branches
 .ONESHELL:
 create-external-rc-branches:
@@ -169,15 +255,16 @@ create-external-rc-branches:
 	  echo "❌ BRANCH_NAME environment variable is required" >&2
 	  exit 1
 	fi
-	REPOS="tensorleap/engine tensorleap/node-server tensorleap/web-ui"
+	BASE_BRANCH="$${BASE_BRANCH:-master}"
+	REPOS="tensorleap/engine tensorleap/node-server tensorleap/web-ui tensorleap/leap-cli"
 	for REPO in $$REPOS; do
-	  echo "Creating branch $$BRANCH_NAME in $$REPO..."
-	  # Get the SHA of master branch
-	  MASTER_SHA=$$(curl -s -H "Authorization: token $$GITHUB_TOKEN" \
+	  echo "Creating branch $$BRANCH_NAME in $$REPO (from $$BASE_BRANCH)..."
+	  # Get the SHA of the base branch
+	  BASE_SHA=$$(curl -s -H "Authorization: token $$GITHUB_TOKEN" \
 	    -H "Accept: application/vnd.github.v3+json" \
-	    "https://api.github.com/repos/$$REPO/git/ref/heads/master" | jq -r '.object.sha')
-	  if [ "$$MASTER_SHA" = "null" ] || [ -z "$$MASTER_SHA" ]; then
-	    echo "❌ Failed to get master SHA for $$REPO" >&2
+	    "https://api.github.com/repos/$$REPO/git/ref/heads/$$BASE_BRANCH" | jq -r '.object.sha')
+	  if [ "$$BASE_SHA" = "null" ] || [ -z "$$BASE_SHA" ]; then
+	    echo "❌ Failed to get SHA of branch $$BASE_BRANCH for $$REPO" >&2
 	    exit 1
 	  fi
 	  # Create the branch
@@ -185,7 +272,7 @@ create-external-rc-branches:
 	    -H "Authorization: token $$GITHUB_TOKEN" \
 	    -H "Accept: application/vnd.github.v3+json" \
 	    "https://api.github.com/repos/$$REPO/git/refs" \
-	    -d "{\"ref\":\"refs/heads/$$BRANCH_NAME\",\"sha\":\"$$MASTER_SHA\"}")
+	    -d "{\"ref\":\"refs/heads/$$BRANCH_NAME\",\"sha\":\"$$BASE_SHA\"}")
 	  HTTP_CODE=$$(echo "$$RESPONSE" | tail -1)
 	  BODY=$$(echo "$$RESPONSE" | sed '$$d')
 	  if [ "$$HTTP_CODE" = "201" ]; then
@@ -273,4 +360,24 @@ release-notes:
 	@venv/bin/pip install --quiet jira
 	@echo "Running release note generator..."
 	@venv/bin/python scripts/jira-release-integration.py
+
+.PHONY: jira-check
+jira-check:
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@venv/bin/pip install --quiet jira
+	@venv/bin/python scripts/jira-check-auth.py
+
+.PHONY: showstoppers
+showstoppers:
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@echo "Installing dependencies..."
+	@venv/bin/pip install --quiet jira
+	@echo "Collecting open showstoppers..."
+	@venv/bin/python scripts/jira-showstoppers.py
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
@@ -176,6 +177,29 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 	return
 }
 
+func detectClusterMemory(ctx context.Context, clusterMemoryGb uint) (memoryBytes int64, memorySource string) {
+	if clusterMemoryGb > 0 {
+		memoryBytes = int64(clusterMemoryGb) * 1024 * 1024 * 1024
+		memorySource = "flag"
+		log.Printf("Using cluster memory budget from --cluster-memory-gb: %d GiB\n", clusterMemoryGb)
+		return
+	}
+	memorySource = "auto"
+	dockerClient, err := docker.NewClient()
+	if err == nil {
+		info, infoErr := dockerClient.Info(ctx)
+		if infoErr == nil {
+			memoryBytes = info.MemTotal
+		} else {
+			log.Warnf("Failed detecting docker total memory: %v", infoErr)
+		}
+	} else {
+		log.Warnf("Failed detecting docker total memory: %v", err)
+	}
+	log.Infof("Auto-detected cluster memory: %d bytes", memoryBytes)
+	return
+}
+
 func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, installationParams *InstallationParams, infraChart, serverChart *chart.Chart) error {
 	log.SendCloudReport("info", "Installing helm", "Running", nil)
 
@@ -237,7 +261,8 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
 		return err
 	}
-	serverValues, err := helm.CreateTensorleapChartValues(installationParams.GetServerHelmValuesParams(mnf.Tag))
+	serverHelmParams := installationParams.GetServerHelmValuesParams(mnf.Tag)
+	serverValues, err := helm.CreateTensorleapChartValues(serverHelmParams)
 	if err != nil {
 		log.SendCloudReport("error", "Failed to create chart values", "Failed",
 			&map[string]interface{}{"version": serverChartMeta.Version, "error": err.Error()})
@@ -269,7 +294,30 @@ func InstallCharts(ctx context.Context, mnf *manifest.InstallationManifest, inst
 		}
 	}
 
+	assertMemoryBudgetDeployed(helmConfig, serverChartMeta.ReleaseName)
+
 	log.SendCloudReport("info", "Successfully installed helm charts", "Running", nil)
 	log.Info("Tensorleap installed on local k3d cluster")
 	return nil
+}
+
+// A silently inert memory-admission feature must not ship again: a stale caller or a
+// failed detection leaves total_memory_bytes empty, the engine fails open, and nothing
+// says so at install time. Read back what helm actually deployed and warn loudly.
+func assertMemoryBudgetDeployed(helmConfig *helm.HelmConfig, releaseName string) {
+	values, err := helm.GetValues(helmConfig, releaseName)
+	if err != nil {
+		log.Warnf("Could not verify deployed memory budget: %v", err)
+		return
+	}
+	engineValues, _ := values["tensorleap-engine"].(map[string]interface{})
+	total, _ := engineValues["total_memory_bytes"].(string)
+	if total == "" || total == "0" {
+		log.Warn("Memory budget was NOT deployed (total_memory_bytes is empty): " +
+			"job memory admission will be disabled. Re-run with --cluster-memory-gb, " +
+			"or check that docker memory detection works on this host.")
+		log.SendCloudReport("warning", "Memory budget missing from deployed values", "Running", nil)
+		return
+	}
+	log.Infof("Memory budget deployed: total_memory_bytes=%s", total)
 }

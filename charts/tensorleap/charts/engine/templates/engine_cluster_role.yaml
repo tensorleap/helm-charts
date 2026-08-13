@@ -1,0 +1,26 @@
+{{- if not .Values.global.namespacedInstall }}
+# Cluster-wide pod read for the orchestrator's memory-admission infra sweep (aggregate
+# memory of all non-engine-job pods across all namespaces). Skipped on namespacedInstall,
+# where the orchestrator falls back to a namespaced list + reserve for out-of-namespace infra.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Namespace }}-deployment-manager-pods-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Namespace }}-deployment-manager-pods-reader
+subjects:
+  - kind: ServiceAccount
+    name: deployment-manager
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ .Release.Namespace }}-deployment-manager-pods-reader
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

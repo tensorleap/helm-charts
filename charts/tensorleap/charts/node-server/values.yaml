@@ -1,4 +1,4 @@
-image_tag: master-8a08d376
+image_tag: master-30e65e01
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
@@ -13,5 +13,11 @@ mongodb:
   connectionString: mongodb://mongodb/tensorleap?tls=false&ssl=false
 
 localBucketPath: ""
+
+# Install-time default pip index for dependency builds (e.g. internal PyPI
+# mirror on airgap installs); set by the installer. Empty = public PyPI.
+# Editable per-installation via the web UI engine settings.
+pipIndexUrl: ""
+pipExtraIndexUrl: ""
 
 mongodb_image: docker.io/library/mongo:6.0.5
