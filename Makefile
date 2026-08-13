@@ -240,7 +240,7 @@ checkout-patch-branch:
 	echo "$$IS_NEW_BRANCH"
 	echo "$$BASE_BRANCH"
 
-# Create version branches in external repositories (engine, node-server, web-ui)
+# Create version branches in external repositories (engine, node-server, web-ui, leap-cli)
 # Requires: GITHUB_TOKEN and BRANCH_NAME environment variables
 # Optional: BASE_BRANCH - branch to cut from in each repo (defaults to master)
 .PHONY: create-external-rc-branches
@@ -256,7 +256,7 @@ create-external-rc-branches:
 	  exit 1
 	fi
 	BASE_BRANCH="$${BASE_BRANCH:-master}"
-	REPOS="tensorleap/engine tensorleap/node-server tensorleap/web-ui"
+	REPOS="tensorleap/engine tensorleap/node-server tensorleap/web-ui tensorleap/leap-cli"
 	for REPO in $$REPOS; do
 	  echo "Creating branch $$BRANCH_NAME in $$REPO (from $$BASE_BRANCH)..."
 	  # Get the SHA of the base branch

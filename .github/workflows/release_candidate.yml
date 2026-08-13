@@ -88,7 +88,7 @@ jobs:
               - type: section
                 text:
                   type: mrkdwn
-                  text: "*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|web-ui>"
+                  text: "*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|web-ui>\n• <https://github.com/tensorleap/leap-cli/tree/${{ steps.checkout_rc_branch.outputs.rc_branch }}|leap-cli>"
 
       - name: Sync tensorleap-infra chart from master
         run: |

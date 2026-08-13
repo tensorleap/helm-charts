@@ -56,7 +56,7 @@ jobs:
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
         shell: bash
 
-      # Cut the same version branch in engine/node-server/web-ui, off the branch this
+      # Cut the same version branch in engine/node-server/web-ui/leap-cli, off the branch this
       # patch is based on (e.g. 1.6.58 from 1.6.57) so the patch carries the version
       # branch state and not master. Idempotent - existing branches are left as is.
       - name: Create external patch branches
@@ -87,7 +87,7 @@ jobs:
               - type: section
                 text:
                   type: mrkdwn
-                  text: "*Patched from:* `${{ steps.checkout_patch_branch.outputs.base_branch }}`\n*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|web-ui>"
+                  text: "*Patched from:* `${{ steps.checkout_patch_branch.outputs.base_branch }}`\n*Branch Links:*\n• <https://github.com/tensorleap/helm-charts/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|helm-charts>\n• <https://github.com/tensorleap/engine/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|engine>\n• <https://github.com/tensorleap/node-server/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|node-server>\n• <https://github.com/tensorleap/web-ui/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|web-ui>\n• <https://github.com/tensorleap/leap-cli/tree/${{ steps.checkout_patch_branch.outputs.patch_branch }}|leap-cli>"
 
       - name: Update charts with branch images
         uses: ./.github/actions/update-images-from-branch
