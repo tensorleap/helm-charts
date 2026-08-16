@@ -25,6 +25,9 @@ data:
   STORAGE_PORT: "9000"
   CONTENT_BASE_URL: /session/
   MOUNTHPATH: /usr/minio/session/
+  # Storage direct-FS fast path: the MinIO backing PVC mounted into engine pods.
+  # Engine validates /usr/minio/.minio.sys/format.json (legacy fs backend) before using it.
+  STORAGE_DIRECT_FS_ROOT: /usr/minio/session
   UI_SETTINGS_SCHEMA: '{"N_DATASET_PROCESSES":{"type":"number","title":"Number of Dataset Processes","min":1,"description":"Number of processes to use for dataset processing (if empty, calculated automatically)"},"N_METRICS_PROCESSES":{"type":"number","title":"Number of Metrics Processes","min":1,"description":"Number of processes to use for metrics processing (if empty, calculated automatically)"},"N_VISUALIZERS_PROCESSES":{"type":"number","title":"Number of Visualizers Processes","min":1,"description":"Number of processes to use for visualizers processing (if empty, calculated automatically)"}}'
 
   ENGINE_IMAGE: {{ .Values.image_name }}:{{ .Values.image_tag }}

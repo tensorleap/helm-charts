@@ -59,8 +59,14 @@ spec:
           volumeMounts:
             - name: job-shared
               mountPath: /job-shared
+            # Storage direct-FS fast path (see STORAGE_DIRECT_FS_ROOT in engine-cm).
+            - name: minio
+              mountPath: /usr/minio
       volumes:
         - name: job-shared
           hostPath:
             path: /var/lib/tensorleap/standalone/storage/job-shared
             type: DirectoryOrCreate
+        - name: minio
+          persistentVolumeClaim:
+            claimName: tensorleap-minio
