@@ -2,6 +2,7 @@
 
 | File Name | Last Modified |
 |-----------|---------------|
+| [tl-manifest-1.6.68-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.6.68-linux-amd64.tar.gz) | 2026-08-16T12:32:49.000Z |
 | [tl-manifest-1.6.66-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.6.66-linux-amd64.tar.gz) | 2026-08-13T11:34:41.000Z |
 | [tl-manifest-1.6.58-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.6.58-linux-amd64.tar.gz) | 2026-08-03T16:27:27.000Z |
 | [tl-manifest-1.6.57-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.6.57-linux-amd64.tar.gz) | 2026-07-28T14:33:04.000Z |
@@ -51,4 +52,3 @@
 | [tl-manifest-1.1.596-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.1.596-linux-amd64.tar.gz) | 2025-05-26T13:30:21.000Z |
 | [tl-manifest-1.1.590-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.1.590-linux-amd64.tar.gz) | 2025-05-19T10:13:05.000Z |
 | [tl-manifest-1.1.589-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.1.589-linux-amd64.tar.gz) | 2025-05-19T08:15:41.000Z |
-| [tl-manifest-1.1.588-linux-amd64.tar.gz](https://tensorleap-assets.s3.amazonaws.com/airgap-versions/tl-manifest-1.1.588-linux-amd64.tar.gz) | 2025-05-17T21:37:29.000Z |
