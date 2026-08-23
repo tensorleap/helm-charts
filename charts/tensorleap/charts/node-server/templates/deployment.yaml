@@ -92,7 +92,7 @@ spec:
             successThreshold: 1
             timeoutSeconds: 10
             httpGet:
-              path: /api/v2/monitor/healthCheck
+              path: /api/v2/monitor/alive
               port: http
           envFrom:
             - configMapRef:

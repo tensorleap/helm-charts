@@ -6,6 +6,7 @@ data:
   NODE_ENV: production
   MONGO_URI: {{ .Values.mongodb.connectionString }}
   RABBIT_URI: "amqp://guest:guest@rabbitmq"
+  RABBIT_CONNECTION_RETRY_TIMEOUT: "15s"
   BUCKET_NAME: session
   STORAGE_MOUNT_PATH: /usr/minio/session
   ENSURE_BUCKET_EXISTS: "true"
