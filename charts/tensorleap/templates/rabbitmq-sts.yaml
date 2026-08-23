@@ -23,7 +23,7 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             requests:
-              cpu: "50m"
+              cpu: "250m"
               memory: "500Mi"
           lifecycle:
             preStop:
@@ -54,10 +54,8 @@ spec:
             periodSeconds: 30
             successThreshold: 1
             timeoutSeconds: 20
-            exec:
-              command:
-                - rabbitmq-diagnostics
-                - status
+            tcpSocket:
+              port: amqp
           readinessProbe:
             failureThreshold: 3
             initialDelaySeconds: 10
