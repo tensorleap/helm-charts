@@ -21,13 +21,13 @@ glance what *should* be there:
 | Engine job type | Spawns (besides the main/worker pod) | Job subTypes that use it |
 |---|---|---|
 | `TRAINING` | per-job **redis** + **generic-process (N)** + **streaming-handler** | Evaluate, Update Evaluate |
-| `ANALYZE` | per-job **redis** + **generic-process (1 or N)** + **streaming-handler** | Sample Analysis (1), Visualizers Calculation (N) |
-| `SYNTHETIC` (engine type) | per-job **redis** + **generic-process (1)** + **streaming-handler** | (engine sample-generation; *not* the curation "Synthetic Data Generation") |
+| `ANALYZE` | per-job **redis** + **generic-process (1 or N)** + **streaming-handler** | Sample Analysis (1), Visualizers Calculation (N), Domain Gap |
+| `SYNTHETIC` (engine type) | per-job **redis** + **generic-process (1)** + **streaming-handler** | Synthetic Data Generation — **auto mode only** (`generateAutoSyntheticData`; the manual calibration mode is `SLIM_LS`) |
 | `PUSH` | per-job **redis** + **generic-process (1)**, **no** streaming-handler | Push (= Code Parse + Import Model + Graph Validate phases) |
 | `EXPORT_MODEL` | per-job **redis** + **generic-process (1)**, no streaming-handler | Export Model |
 | `DRY_RUN_GRAPH` | per-job **redis** + **generic-process (1)**, no streaming-handler | Graph Validate |
 | `STREAMING_SAMPLES_VIS` | per-job **redis** + **generic-process (1)**, no streaming-handler | Streaming Samples Vis |
-| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Resplitting** |
+| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting** |
 | `ANALYZE_GRAPH` | **NOTHING** — engine main pod only | (graph static analysis, a phase of import) |
 | `WARMUP` | a sleep-placeholder GPU **Job** (`engine-warmup-*`) | Warmup |
 | node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | one **node** Job pod (node-server image), no engine pods | Export/Copy/Import Project |
@@ -46,13 +46,15 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 |---|---|---|---|---|---|
 | Sample Analysis | `ANALYZE` | `WorkerAnalyzer._sample_analysis` | `sample-analysis-<jobId>` | mongo `visualizations`; bucket `vis/<vis_artifact_id>/sample_analysis/payloads/<guid>` | `#sample-analysis-dashlet-loaded-content` |
 | Visualizers Calculation | `ANALYZE` | `WorkerAnalyzer._visualizers_calculation` | `visualizers-calculation-<jobId>` | bucket `vis/<vis_artifact_id>/sample_visualizers/*` + `visualizer_names.json` | `#population-exploration-right-panel-visualizations` tiles |
+| Domain Gap | `ANALYZE` | `WorkerAnalyzer._domain_gap` → `DomainGapJobRunner` | `domain-gap-<jobId>` | mongo `domaingap`; bucket `vis/<vis_artifact_id>/domain_gap/<digest>/{stats.json, cluster.json, heatmaps.json + heatmaps}` | row in DS Curation → DOMAIN GAP tab grid |
 | Population Exploration | `SLIM_LS` | `WorkerSlimLSOps.population_exploration` | `population-exploration-<jobId>` | bucket `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` | `#population-exploration-circles` (dots) |
 | Fetch Similar | `SLIM_LS` | `WorkerSlimLSOps.create_cluster_filter` | `fetch-similar-<jobId>` | bucket `vis/<vis_artifact_id>/fetch_similar/<digest>/cluster.json` | filter chip + highlight in `#population-exploration-circles` |
 | Generate Insights | `SLIM_LS` | `WorkerSlimLSOps.insights_calculation` | `generate-insights-<jobId>` | mongo `insights` + `versions.resources.csv_blob_path`; reads ES `es_metrics_index` | `#insight-card` under `#insights-list` |
 | Dataset Balancing | `SLIM_LS` | `WorkerSlimLSOps.dataset_balancing` | `dataset-balancing-<jobId>` | mongo `datasetbalancing`; bucket `digest_<d>/dataset_balancing/*` | row in DS Curation → PRUNING tab grid |
-| Synthetic Data Generation | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` | row in DS Curation → SYNTHETIC tab grid |
+| Synthetic Data Generation (manual) | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` | row in DS Curation → SYNTHETIC tab grid |
+| Synthetic Data Generation (auto) | `SYNTHETIC` | `WorkerSyntheticJob` | `synthetic-data-generation-<jobId>` (same subType label as manual) | mongo `syntheticdata` (shared collection with manual) | row in DS Curation → SYNTHETIC tab grid |
 | Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → UNLABELED tab grid |
-| Resplitting *(engine-side; node trigger not yet on master)* | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `resplitting-<jobId>` | bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | DS Curation (data re-split) — verify UI |
+| Splitting | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `splitting-<jobId>` | mongo `datasetsplitting`; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | row in DS Curation → SPLITTING tab grid |
 | Push | `PUSH` | `WorkerPush` (CodeParser+ImportModel+ValidateAssets) | `push-<jobId>` | mongo `codesnapshots`,`versions`,`models`; bucket model artifacts | Version Control state PUSHING→PUSHED |
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` | mongo `exportedmodels`; bucket exported file | exported-models list per version |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` | mongo `versions.graphValidationData` | network-editor markers / push state |
@@ -81,6 +83,13 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 - **Observables:** k8s `visualizers-calculation-<jobId>`; multiple generic-process pods for the jobId; redis work queue `vis_calc_<jobId>` drains to 0; per-sample blobs + `visualizer_names.json` in bucket; `wait_for_all_vis_processes` completes ≤300s.
 - **Dedup:** concurrent duplicate → HTTP **208 AlreadyReported**.
 - **Failure:** queue not drained in 300s → timeout; under-scheduled replicas (small cluster) → stuck queue; individual visualizer crash → `has_error` item, job still completes.
+- **Domain-gap context:** when the request carries a `domain_gap_id`, the same worker renders only the MISSING assets per sample (regular visualization and/or domain-gap heatmap) and refreshes `heatmaps.json`; heatmap render failures (e.g. `NoUsableLayersError` — no usable spatial layers) never fail the job, they're logged and skipped.
+
+### Domain Gap  *(new ANALYZE subtype)*
+- **Trigger:** DS Curation → **DOMAIN GAP** tab → `POST /datasetcuration/generateDomainGap` `{projectId, versionId, groupAFilters, groupBFilters}`. UI validation blocks: "No model selected", and each domain needs ≥1 filter ("Domain #1/#2 needs at least one filter"). `subType='Domain Gap'`, engine `analyze_type=domain_gap`, `preferCpu=false`.
+- **What it does** (`DomainGapJobRunner`): stats → A∪B population exploration → adapter → heatmaps, all **persisted to the blob dir** `vis/<vis_artifact_id>/domain_gap/<digest>/` (`stats.json`, `cluster.json`, `heatmaps.json` + heatmaps) — **no push message**; node-server reads the blobs on the standard FINISHED job-status update. `population_exploration_n_samples` is pinned to 2000 to match the PE dashlet default, so the inline scatter lands under the digest the dashlet later mints.
+- **Outputs:** mongo `domaingap` entity (jobId ref); the tab row exposes stats/filter download URLs only when the files exist (`hasStatsFile`/`hasFilterFile`).
+- **Success:** job FINISHED + `stats.json` in the bucket + a new row in the DOMAIN GAP tab's DataGridPro.
 
 ---
 
@@ -92,7 +101,7 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 > notification); `post_running` sets FINISHED/FAILED.
 
 ### Population Exploration  *(this is a `SLIM_LS` job, NOT `ANALYZE`)*
-- **Trigger:** auto-runs when the dashlet mounts. `POST /visualizations/populationExploration` then polls `POST /visualizations/getPopulationExplorationStatus` every ~3s. **Blocked only while a prerequisite Evaluate/Update-Evaluate job's `insights_analysis` step is still pending** (UserError before the job is created); once that step's event reaches `FINISHED` or `SKIPPED`, PE may run even if the evaluate job is still in progress (later steps like `visualize_samples` continue).
+- **Trigger:** auto-runs when the dashlet mounts. `POST /visualizations/populationExploration` then polls `POST /visualizations/getPopulationExplorationStatus` every ~3s. **Blocked only while a prerequisite Evaluate/Update-Evaluate job's `prepare_displays` step is still pending** (UserError before the job is created — only then are the scatters published and the resource pin final); once that step's event reaches `FINISHED` or `SKIPPED`, PE may run even if the evaluate job is still in progress (later steps like `visualize_samples` continue).
 - **The digest** is minted server-side in one place (`calcPopulationExplorationDigest`) from the population params + `insightsRevision` + seed count + teamId; the client-passed digest is ignored (note: `sample_visualizers_revision` is **no longer** part of the digest). A new Evaluate bumps `insightsRevision` + the seed count → new digest → new scatter path → UI re-runs. (Status `NOT_FOUND` after a new eval is *expected*, not a bug.)
 - **Success:** `scatter.json` present at `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` → status FINISHED; UI renders dots in `#population-exploration-circles` (inside `#population-exploration-dashlet`).
 - **UI states:** processing → `#population-exploration-processing` ("processing…"); empty → "No samples"; error → "Population Exploration creation failed" + Retry, or "Evaluate failed" when the prerequisite eval failed.
@@ -110,16 +119,17 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 - **Failure / gotchas:** SLIM pod OOM (insights load latent spaces in one pod, no scaling) → FAILED; **empty insights list → FINISHED with no cards** (often mistaken for failure); revision mismatch → UI shows wrong-revision/empty list.
 
 ### Dataset Balancing  ·  Synthetic Data Generation  ·  Labeling Recommendation (DS Curation)
-All three are launched from the **DS Curation** toolbar button → `DatasetCurationDialog`
-(title "DATASET CURATION LIST") tabs **PRUNING / SYNTHETIC / UNLABELED**, via
-`EvaluationAwareActionButton` (warns if the eval is incomplete).
+All are launched from the **DS Curation** toolbar button → `DatasetCurationDialog`
+(title "DATASET CURATION LIST"), now five tabs: **UNLABELED** (default) **/ DOMAIN GAP /
+SYNTHETIC / PRUNING / SPLITTING**, via `EvaluationAwareActionButton` (warns if the eval
+is incomplete). Splitting and Domain Gap are covered in their own sections.
 
 | | Dataset Balancing | Synthetic Data Generation | Labeling Recommendation |
 |---|---|---|---|
 | endpoint | `/datasetcuration/generateDatasetBalancing` | `/datasetcuration/generateSyntheticData` | `/datasetcuration/generateLabels` |
 | `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
-| bucket output | `digest_<d>/dataset_balancing/{recommendations.csv[.tar.gz], cluster_filter.json}` | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` | `digest_<d>/labeling/{recommendations.csv, cluster_filter.json}` |
+| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
 | UI tab | PRUNING | SYNTHETIC | UNLABELED |
 | validation block | no model / no dashboard / no pop-exp dashlet | "Target is empty" / "No sources added" | "No model selected" |
 
@@ -127,21 +137,31 @@ All three are launched from the **DS Curation** toolbar button → `DatasetCurat
   the bucket + a new row in the tab's DataGridPro. **Note:** a job can be FINISHED
   while the output file is absent (e.g. optimizer produced no trials) → the UI row
   shows no download. Don't treat FINISHED alone as success — check the bucket file.
-- **⚠️ Synthetic confusion:** "Synthetic Data Generation" here is the **`SLIM_LS`
-  calibration/optimizer** job (single pod). It is *not* the separate engine
-  `JobTypeEnum.SYNTHETIC` sample-generation worker (which *does* spawn
-  redis+generic+streaming). If you see redis/streaming pods, you're looking at the
-  wrong thing.
+- **⚠️ Synthetic confusion:** the SYNTHETIC tab now has **two modes**, both labeled
+  `subType='Synthetic Data Generation'` (same k8s job name, same `syntheticdata`
+  mongo collection):
+  - **Manual** → `POST /datasetcuration/generateSyntheticData` → **`SLIM_LS`**
+    calibration/optimizer job (single SLIM pod, `slim_request_type=synthetic_calibration`,
+    `preferCpu=true`).
+  - **Auto** → `POST /datasetcuration/generateAutoSyntheticData` → engine
+    **`SYNTHETIC`** job (`WorkerSyntheticJob`, `SyntheticJobRequest` with
+    `simulation_names`/`target_filters`/`initial_simulation_filters`; the engine
+    generates simulation parameters itself, so `simulations_data` is sent empty) —
+    this one **does** spawn redis+generic+streaming.
+  Tell them apart by the pod signature / `jobType` label, not the subType.
 
-### Resplitting  *(engine-side as of engine master; node trigger not yet on node-server master)*
-A 7th `SLIM_LS` request type added engine-side: `slim_request_type=resplitting`, worker
-`WorkerSlimLSOps.resplitting` → `Resplitting.run_resplitting` (`trainer/ds_curation/resplitting.py`).
-It re-splits the dataset across train/val/test: groups samples by `keep_together_metadata`,
-stratifies across `split_across_metadata`, KMeans-clusters feature vectors, and assigns
-clusters to splits by `train/val/test_ratio` (request `SlimResplittingRequest`).
-- **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `resplitting-<jobId>`.
-- **Bucket:** `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` (`get_resplitting_csv_path` / `get_resplitting_cluster_filter_path`).
-- **⚠️ Gap:** node-server master has **no** `resplit` reference yet — the REST trigger, subType label, and mongo entity are not shipped on node-server master. Verify the node-server side + the DS Curation UI entry once wired (logged in `maintenance/GAPS.md`).
+### Splitting (resplitting)
+The 7th `SLIM_LS` request type: `slim_request_type=resplitting`, worker
+`WorkerSlimLSOps.resplitting`. It re-splits the dataset across train/val/test:
+groups samples by `keep_together_metadata`, stratifies across `split_across_metadata`
+(request `SlimResplittingRequest`, subsets mapped to the engine's numeric
+`DataStateEnum` training=0/validation=1/test=2).
+- **Trigger:** DS Curation → **SPLITTING** tab → `POST /datasetcuration/generateDatasetSplitting`
+  `{projectId, versionId, splitsToResplit, keepTogetherMetadata, splitAcrossMetadata}`;
+  `subType='Splitting'`, `preferCpu=true`. UI validation: "No model selected".
+- **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `splitting-<jobId>`.
+- **Outputs:** mongo `datasetsplitting` entity; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` — the CSV is named `<jobUid>.csv` by the engine (uid = job.cid), only the filter filename is fixed.
+- **Success:** job FINISHED + a new row in the SPLITTING tab's DataGridPro.
 
 ---
 

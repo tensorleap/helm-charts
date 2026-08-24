@@ -57,14 +57,16 @@ A user (browser or `leap` CLI) authenticates via **Keycloak** and reaches
 **node-server** through a single **ingress-nginx** entrypoint (host port **4589**
 by default). **node-server** (Express/tsoa) is the brain: it stores entities in
 **MongoDB**, queries **Elasticsearch** to build dashboard "dashlets", reads/writes
-payloads in the **MinIO** bucket, and **creates Kubernetes Jobs** for compute. A
+payloads in the **MinIO** bucket, and **requests compute Kubernetes Jobs** (the
+orchestrator creates them — see corrected-model point 2). A
 compute job runs the **engine** image; the main engine pod spins up its own
 **per-job Redis**, an **engine-generics** (generic-process) Deployment that runs
 the customer's integration code, and a **streaming-handler** Deployment that
 writes metrics/metadata to Elasticsearch and latent-space vectors to the bucket.
 The engine reports progress back to node-server over **RabbitMQ**, and node-server
 pushes live updates to the browser over **socket.io**. A long-lived
-**engine-orchestrator** watches for failed jobs and reports them. Everything runs
+**engine-orchestrator** creates the engine Jobs (memory-admission-gated) and
+watches for failed jobs and reports them. Everything runs
 in a single-node **k3d** cluster (`k3d-tensorleap`, namespace `tensorleap`) on the
 customer's machine, so resource sizing is done by an **auto-settings** mechanism
 that must be infrastructure-agnostic.

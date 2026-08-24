@@ -29,7 +29,7 @@ failure surfaces. Use this to **classify** a failure, not just report "it broke"
 
 | Symptom | Root cause | Confirm |
 |---|---|---|
-| Job stuck `UNSTARTED`/`PENDING`, no pod | k8s Job created but pod unschedulable (no CPU/mem), or template/configmap missing | `kubectl describe job evaluate-<jobId>`; `kubectl get pods -l jobId=<jobId>`; node-server log `config-map was not found` ⇒ missing `engine-job-template-cm`/`engine-job-config` |
+| Job stuck `UNSTARTED`/`PENDING`, no pod | k8s Job created but pod unschedulable (no CPU/mem), or template/configmap missing | `kubectl describe job evaluate-<jobId>`; `kubectl get pods -l jobId=<jobId>`; node-server log `k8s engine-job-config was not found` ⇒ missing `engine-job-template-cm`/`engine-job-config` |
 | Pod `Pending` "Unschedulable" | requested resources exceed node capacity (auto-settings too high for this machine) | `kubectl describe pod` Events: `Insufficient cpu/memory`; check the applied `resources` |
 | `redis-<jobId>` Pending forever; main pod log `Redis pod is Unschedulable -- waiting for cluster resources` | no room for the per-job redis | `kubectl get pod redis-<jobId>`; free resources or lower sizing |
 | Pod `ImagePullBackOff`/`ErrImagePull` (engine/generic/redis) | bad tag / registry unreachable / pippin build failed | `kubectl describe pod`; for redis the main pod fast-fails `Redis pod ... unrecoverable state` |
@@ -54,10 +54,10 @@ failure surfaces. Use this to **classify** a failure, not just report "it broke"
 | Symptom | Root cause | Confirm |
 |---|---|---|
 | Pod `OOMKilled` / exit **137** / phase `Evicted` | under-provisioned memory (auto-settings too low, batch too big) | `kubectl get pod -l jobId=<jobId>`; `kubectl describe pod`; orchestrator maps OOMKilled + exit 137 (on pods **not** being torn down) → `OOM_KILLED` and FAILs the job; exit 137 on a pod with `deletion_timestamp` set is teardown (`UNKNOWN`), not OOM. Knobs: machine type, `batch_memory_multiple`, `batchSize` |
-| Throughput stalls mid-run | Redis backpressure: streaming-handler can't keep up | `LLEN streaming_evaluate_<jobId>_queue` stays high; main pod push loop log repeats; streaming-handler replicas at max (10) |
+| Throughput stalls mid-run | Redis backpressure: streaming-handler can't keep up | `LLEN` on the `streaming_evaluate_<jobId>_s<N>_queue` shard keys stays high (sharded, default 8 keys; `SCAN streaming_evaluate_*_queue` finds them); main pod push loop log repeats; streaming-handler replicas at max (20 per job) |
 | Per-job redis crashes under load | `maxmemory-policy noeviction` + too-small redis → OOM instead of evict | `redis-cli INFO memory` `used_memory` near `maxmemory`; redis pod restart |
 | ES `_count` lower than evaluated samples; partial/empty dashlets | streaming-handler dropped docs (NaN sanitation failure or bulk error) | streaming-handler log `failed to index docs to elasticsearch` (`err_vec`) |
-| Job FAILED `API error (503): low available disk space (<150GB)` | ES disk watermark | ES node disk; `kubectl get elasticsearch tl-elasticsearch` health |
+| Job FAILED `API error (503): This may indicate low available disk space` (<150 GB free) | ES disk watermark | ES node disk; `kubectl get elasticsearch tl-elasticsearch` health |
 | Dashlets empty, eval stalls writing metrics | ES CR unhealthy / operator issue | `kubectl get elasticsearch -n tensorleap`; ECK operator + ES pod logs |
 
 ---
