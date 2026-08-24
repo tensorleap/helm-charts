@@ -18,11 +18,14 @@ editor, model tests, sample collections, and code-integration assets.
 (injected via a `<base href>` by the nginx router image at serve time).
 Top-level routes: `/project/:cid/*`, `/team-management` (admin), `/welcome`,
 `/flags`, `/conflict-users`, `/authorization-request`, `/init-trial/*`,
-`/login`, `/signup`; `/` → `/project`. **In-project navigation is query-param
-driven, not nested paths:** `dashboard=<cid>` selects the active dashboard,
-`panel=<DrawerTab>` selects the drawer (Tests/Insights/Issues/Collections),
-`selected-version=<id>`, plus serialized `state`/`dashstate` digests.
-→ Verify navigation by URL **query params**, not path segments.
+`/login`, `/signup`; `/` → `/project`. **In-project navigation is mostly
+query-param driven:** `dashboard=<cid>` selects the active dashboard,
+`selected-version=<id>`, plus serialized `state`/`dashstate` digests. The one
+path-segment exception: the drawer (Tests/Insights/Issues/Collections) is
+selected by a `/panel/<tab>` segment appended to the tab path
+(`useSelectedUrlTab`).
+→ Verify navigation by URL **query params** (plus the `/panel/<tab>` segment
+for the drawer).
 
 **Auth.** `AuthProviderLoader` calls `getAuthProvider()` to pick **KeycloakProvider**
 (OIDC, realm `tensorleap`, client `tensorleap-client`, check-sso + PKCE) or
@@ -50,8 +53,10 @@ catalog.** Quick facts:
   (`src/tour/ToursConfig.tsx`), e.g. `analytics-dashlet`,
   `population-exploration-dashlet`, `version-control-pane`,
   `add-new-dashboard-button`.
-- `data-testid` is **mostly dead** (only `editor-file-name-row`,
-  `editor-rename-file-input` are applied). Do not rely on `src/test-ids.ts`.
+- `data-testid` is **sparse** (applied: `editor-file-name-row`,
+  `editor-rename-file-input`, `edit-button`/`save-changes-button`/
+  `discard-changes-button`, `full-screen-button`, `expand-node-details`,
+  `custom-visualization-filter-bar-expand`). Do not rely on `src/test-ids.ts`.
 - Version-control row actions are best targeted by **`aria-label`**
   (`Make this the active version`, `Expand experiment`).
 - Dashlet grids are **MUI X DataGridPro** → target `.MuiDataGrid-row`,
@@ -68,7 +73,7 @@ the long-lived **HTTP+WebSocket server** (default), or a one-shot **in-pod node-
 runner** when `JOB_TYPE`/`JOB_ID` are set (`isProcessJob()`).
 
 **Owns:**
-- The tsoa REST API under **`/api/v2`** (24 controllers, mostly POST).
+- The tsoa REST API under **`/api/v2`** (25 controllers, mostly POST).
 - All MongoDB entities via a scoped-collection layer (scopes add unique compound
   indexes: `{cid}`, `{cid,teamId}`, `{cid,teamId,projectId}`).
 - Elasticsearch **aggregation queries** that build chart/dashlet data on demand.
@@ -82,13 +87,15 @@ runner** when `JOB_TYPE`/`JOB_ID` are set (`isProcessJob()`).
 
 **Health & probes.** `GET /api/v2/monitor/healthCheck` → 200 with
 `allModules: [{name: 'rabbitmq'|'mongo'|'elastic', status, error}]`; **503** if any
-module is down. This is the readiness + liveness probe target.
+module is down. This is the **readiness** probe target only; liveness hits
+`GET /api/v2/monitor/alive` (always 200 while the event loop responds), so a
+downed dependency marks the pod unready without restart-looping it.
 
 **REST surface (selected, all under `/api/v2`):**
 - `/auth` — login, localAuth, whoAmI, getAuthStatus, getAuthProvider, keygen,
   getApiKeyByCode, activate, startTrial, refreshLocalAuth, resolveConcurrentUsersConflict, logout
 - `/projects` — addProject, getProjects, deleteProject, loadModel, importProject,
-  exportProject, uploadProject, downloadProject, setEngineGenericWorkers
+  exportProject, uploadProject, downloadProject
 - `/versions` — push, pushOverride, initExperiment, loadVersion, setActiveVersion,
   get*SlimVersions, getCodeSnapshotUploadUrl, tagModel, deleteVersion, getVersionsEpochs
 - `/jobs` — getSlimJobs, getTeamJobs, getJobLogs, stopJob, terminateJob, terminateAllJobs, warmup
@@ -107,8 +114,9 @@ module is down. This is the readiness + liveness probe target.
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
 `insightsSettings`, `insightContainerLabels`, `models`, `codesnapshots`,
 `exportedmodels`, `samplecollection`, `secretmanager`, `generatedLabels`,
-`syntheticdata`, `datasetbalancing`, `issues`, `tests`, `externalepochdata`,
-`projectstate`, `system_settings`, `system_metadata`, `db_metadata`.
+`syntheticdata`, `datasetbalancing`, `datasetsplitting`, `domaingap`, `issues`,
+`tests`, `externalepochdata`, `projectstate`, `system_settings`,
+`system_metadata`, `db_metadata`.
 
 **Key relations.** team → project → version (chain via
 `versions.experimentId`/`parentVersionId`); `version.codeSnapshotId → codesnapshots`;
@@ -168,7 +176,8 @@ A Python distributed compute system. All in namespace `tensorleap`.
   from per-job Redis. Pushes result batches to the streaming queue.
 - Runs a **`StreamingHandlerScaler` daemon thread** (this lives in the main pod,
   not the orchestrator) that scales the streaming-handler Deployment from
-  push/pull counters (`ceil(pushed/pulled_per_instance)+3`, capped at 10).
+  push/pull counters (`ceil(pushed/pulled_per_instance)+3`, capped at 20,
+  ramped ≤5 pods per tick; the orchestrator can lower a per-job reclaim cap).
 - Publishes status (STARTED/FINISHED/FAILED) and messages to node-server over
   **RabbitMQ** (`FEEDBACK_TOPIC`); subscribes to a stop command on
   `SUBSCRIBER_TOPIC`.
@@ -186,13 +195,15 @@ A Python distributed compute system. All in namespace `tensorleap`.
   to a shared volume.
 
 ### streaming-handler (`python -m src_tensorleap.engine.streaming_handler`, ENGINE image)
-- Polls all `streaming_*_<job_id>_queue` Redis keys in bulk (up to 500 docs or
-  every 20s).
+- Polls all `streaming_*_<job_id>_queue` Redis keys in bulk (up to
+  `STREAMING_BULK_SIZE` docs, default 1000, or every 20s).
 - Writes **metrics + metadata → Elasticsearch** (`es_metrics_index`) **always**.
 - Writes **latent-space vectors → bucket** (via `LatentSpaceDBManager`) **only for
   "evaluate" queues** (`streaming_evaluate_*`); training queues get ES only.
 - Sanitizes `NaN → None` (ES rejects `NaN` and would drop the whole doc).
-- Memory request 1Gi / limit 2Gi; up to 10 replicas/job; grace period 60s.
+- Memory request/limit computed from the measured streaming payload size and pod
+  concurrency (`STREAMING_HANDLER_MEMORY_REQUEST/_LIMIT` env override); up to 20
+  replicas/job; grace period 60s.
 
 ### orchestrator (`engine-orchestrator` Deployment, `python -m src_tensorleap.engine.engine_scheduler`)
 - The **only static engine workload**. Uses the `deployment-manager`
@@ -206,7 +217,7 @@ A Python distributed compute system. All in namespace `tensorleap`.
 - **Does NOT manage per-job Redis queue rate** (that is the trainer's
   backpressure + the main-pod streaming scaler).
 
-### Per-job Redis & its 5 logical queues
+### Per-job Redis & its logical queues
 
 One Redis pod `redis-<jobId>` (`redis:8.6-alpine`, port 6379,
 `--maxmemory-policy noeviction`). DNS `redis-<jobId>.tensorleap.svc.cluster.local:6379`.
@@ -217,7 +228,9 @@ One Redis pod `redis-<jobId>` (`redis:8.6-alpine`, port 6379,
 | `dataset_<state>_<job_id>_ready` | generic → engine | `DatasetSample` pickles |
 | `metrics_<job_id>` | engine → generic | `RedisMetricsQueueElement` (dedicated-metrics mode) |
 | `vis_calc_<job_id>` | engine → generic | visualizer batches (`visualizers_calculation`) |
-| `streaming_evaluate_<job_id>_queue` / `streaming_training_<job_id>_queue` | generic/engine → streaming-handler | output docs (+ latent space for evaluate) |
+| `streaming_evaluate_<job_id>_queue` / `streaming_training_<job_id>_queue` (optionally sharded: `..._s<n>_queue`) | generic/engine → streaming-handler | output docs (+ latent space for evaluate) |
+| `hook_request_<job_id>` / `hook_ready_<job_id>` | engine ↔ generic | autoregressive rollout step-hook requests/responses |
+| `scriptcommand_request_<job_id>` / `scriptcommand_response_<job_id>` | engine ↔ generic | script commands run against the in-pod user code |
 
 Scaling/timing keys: `generic_children:<job_id>` (TTL 1800s),
 `memory_update:generic:<job_id>`, `generic_process_ratio_<job_id>`,
@@ -257,8 +270,9 @@ elasticsearch CR, minio, rabbitmq, keycloak, ingress-nginx, datadog) and
 deps pinned exactly; bundled tarballs updated via `helm dependency build`.
 
 **`leap server` subcommands** (`cmd/server/`): `install`
-`[--local --yes --data-dir --tag --gpu --port]`, `upgrade` (always latest; minor
-bump → reinstall), `reinstall`, `uninstall` `[--purge|--cleanup|--clear-data]`,
+`[--local --yes --data-dir --tag --gpus --gpu-devices --port]`, `upgrade`
+(always latest; minor bump → reinstall), `reinstall`, `uninstall`
+`[--purge|--cleanup|--clear-data|--custom]`,
 `run`/`up`/`start`, `stop`/`down`, `check` *(stub — prints only "Check command")*,
 `pack`/`pack-installation` (airgap), `create-manifest`, **`tools`** (embedded k3d +
 kubectl pre-wired to context `k3d-tensorleap`).
@@ -282,15 +296,15 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
 `--config` or `TL_CLI_CONFIG_FILE`).
 
 **Commands relevant to QA:**
-- `leap auth login [url] -k <apiKey>` (or `-u/-p`), `auth logout/select/whoami/licence`.
+- `leap auth login [url] -k <apiKey>` (or `-u/-p`), `auth logout/select/whoami/license`.
 - `leap push` — the central command: reads `leap.yaml`, bundles code into a tar.gz,
   parses it + imports/validates the model; flags `-n/--name`,
   `--type [JSON_TF2/ONNX/PB_TF2/H5_TF2]`, `--branch`, `--secretId`,
   `-m/--model-path`, `-e/--eval`, `-b/--batch <n|latest>` (needs `--eval`),
   **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz}`
   (implies `--eval`), `--no-wait`, `--novis`, `--yes`.
-- `leap projects {create,list,select,info,delete,copy,export,import,publish,push,set-secret}`.
-- `leap run {list,logs <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
+- `leap projects {create,init,list,select,info,delete,copy,export,import,publish,push,set-secret}`.
+- `leap run {list,logs <runId>,info <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
 - `leap server …` — cluster lifecycle + embedded `kubectl`/`k3d`.
 
 > There is **no** `leap dataset` command and **no** `leap_mapping.yaml`. The
@@ -311,6 +325,6 @@ Encoder contract: `(idx, preprocess: PreprocessResponse) -> np.ndarray` of dtype
 runs the whole binder locally — the cheapest pre-push validation a QA engineer can run.
 
 Enums: `LeapDataType {Image,Text,Graph,HorizontalBar,ImageMask,TextMask,
-ImageWithBBox,ImageWithHeatmap,Video}`; `MetricDirection {Upward,Downward}`;
+ImageWithBBox,ImageWithHeatmap,Video,Audio}`; `MetricDirection {Upward,Downward}`;
 `DataStateType {training,validation,test,unlabeled,additional}`;
 `DatasetMetadataType {float,string,int,boolean}`.

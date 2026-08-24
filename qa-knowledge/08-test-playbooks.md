@@ -140,7 +140,8 @@ and re-evaluate produces a fresh FINISHED job whose metrics show in the dashboar
 ## Playbook 6 — Job control (stop / terminate)
 
 **Action:** start a long Evaluate, then **Stop** (graceful) or **Terminate** (hard)
-from the UI / `leap run`.
+from the UI. (`leap run` only inspects — `list`/`logs`/`info`; the CLI terminates a
+job only via the concurrent-evaluate-limit picker on `leap push -e`.)
 
 | Step | Back-end | Front-end |
 |---|---|---|

@@ -31,7 +31,7 @@ the rules here matter.
 | Tests | `tests-panel-button`, `test-list`, `create-new-test-button` |
 | Issues | `issues-panel-button`, `create-new-issue-button` |
 | Collections | `collections-panel-button` |
-| Misc | `hub-gallery`, `import-project-dialog`, `recent-projects-table-id`, `run-and-processes-table-id` |
+| Misc | `import-project-dialog`, `recent-projects-table-id`, `run-and-processes-table-id` |
 
 > **Collection sample-viewer grid:** clicking a collection's **view**/grid icon opens
 > a sample grid with its own load path (per-collection ES index → cursor pages →
@@ -40,7 +40,7 @@ the rules here matter.
 
 ### `aria-label` selectors (version control)
 `Make this the active version`, `Different evaluation generation`,
-`Expand experiment` / `Collapse experiment`. (~25 files use `aria-label`.)
+`Expand experiment` / `Collapse experiment`. (~35 files use `aria-label`.)
 
 ### MUI DataGridPro (dashlet tables, projects table, running dialog)
 Target `.MuiDataGrid-row`, `[role="row"]`, `[data-rowindex]`, `[data-field]`,
@@ -57,14 +57,14 @@ Target `.MuiDataGrid-row`, `[role="row"]`, `[data-rowindex]`, `[data-field]`,
 
 ## URL / navigation assertions
 
-In-project state is **query-param driven**, not nested paths. Verify navigation by
-reading params, not the path:
+In-project state is mostly **query-param driven** (the drawer panel is the one
+nested-path exception). Verify navigation by reading params:
 
 | Param | Meaning |
 |---|---|
 | `/project/<projectCid>` | the project |
 | `?dashboard=<cid>` | the selected dashboard |
-| `?panel=<DrawerTab>` | the open drawer (Tests/Insights/Issues/Collections) |
+| `.../panel/<tab>` | the open drawer — a **path segment**, not a query param (`tab` ∈ `insights`/`issues`/`tests`/`collections`, `URLS_ENUM.PANEL` in `src/url/url-builder.ts`) |
 | `?selected-version=<id>` | the selected model version |
 | `?state=…` / `?dashstate=…` | serialized UI state digests |
 
@@ -101,7 +101,7 @@ A dashlet passes through layered states. Decide pass/fail by combining a
 
 | Text | Source stage | What it means |
 |---|---|---|
-| `Loading...` | dashletFields | still loading (transient) |
+| `CircularProgress` spinner (no text) | dashletFields (`ChartLoading`) | still loading (transient; `Loading...` text appears only in sample-vis displays) |
 | `Sorry, there was an error fetching the visualization's config` | dashletFields | config fetch failed (ES mapping/down) — **error** |
 | `Training/Evaluation process is required to visualize data` | dashletFields | no aggregatable/numeric fields — pre-data |
 | `Select a version to see data.` | Analytics dashlet | no model version selected — user state |

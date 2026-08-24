@@ -4,11 +4,11 @@ The commands a senior QA engineer runs to observe a live Tensorleap install. All
 examples target namespace **`tensorleap`** and context **`k3d-tensorleap`**.
 
 > **kubectl without a separate install:** the `leap` binary bundles one —
-> `leap server tools <kubectl args>` (pre-wired to `k3d-tensorleap`), and
+> `leap server tools kubectl <args>` (pre-wired to `k3d-tensorleap`), and
 > `leap server tools k3d ...` for the k3d CLI. If you have your own `kubectl`,
 > add `--context k3d-tensorleap -n tensorleap`. The examples below use plain
-> `kubectl -n tensorleap`; substitute `leap server tools` if no kubeconfig is
-> merged.
+> `kubectl -n tensorleap`; substitute `leap server tools kubectl` if no
+> kubeconfig is merged.
 
 ---
 
@@ -81,7 +81,7 @@ kubectl -n tensorleap port-forward svc/tensorleap-node-server 4000:80   # REST /
 kubectl -n tensorleap port-forward svc/tl-elasticsearch-es-master 9200:9200
 kubectl -n tensorleap port-forward svc/mongodb 27017:27017
 kubectl -n tensorleap port-forward svc/rabbitmq 15672:15672             # mgmt UI (guest/guest)
-kubectl -n tensorleap port-forward svc/tensorleap-minio 9001:9001       # console
+kubectl -n tensorleap port-forward deploy/tensorleap-minio 9001:9001    # console (svc exposes only 9000)
 ```
 
 The app itself is reachable at **http://localhost:4589** (host port → ingress).
@@ -184,7 +184,7 @@ Interpretation:
 
 ```bash
 # Console UI
-kubectl -n tensorleap port-forward svc/tensorleap-minio 9001:9001   # creds foobarbaz / foobarbazqux
+kubectl -n tensorleap port-forward deploy/tensorleap-minio 9001:9001   # creds foobarbaz / foobarbazqux
 
 # CLI via mc inside the pod (or your own mc against the port-forward)
 kubectl -n tensorleap exec -it deploy/tensorleap-minio -- sh
