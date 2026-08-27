@@ -7,7 +7,7 @@ import (
 
 // When upgrading major number(the middle digit) it will require reinstall
 
-const Version = "v0.10.16"
+const Version = "v0.10.17"
 
 func IsMinorVersionSmaller(currentVersion, comperedVersion string) bool {
 
