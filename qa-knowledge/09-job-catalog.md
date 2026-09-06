@@ -51,8 +51,8 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 | Fetch Similar | `SLIM_LS` | `WorkerSlimLSOps.create_cluster_filter` | `fetch-similar-<jobId>` | bucket `vis/<vis_artifact_id>/fetch_similar/<digest>/cluster.json` | filter chip + highlight in `#population-exploration-circles` |
 | Generate Insights | `SLIM_LS` | `WorkerSlimLSOps.insights_calculation` | `generate-insights-<jobId>` | mongo `insights` + `versions.resources.csv_blob_path`; reads ES `es_metrics_index` | `#insight-card` under `#insights-list` |
 | Dataset Balancing | `SLIM_LS` | `WorkerSlimLSOps.dataset_balancing` | `dataset-balancing-<jobId>` | mongo `datasetbalancing`; bucket `digest_<d>/dataset_balancing/*` | row in DS Curation → PRUNING tab grid |
-| Synthetic Data Generation (manual) | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` | row in DS Curation → SYNTHETIC tab grid |
-| Synthetic Data Generation (auto) | `SYNTHETIC` | `WorkerSyntheticJob` | `synthetic-data-generation-<jobId>` (same subType label as manual) | mongo `syntheticdata` (shared collection with manual) | row in DS Curation → SYNTHETIC tab grid |
+| Synthetic Data Generation (manual) | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` + `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
+| Synthetic Data Generation (auto) | `SYNTHETIC` | `WorkerSyntheticJob` | `synthetic-data-generation-<jobId>` (same subType label as manual) | mongo `syntheticdata` (shared collection with manual); bucket `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
 | Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → UNLABELED tab grid |
 | Splitting | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `splitting-<jobId>` | mongo `datasetsplitting`; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | row in DS Curation → SPLITTING tab grid |
 | Push | `PUSH` | `WorkerPush` (CodeParser+ImportModel+ValidateAssets) | `push-<jobId>` | mongo `codesnapshots`,`versions`,`models`; bucket model artifacts | Version Control state PUSHING→PUSHED |
@@ -129,7 +129,7 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
 | endpoint | `/datasetcuration/generateDatasetBalancing` | `/datasetcuration/generateSyntheticData` | `/datasetcuration/generateLabels` |
 | `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
-| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
+| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
 | UI tab | PRUNING | SYNTHETIC | UNLABELED |
 | validation block | no model / no dashboard / no pop-exp dashlet | "Target is empty" / "No sources added" | "No model selected" |
 
@@ -168,7 +168,7 @@ groups samples by `keep_together_metadata`, stratifies across `split_across_meta
 ## PUSH and its phases
 
 ### Push  (`PUSH` / `WorkerPush`)
-- **Trigger:** primarily the **`leap push`** CLI (also code-integration panel). `POST /versions/push` (new version + model upload) or `POST /versions/pushOverride` (re-push to an existing version, reuses model). Web-ui renders **status only** — there is no primary push button in the SPA.
+- **Trigger:** primarily the **`leap push`** CLI (also code-integration panel). `POST /versions/push` (new version + model upload) or `POST /versions/pushOverride` (re-push to an existing version, reuses model). Web-ui renders **status only** — there is no primary push button in the SPA. CLI note: passing `-n/--name` with no `--overwrite` target now signals intent to create a **new** version and skips the interactive overwrite prompt (`wantsNewVersion` in `leap-cli/cmd/root_cmd/push.go`); it still prompts for `--model-path` if omitted.
 - **Spawns:** redis + generic-process(1, priorityClass `low-medium-priority`), **no** streaming-handler.
 - **Phases inside the one job:** Code Parse (`CodeParser.parse()`) → Import Model (`ImportModel.import_and_validate()`) → Graph Validate (`ValidateAssets`). Job events: `dataset_parse → load_data → parsing_model → convert_to_tensorleap_format → (build/run/testing) `.
 - **Outputs:** mongo `codesnapshots` (`testStatus` = `testSuccess`/`testFail`, parseResult/setup/modelSetup), `versions` (`data`=ModelGraph, `modelHash`, `modelId`), `models`; bucket uploaded model + weights `.h5` + `graph_assets-<uuid>.json` + engine file contract.

@@ -71,7 +71,10 @@ push.
 **Overwrite / sub-version:** `-o/--overwrite <id|name>` targets an existing
 version; `-u/--update {metadata|metric|metric_config|viz}` (implies `--eval`)
 chooses a full re-evaluate vs an update-evaluate-artifact run. (The flag is
-`--overwrite`, **not** `--override`.)
+`--overwrite`, **not** `--override`.) `-n/--name <name>` given **without**
+`-o` always creates a new version and skips the interactive overwrite
+prompt — it no longer offers to overwrite an existing version by matching
+name.
 
 ---
 
