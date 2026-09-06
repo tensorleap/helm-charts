@@ -6,7 +6,7 @@
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "3a4f3072ea9323acba959d7990f71772661bef24"
+      "built_from_sha": "7c6fd16661dea7727de136217a1ef28744de6870"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
@@ -18,13 +18,13 @@
       "remote": "git@github.com:tensorleap/node-server.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "afa8848789b5ebf67aaba247edbcc0e1f8f74613"
+      "built_from_sha": "9f1ef94b271c87bc51f955da9649cbc02a5190b5"
     },
     "web-ui": {
       "remote": "git@github.com:tensorleap/web-ui.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "2c66889b362b1655c836d483666b06bf0d3fcf87"
+      "built_from_sha": "7d9870479601d337b5178b41b5afb70a54928fdf"
     },
     "leap-cli": {
       "remote": "git@github.com:tensorleap/leap-cli.git",
