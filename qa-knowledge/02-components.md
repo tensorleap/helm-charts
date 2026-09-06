@@ -109,6 +109,9 @@ downed dependency marks the pod unready without restart-looping it.
 - `/insights`, `/insightsSettings`, `/datasetcuration`, `/sample-collection`,
   `/sessions-tests`, `/issues`, `/notifications`, `/teams`, `/users`, `/settings`,
   `/secret-manager`, `/metadata`, `/projectstate`, `/monitor/healthCheck` (GET)
+- `/analysis-export` — listTargets, exportAnalysis, getSampleAssets — a
+  versioned public contract (`ANALYSIS_EXPORT_CONTRACT_VERSION`) consumed by
+  the external `tensorleap-analysis` skill, not the web-ui
 
 **Mongo collections** (`db: tensorleap`): `jobs`, `versions`, `projects`, `users`,
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
