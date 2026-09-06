@@ -14,6 +14,12 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-09-06 — manual refresh (web-ui/node-server → master)
+Reviewed: web-ui `2c66889b..7d987047` (2 commits), node-server `afa88487..9f1ef94b` (1 commit); engine, leap-cli, code-loader unchanged (baseline SHA == current `origin/master` HEAD); helm-charts `3a4f3072..7c6fd166` touched only `qa-knowledge/maintenance/**` (the prior KB-update PR) — no manifest-glob match.
+Changed: 09-job-catalog.md — added a bullet under Labeling Recommendation: applying an UNLABELED-tab row as the dashboard top panel (`applyUnlabeledTopPanel`) no longer leaves the Population Exploration dashlet filtered to just the suggested samples like every other dashlet — it now swaps in the recommendation's balanced/`filterFileUrl` cluster blob (`useLabelingPopulationClusterSwap` in `web-ui/src/dashboard/top-panel/useTopPanelState.ts`) so labeled/suggested/not-chosen populations all stay visible together (web-ui #3465).
+Changed: none (node-server) — the only node-server commit in range (#1837) is a pure directory rename `src/analysis-export` → `src/z_analysis-export` (tsoa route-registration ordering fix) plus an api-client regen; the `@Route('analysis-export')` URL path 02-components.md cites is unaffected, and web-ui's matching "fix api client" commit (#3466) only touches Storybook mocks/stories (a new `has_element_instances` mock field) with no behavior change.
+Open gaps: none new.
+
 ## 2026-09-06 — manual refresh (all repos → master; no drift)
 Reviewed: helm-charts `ea15dbbf..3a4f3072` (8 changed files, all under `qa-knowledge/maintenance/**` and `.claude/skills/update-qa-knowledge/**` from the prior KB-update PRs — none match a manifest glob); engine, node-server, web-ui, leap-cli, code-loader all unchanged (baseline SHA == current `origin/master` HEAD).
 Changed: none — no doc depends on the helm-charts paths that changed (docs/skill-maintenance files only, no `charts/`, `pkg/`, `cmd/`, or `images.txt` touched).

@@ -137,6 +137,15 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
   the bucket + a new row in the tab's DataGridPro. **Note:** a job can be FINISHED
   while the output file is absent (e.g. optimizer produced no trials) → the UI row
   shows no download. Don't treat FINISHED alone as success — check the bucket file.
+- **Labeling Recommendation → "Apply as dashboard top panel":** each UNLABELED-tab
+  row can mint a dashboard top panel from its `suggestedClusterFileUrl` (needs
+  `statsFileUrl` too) via `applyUnlabeledTopPanel` (web-ui `UnlabeledTabContent.tsx`).
+  While that panel is open, the Population Exploration dashlet no longer just
+  filters down to the suggested samples — it swaps its cluster filter to the
+  recommendation's balanced/`filterFileUrl` blob so the dashlet keeps showing the
+  labeled, suggested, and not-chosen populations together (`useLabelingPopulationClusterSwap`
+  in `web-ui/src/dashboard/top-panel/useTopPanelState.ts`); every other dashlet is
+  still filtered to just the suggested samples.
 - **⚠️ Synthetic confusion:** the SYNTHETIC tab now has **two modes**, both labeled
   `subType='Synthetic Data Generation'` (same k8s job name, same `syntheticdata`
   mongo collection):
