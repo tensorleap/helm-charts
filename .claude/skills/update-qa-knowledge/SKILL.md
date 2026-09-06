@@ -50,9 +50,17 @@ In short, per that prompt:
 - Make the doc edits on a **new kebab-case branch** `qa-kb-update-<helm-charts-short-sha>`
   (never `/` in the branch name).
 - Commit (`docs(qa-knowledge): refresh KB against latest masters`), push, and open a
-  **PR** for review with `gh pr create`. Do **not** commit to `master`.
-- Print a concise summary: impacted docs, what changed, and any open gaps a human
-  should resolve.
+  **PR** with `gh pr create`. Do **not** commit to `master` directly.
+- **Auto-merge the PR** immediately after opening it (decision 2026-09-06: the KB is a
+  docs-only generated artifact, like the quality repo's committed run reports — it
+  doesn't need to wait for human review, and the nightly loop's retro should read an
+  already-landed KB):
+  `gh pr merge <pr-url> --squash --delete-branch` — and if that fails because required
+  checks are still pending, fall back to `gh pr merge <pr-url> --squash --delete-branch --auto`.
+  If the merge fails for any other reason, leave the PR open and say so in the summary
+  rather than retrying destructively.
+- Print a concise summary: impacted docs, what changed, whether the PR merged, and any
+  open gaps a human should resolve.
 - If nothing drifted, say so and skip the PR (optionally bump `last_verified` and add
   a "no drift detected" GAPS entry).
 
