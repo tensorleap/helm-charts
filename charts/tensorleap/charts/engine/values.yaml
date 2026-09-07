@@ -1,4 +1,4 @@
-image_tag: 1.6.74-36fb1a2c
+image_tag: 1.6.74-9223b825
 image_name: public.ecr.aws/tensorleap/engine
 redis_image: docker.io/library/redis:8.6-alpine
 entry_point: generic_processor
