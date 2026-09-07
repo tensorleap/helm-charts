@@ -129,7 +129,7 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
 | endpoint | `/datasetcuration/generateDatasetBalancing` | `/datasetcuration/generateSyntheticData` | `/datasetcuration/generateLabels` |
 | `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
-| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
+| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` + `dataset_balancing_stats.json` (node-server checks for/exposes it as `statsFileUrl`; ⚠️ engine `master` doesn't write this file yet — see gotcha below) | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
 | UI tab | PRUNING | SYNTHETIC | UNLABELED |
 | validation block | no model / no dashboard / no pop-exp dashlet | "Target is empty" / "No sources added" | "No model selected" |
 
@@ -146,6 +146,20 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
   labeled, suggested, and not-chosen populations together (`useLabelingPopulationClusterSwap`
   in `web-ui/src/dashboard/top-panel/useTopPanelState.ts`); every other dashlet is
   still filtered to just the suggested samples.
+- **Dataset Balancing → "Apply as dashboard top panel":** same pattern on the
+  PRUNING tab — a row with both `statsFileUrl` and `filterFileUrl` shows an
+  "Apply as dashboard top panel" action (`handleApplyTopPanelClick` in web-ui
+  `BalancingTabContent.tsx`) that mounts a 4th top-panel kind (`kind: 'pruning'`,
+  `applyPruningTopPanel` in `DashboardContext.tsx`) rendering the coverage curve
+  / kept-vs-pruned metadata distribution from the stats blob
+  (`PruningTopPanel.tsx`), replaces the dashboard's global filters with the
+  run's training-split cluster filter, and joins the run's version to the
+  dashboard's selection — same one-batched-write shape as `applyDomainGapTopPanel`.
+  **⚠️ Currently dormant:** `statsFileUrl` is only set once the bucket has
+  `dataset_balancing_stats.json`, which engine `master` doesn't produce yet
+  (in progress on a separate branch) — so today every PRUNING row only has
+  `filterFileUrl`, and the row falls back to the pre-existing "Apply filter to
+  Population Exploration" action instead. Re-check once the engine side ships.
 - **⚠️ Synthetic confusion:** the SYNTHETIC tab now has **two modes**, both labeled
   `subType='Synthetic Data Generation'` (same k8s job name, same `syntheticdata`
   mongo collection):
