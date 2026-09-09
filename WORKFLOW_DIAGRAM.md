@@ -8,7 +8,7 @@ This document describes all GitHub Actions workflows and reusable actions in the
 
 ### Main Release Workflows
 - **`release_candidate.yml`** - Creates RC branch, bumps version, releases charts and RC manifest
-- **`release_production.yml`** - Removes RC suffix, releases charts, releases production manifest, generates release notes, notifies Slack
+- **`release_production.yml`** - Removes RC suffix, pins image tags to the release version, releases charts, releases production manifest, generates release notes, notifies Slack
 - **`patch.yml`** - Manual patch workflow: Bumps the patch version (or only the RC suffix when `bump` is unchecked), releases charts and manifest
 
 ### Supporting Workflows
@@ -108,7 +108,12 @@ This document describes all GitHub Actions workflows and reusable actions in the
 **Purpose:** Release production version of charts and manifest.
 
 **Triggers:**
-- `workflow_dispatch` (manual) - Run from RC branch OR master
+- `workflow_dispatch` (manual) - Run from an RC/patch branch (`X.X.X`)
+
+> Releasing from `master` no longer works: the image tags on master carry the
+> `master-` prefix and there is no matching `X.X.X-<sha>` image in ECR, so the
+> tag-pinning step fails the run. Cut a branch with `release_candidate.yml`
+> (or `patch.yml`) and release from it.
 
 **Flow:**
 
@@ -125,9 +130,12 @@ This document describes all GitHub Actions workflows and reusable actions in the
 │   ├─ Checkout repository                                        │
 │   ├─ Configure Git identity                                     │
 │   ├─ Remove -rc.x suffix (make remove-rc-suffix)                │
-│   │   └─ From RC: X.X.X-rc.0 → X.X.X                           │
-│   │   └─ From master: no change (no -rc suffix)                │
+│   │   └─ X.X.X-rc.0 → X.X.X                                    │
 │   ├─ Get chart version                                          │
+│   ├─ Pin image tags to the release version                      │
+│   │   └─ master-<sha> → X.X.X-<sha> (engine, engine-generic,   │
+│   │      node-server, web-ui); pippin stays on master-<sha>     │
+│   │   └─ Fails if the version-prefixed tag is not in ECR        │
 │   ├─ Set up Helm                                                │
 │   ├─ Extract image names (make build-helm, make update-images)  │
 │   ├─ Commit version changes                                     │
