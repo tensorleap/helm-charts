@@ -109,21 +109,28 @@ tag_exists() {
 # at it. A missing tag means the version branch in that repo was never built at
 # this commit - run the Patch workflow on the branch and release from that.
 require_tag() {
-  local repo="$1" old="$2" new="$3"
-  if [ "$old" = "$new" ]; then
-    echo "  = ${repo}:${new} already version-pinned"
-    return
-  fi
+  local repo="$1" old="$2" new="$3" label="+"
+  # Verify even when the prefix already matches. The Patch workflow pins the
+  # branch HEAD's sha without waiting for that commit's image to be built, so
+  # an already-version-prefixed tag is not proof that the image exists - branch
+  # 1.6.62 pins web-ui:1.6.62-93000e5b, which was never published.
+  [ "$old" = "$new" ] && label="="
   if tag_exists "$repo" "$new"; then
-    echo "  + ${repo}:${old} -> ${new}"
+    if [ "$label" = "=" ]; then
+      echo "  = ${repo}:${new} already version-pinned"
+    else
+      echo "  + ${repo}:${old} -> ${new}"
+    fi
   else
     die "public.ecr.aws/${REGISTRY_PATH}/${repo}:${new} is not published.
-   The release currently pins '${old}'. That commit was never built under the
-   '${VERSION}' prefix, so there is no version-numbered image to point at.
-   Usually this means the release is being cut from master rather than from
-   version branch ${VERSION}, or the ${repo} repo has no ${VERSION} branch.
-   Fix: release from branch ${VERSION}, or run the Patch workflow on it first
-   (that cuts the external branches and repins from their builds)."
+   The release pins '${old}' in ${repo}, and no image exists for that commit
+   under the '${VERSION}' prefix, so there is nothing to release.
+   Most often the ${repo} CI run for branch ${VERSION} failed, so it never
+   pushed the image - check it and re-run:
+     https://github.com/tensorleap/${repo}/actions?query=branch%3A${VERSION}
+   Other causes: the release is being cut from master instead of from branch
+   ${VERSION}, or branch ${VERSION} in ${repo} sits on a different commit than
+   the charts pin (run the Patch workflow on ${VERSION} to repin to its head)."
   fi
 }
 
