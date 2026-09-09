@@ -117,7 +117,8 @@ downed dependency marks the pod unready without restart-looping it.
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
 `insightsSettings`, `insightContainerLabels`, `models`, `codesnapshots`,
 `exportedmodels`, `samplecollection`, `secretmanager`, `generatedLabels`,
-`syntheticdata`, `datasetbalancing`, `datasetsplitting`, `domaingap`, `issues`,
+`syntheticdata`, `datasetbalancing`, `datasetsplitting`, `domaingap`,
+`unlabeledanalysis`, `issues`,
 `tests`, `externalepochdata`, `projectstate`, `system_settings`,
 `system_metadata`, `db_metadata`.
 
@@ -304,8 +305,9 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
   parses it + imports/validates the model; flags `-n/--name`,
   `--type [JSON_TF2/ONNX/PB_TF2/H5_TF2]`, `--branch`, `--secretId`,
   `-m/--model-path`, `-e/--eval`, `-b/--batch <n|latest>` (needs `--eval`),
-  **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz}`
-  (implies `--eval`), `--no-wait`, `--novis`, `--yes`.
+  **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples}`
+  (implies `--eval`; `samples` evaluates only newly added samples and skips the
+  run-eval prompt), `--no-wait`, `--novis`, `--yes`.
 - `leap projects {create,init,list,select,info,delete,copy,export,import,publish,push,set-secret}`.
 - `leap run {list,logs <runId>,info <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
 - `leap server …` — cluster lifecycle + embedded `kubectl`/`k3d`.

@@ -21,8 +21,8 @@ same list — this is the #1 source of confusion.
 ### node-server JobSubType (UI / `leap run list`)
 `Evaluate`, `Update Evaluate`, `Population Exploration`, `Labeling Recommendation`,
 `Synthetic Data Generation`, `Dataset Balancing`, `Splitting`, `Domain Gap`,
-`Visualizers Calculation`, `Sample Analysis`, `Graph Validate`, `Fetch Similar`,
-`Export/Copy/Import Project`, `Code Parse`, `Import Model`, `Push`,
+`Unlabeled Analysis`, `Visualizers Calculation`, `Sample Analysis`, `Graph Validate`,
+`Fetch Similar`, `Export/Copy/Import Project`, `Code Parse`, `Import Model`, `Push`,
 `Generate Insights`, `Streaming Samples Vis`.
 node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT`.
 
@@ -33,7 +33,7 @@ node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT
 | Evaluate | `TRAINING` | `WorkerTrainer.evaluate()` | `evaluate-<jobId>` |
 | Update Evaluate | `TRAINING` | `WorkerTrainer` (update artifact) | `update-evaluate-<jobId>` |
 | Sample Analysis / Visualizers Calculation / Domain Gap | `ANALYZE` | `WorkerAnalyzer` | `sample-analysis-<jobId>` / `visualizers-calculation-<jobId>` / `domain-gap-<jobId>` |
-| Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual; auto = `SYNTHETIC`), Labeling Recommendation, Splitting | `SLIM_LS` | `WorkerSlimLSOps` | `<subtype>-<jobId>` (single `SLIM` pod) |
+| Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual; auto = `SYNTHETIC`), Labeling Recommendation, Splitting, Unlabeled Analysis | `SLIM_LS` | `WorkerSlimLSOps` | `<subtype>-<jobId>` (single `SLIM` pod) |
 | Push (incl. Code Parse + Import Model + Graph Validate phases) | `PUSH` | `WorkerPush` (`CodeParser` → `ImportModel` → `ValidateAssets`) | `push-<jobId>` |
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` |
@@ -55,7 +55,7 @@ node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT
 |---|---|---|---|
 | `TRAINING` (incl. Evaluate), `ANALYZE`, `SYNTHETIC` (engine type) | ✅ pod+svc | ✅ Deployment (Sample Analysis=1, Visualizers Calc=N) | ✅ Deployment (replicas=1, autoscaled ≤10) |
 | `PUSH`, `EXPORT_MODEL`, `DRY_RUN_GRAPH`, `STREAMING_SAMPLES_VIS` | ✅ | ✅ single pod | ❌ |
-| `SLIM_LS` (Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Splitting) | ❌ | ❌ | ❌ — a **single** `SLIM` pod, no companions |
+| `SLIM_LS` (Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Splitting, Unlabeled Analysis) | ❌ | ❌ | ❌ — a **single** `SLIM` pod, no companions |
 | `ANALYZE_GRAPH` | ❌ | ❌ | ❌ — engine main pod only |
 | `WARMUP` | ❌ | ❌ | ❌ — placeholder GPU Job `engine-warmup-*` |
 | node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | ❌ | ❌ | ❌ — one node-server job pod |
