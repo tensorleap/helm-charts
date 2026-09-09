@@ -47,6 +47,20 @@ jobs:
           echo "Chart version: $CHART_VERSION"
         shell: bash
 
+      # Nothing else in the release path resolves image tags, so a release ships
+      # whatever `image_tag:` its branch inherited - `master-<sha>` unless the
+      # Patch workflow rewrote it. That made `master-*` tags load-bearing for
+      # published releases and impossible to garbage-collect. Rewrite the prefix
+      # to the release version, keeping the sha that is already pinned, and fail
+      # the release if the resulting tag was never published. Runs after
+      # remove-rc-suffix so the version is final, and before update-images so
+      # images.txt and the manifest record the new tags.
+      - name: Pin image tags to the release version
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: ./scripts/pin-release-image-tags.sh
+        shell: bash
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
