@@ -69,12 +69,15 @@ locally first — it runs the binder and raises `… validation failed: …` bef
 push.
 
 **Overwrite / sub-version:** `-o/--overwrite <id|name>` targets an existing
-version; `-u/--update {metadata|metric|metric_config|viz}` (implies `--eval`)
-chooses a full re-evaluate vs an update-evaluate-artifact run. (The flag is
-`--overwrite`, **not** `--override`.) `-n/--name <name>` given **without**
-`-o` always creates a new version and skips the interactive overwrite
-prompt — it no longer offers to overwrite an existing version by matching
-name.
+version; `-u/--update {metadata|metric|metric_config|viz|samples}` (implies
+`--eval`) chooses a full re-evaluate vs an update-evaluate-artifact run.
+`samples` evaluates only the newly added sample ids via continue-evaluate
+(any dataset state; existing ids must stay stable — a shrink is rejected)
+and always runs the evaluation, skipping the "run update-evaluate after
+push?" prompt. (The flag is `--overwrite`, **not** `--override`.) `-n/--name
+<name>` given **without** `-o` always creates a new version and skips the
+interactive overwrite prompt — it no longer offers to overwrite an existing
+version by matching name.
 
 ---
 

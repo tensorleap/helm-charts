@@ -27,12 +27,12 @@ glance what *should* be there:
 | `EXPORT_MODEL` | per-job **redis** + **generic-process (1)**, no streaming-handler | Export Model |
 | `DRY_RUN_GRAPH` | per-job **redis** + **generic-process (1)**, no streaming-handler | Graph Validate |
 | `STREAMING_SAMPLES_VIS` | per-job **redis** + **generic-process (1)**, no streaming-handler | Streaming Samples Vis |
-| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting** |
+| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting, Unlabeled Analysis** |
 | `ANALYZE_GRAPH` | **NOTHING** — engine main pod only | (graph static analysis, a phase of import) |
 | `WARMUP` | a sleep-placeholder GPU **Job** (`engine-warmup-*`) | Warmup |
 | node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | one **node** Job pod (node-server image), no engine pods | Export/Copy/Import Project |
 
-**SLIM_LS is the big one to internalize:** seven different SLIM_LS request types run as a
+**SLIM_LS is the big one to internalize:** eight different SLIM_LS request types run as a
 *single* `SLIM_LS` pod. If you expect `redis-<jobId>`/`generic-process`/`streaming-handler`
 for a Population Exploration or Insights job, you'll think it's broken — there
 won't be any. The defining observable for SLIM_LS is "exactly one engine pod
@@ -53,8 +53,9 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 | Dataset Balancing | `SLIM_LS` | `WorkerSlimLSOps.dataset_balancing` | `dataset-balancing-<jobId>` | mongo `datasetbalancing`; bucket `digest_<d>/dataset_balancing/*` | row in DS Curation → PRUNING tab grid |
 | Synthetic Data Generation (manual) | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` + `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
 | Synthetic Data Generation (auto) | `SYNTHETIC` | `WorkerSyntheticJob` | `synthetic-data-generation-<jobId>` (same subType label as manual) | mongo `syntheticdata` (shared collection with manual); bucket `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
-| Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → UNLABELED tab grid |
+| Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → LABEL NEXT tab grid |
 | Splitting | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `splitting-<jobId>` | mongo `datasetsplitting`; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | row in DS Curation → SPLITTING tab grid |
+| Unlabeled Analysis | `SLIM_LS` | `WorkerSlimLSOps.unlabeled_analysis_task` → `UnlabeledAnalysis.run_unlabeled_analysis` | `unlabeled-analysis-<jobId>` | mongo `unlabeledanalysis`; bucket `vis/<vis_artifact_id>/unlabeled_analysis/<jobId>/stats.json` (analysis_id = jobId, **not** the `digest_<d>` pattern) | row in DS Curation → UNLABELED (`UNLABELED_ANALYSIS` tab value) grid; optional dashboard top panel |
 | Push | `PUSH` | `WorkerPush` (CodeParser+ImportModel+ValidateAssets) | `push-<jobId>` | mongo `codesnapshots`,`versions`,`models`; bucket model artifacts | Version Control state PUSHING→PUSHED |
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` | mongo `exportedmodels`; bucket exported file | exported-models list per version |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` | mongo `versions.graphValidationData` | network-editor markers / push state |
@@ -120,9 +121,15 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 
 ### Dataset Balancing  ·  Synthetic Data Generation  ·  Labeling Recommendation (DS Curation)
 All are launched from the **DS Curation** toolbar button → `DatasetCurationDialog`
-(title "DATASET CURATION LIST"), now five tabs: **UNLABELED** (default) **/ DOMAIN GAP /
-SYNTHETIC / PRUNING / SPLITTING**, via `EvaluationAwareActionButton` (warns if the eval
-is incomplete). Splitting and Domain Gap are covered in their own sections.
+(title "DATASET CURATION LIST"), now six tabs: **LABEL NEXT** (default, tab *value*
+`UNLABELED`) **/ UNLABELED** (tab *value* `UNLABELED_ANALYSIS`, see the Unlabeled
+Analysis section below) **/ DOMAIN GAP / SYNTHETIC / PRUNING / SPLITTING**, via
+`EvaluationAwareActionButton` (warns if the eval is incomplete). Splitting and Domain
+Gap are covered in their own sections. ⚠️ The tab **labels** were reshuffled when
+Unlabeled Analysis was added — the pre-existing tab (value `UNLABELED`, backs Labeling
+Recommendation, component `UnlabeledTabContent.tsx`) is now labeled "LABEL NEXT", and
+the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, component
+`UnlabeledAnalysisTabContent.tsx`). Don't confuse the tab *value* with its *label*.
 
 | | Dataset Balancing | Synthetic Data Generation | Labeling Recommendation |
 |---|---|---|---|
@@ -130,14 +137,14 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
 | `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
 | bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` + `dataset_balancing_stats.json` (node-server checks for/exposes it as `statsFileUrl`; ⚠️ engine `master` doesn't write this file yet — see gotcha below) | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
-| UI tab | PRUNING | SYNTHETIC | UNLABELED |
+| UI tab | PRUNING | SYNTHETIC | LABEL NEXT (tab value `UNLABELED`) |
 | validation block | no model / no dashboard / no pop-exp dashlet | "Target is empty" / "No sources added" | "No model selected" |
 
 - **Success (all):** job FINISHED + entity row present + the output file(s) exist in
   the bucket + a new row in the tab's DataGridPro. **Note:** a job can be FINISHED
   while the output file is absent (e.g. optimizer produced no trials) → the UI row
   shows no download. Don't treat FINISHED alone as success — check the bucket file.
-- **Labeling Recommendation → "Apply as dashboard top panel":** each UNLABELED-tab
+- **Labeling Recommendation → "Apply as dashboard top panel":** each LABEL NEXT-tab
   row can mint a dashboard top panel from its `suggestedClusterFileUrl` (needs
   `statsFileUrl` too) via `applyUnlabeledTopPanel` (web-ui `UnlabeledTabContent.tsx`).
   While that panel is open, the Population Exploration dashlet no longer just
@@ -174,7 +181,7 @@ is incomplete). Splitting and Domain Gap are covered in their own sections.
   Tell them apart by the pod signature / `jobType` label, not the subType.
 
 ### Splitting (resplitting)
-The 7th `SLIM_LS` request type: `slim_request_type=resplitting`, worker
+The 7th of 8 `SLIM_LS` request types: `slim_request_type=resplitting`, worker
 `WorkerSlimLSOps.resplitting`. It re-splits the dataset across train/val/test:
 groups samples by `keep_together_metadata`, stratifies across `split_across_metadata`
 (request `SlimResplittingRequest`, subsets mapped to the engine's numeric
@@ -185,6 +192,44 @@ groups samples by `keep_together_metadata`, stratifies across `split_across_meta
 - **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `splitting-<jobId>`.
 - **Outputs:** mongo `datasetsplitting` entity; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` — the CSV is named `<jobUid>.csv` by the engine (uid = job.cid), only the filter filename is fixed.
 - **Success:** job FINISHED + a new row in the SPLITTING tab's DataGridPro.
+
+### Unlabeled Analysis  *(new SLIM_LS subtype)*
+An 8th `SLIM_LS` request type: `slim_request_type=unlabeled_analysis`
+(`SlimRequestTypeEnum.unlabeled_analysis`, `engine/src_tensorleap/contract/workerslimlsops/request/slimlsopsrequest.py`),
+dispatched to `WorkerSlimLSOps.unlabeled_analysis_task` → `UnlabeledAnalysis.run_unlabeled_analysis`
+(`engine/src_tensorleap/workers/workerslimlsops/workerslimlsops.py`,
+`engine/src_tensorleap/trainer/ds_curation/unlabeled_analysis.py`). It triages a filtered unlabeled
+population against three questions: out-of-distribution clusters, similarity to known
+low-performance "aggressor" clusters, and a per-sample trust/confidence score
+(`engine/src_tensorleap/contract/workerslimlsops/response/unlabeledanalysisstats.py`).
+- **Trigger:** DS Curation dialog's **UNLABELED** tab (tab *value* `UNLABELED_ANALYSIS`, distinct
+  from the older `UNLABELED` tab which is now labeled "LABEL NEXT" and still backs Labeling
+  Recommendation) → `POST /datasetcuration/generateUnlabeledAnalysis` `{projectId, versionId,
+  filters?, latentSpaceType?, elementInstance?}` (`node-server/src/dataset-curation/controller.ts`,
+  `logic.ts: generateUnlabeledAnalysis`); `subType='Unlabeled Analysis'`, `preferCpu=true`. The
+  request also carries `aggressors` (the version's current low-performance insight refs, via
+  `getAggressorRefs`) and `insights_counter` pinned to the live revision.
+- **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `unlabeled-analysis-<jobId>`.
+- **Outputs:** mongo `unlabeledanalysis` entity (`node-server/src/dataset-curation/db.ts`, collection
+  `unlabeledanalysis`) tracking `hasStatsFile`; bucket `stats.json` written by
+  `UnlabeledAnalysisStore` under `vis/<vis_artifact_id>/unlabeled_analysis/<analysis_id>/`, where
+  `analysis_id` is the job id — unlike Dataset Balancing/Splitting/Labeling this is **not** keyed by
+  `digest_<d>` (it mirrors `DomainGapStore`'s per-run, version-coupled directory instead). Per-sample
+  OOD/trust results are written separately as display metadata (for the Population Exploration
+  scatter), not into `stats.json`.
+- **Success:** job FINISHED + `stats.json` present (`hasStatsFile=true`) + a new row in the UNLABELED
+  tab's DataGridPro.
+- **Apply as dashboard top panel:** a row can mint a top panel via `applyUnlabeledAnalysisTopPanel`
+  (`web-ui/src/dashboard/DashboardContext.tsx`), gated by `useTopPanelUnlabeledAnalysisRecord`
+  (`web-ui/src/dashboard/top-panel/useTopPanelState.ts`) and rendered by
+  `web-ui/src/dashboard/top-panel/UnlabeledAnalysisTopPanel.tsx` — same one-panel-at-a-time pattern
+  as Domain Gap/Pruning's top panels. Uses icon `web-ui/src/ui/icons/ood-cluster-icon.svg`.
+- **Note:** `WorkerSlimLSOps._unlabeled_analysis_request` (`workerslimlsops.py`) still contains a
+  fallback path that re-tags a `synthetic_calibration`-shaped request as `unlabeled_analysis`,
+  described in its docstring as a transitional shim from "before node knows how to send
+  `unlabeled_analysis`". node-server's `generateUnlabeledAnalysis` (`logic.ts`) already sends the
+  real `slimRequestType: 'unlabeled_analysis'`, so that fallback should be dead in practice — worth
+  a live-cluster spot-check if this job ever appears to run with an empty/wrong request shape.
 
 ---
 
