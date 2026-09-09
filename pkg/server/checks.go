@@ -44,13 +44,11 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 		return true, nil
 	}
 
-	// make sure cluster is running before checking if it needs to be reinstalled (for helm checking)
-	err = k3d.RunCluster(ctx)
-	if err != nil {
-		log.SendCloudReport("warning", "Failed to run cluster, try to recreate", "Running",
-			&map[string]interface{}{"error": err.Error()})
-
-		return true, nil
+	// Downgrade guard, derived from the saved manifest so it needs no running
+	// cluster (mirrors the Helm-based check in IsHelmRequiredReinstall).
+	if version.IsMinorVersionChange(previousMnf.ServerHelmChart.Version, mnf.ServerHelmChart.Version) &&
+		version.IsMinorVersionSmaller(previousMnf.InfraHelmChart.Version, mnf.InfraHelmChart.Version) {
+		return false, ErrOldManifest
 	}
 
 	newK3sImage := ""
@@ -68,10 +66,6 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 		currentK3sImage = previousMnf.Images.K3sGpu
 	}
 
-	isChartsRequiredReinstall, err := IsHelmRequiredReinstall(ctx, mnf, cluster)
-	if err != nil {
-		return false, err
-	}
 	IsK3sImageChange := currentK3sImage != newK3sImage
 	isAppVersionChanged := mnf.AppVersion != previousMnf.AppVersion
 	newSyncRegistries := k3d.BuildZotSyncRegistries(mnf)
@@ -89,12 +83,26 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 			modeString(previousInstallationParams.IsAirgap), modeString(installationParams.IsAirgap))
 	}
 
-	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged || isInstallationModeChanged
-	if shouldReinstall {
+	// These signals come purely from the manifests and installation params, so
+	// they need no running cluster. Decide on them first: an upgrade that is
+	// going to reinstall would otherwise cold-start k3s (which can take several
+	// minutes) via RunCluster below, only for reinstall to tear it right down.
+	if IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged || isInstallationModeChanged {
 		return true, nil
 	}
 
-	return false, nil
+	// No cheap signal decided it — inspect the live Helm releases, which needs
+	// the cluster's API server up. RunCluster also ensures the cluster is
+	// running for the in-place upgrade that follows when no reinstall is needed.
+	log.Info("Checking existing installation state (starting cluster if stopped, this can take a few minutes)...")
+	if err := k3d.RunCluster(ctx); err != nil {
+		log.SendCloudReport("warning", "Failed to run cluster, try to recreate", "Running",
+			&map[string]interface{}{"error": err.Error()})
+
+		return true, nil
+	}
+
+	return IsHelmRequiredReinstall(ctx, mnf, cluster)
 }
 
 func IsHelmRequiredReinstall(ctx context.Context, mnf *manifest.InstallationManifest, cluster *k3d.Cluster) (bool, error) {
