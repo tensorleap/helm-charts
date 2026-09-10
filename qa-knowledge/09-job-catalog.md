@@ -167,6 +167,21 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
   (in progress on a separate branch) — so today every PRUNING row only has
   `filterFileUrl`, and the row falls back to the pre-existing "Apply filter to
   Population Exploration" action instead. Re-check once the engine side ships.
+- **Synthetic Data Generation → "Apply as dashboard top panel":** same pattern on
+  the SYNTHETIC tab — a row with both `filterFileUrl` and `statsFileUrl` (cast as
+  `SyntheticDataWithStats` in web-ui, since `@tensorleap/api-client` hasn't
+  regenerated the field yet) shows an "Apply as dashboard top panel" action
+  (`handleApplyTopPanelClick` in web-ui `SyntheticTabContent.tsx`) instead of the
+  older "Apply filter to Population Exploration" button; a row with only
+  `filterFileUrl` still gets the older button. Applying mounts a 5th top-panel
+  kind (`kind: 'synthetic'`, `applySyntheticTopPanel` in `DashboardContext.tsx`,
+  gated by `useTopPanelSyntheticRecord` in `useTopPanelState.ts`) rendering the
+  MMD-convergence trial curve / simulation mix / recipe params from the
+  `synthetic_top_panel.json` stats blob (`SyntheticTopPanel.tsx`), replaces the
+  dashboard's global filters with the job's real-vs-synthetic cluster filter, and
+  joins the job's version to the dashboard's selection — same
+  one-batched-write shape as `applyDomainGapTopPanel`. Switching version/filters
+  is confirmed first if it would drop existing dashboard state.
 - **⚠️ Synthetic confusion:** the SYNTHETIC tab now has **two modes**, both labeled
   `subType='Synthetic Data Generation'` (same k8s job name, same `syntheticdata`
   mongo collection):
