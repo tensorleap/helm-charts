@@ -1,12 +1,12 @@
 {
   "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
-  "last_verified_utc": "2026-09-10",
+  "last_verified_utc": "2026-09-11",
   "repos": {
     "helm-charts": {
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "4aa78f5ae1999b5eb67a8817ef24ca648ba595fc"
+      "built_from_sha": "5f20c6644f0ecb62a23e30bd3b3a2ab5f98c0b30"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
