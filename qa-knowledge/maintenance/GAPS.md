@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-09-12 — manual refresh (all repos → master; no drift)
+Reviewed: helm-charts `5f20c664..4843cacd` (2 changed files, both under `qa-knowledge/maintenance/**` from the prior KB-update PR — no manifest-glob match); engine, node-server, web-ui, leap-cli, code-loader all unchanged (baseline SHA == current `origin/master` HEAD).
+Changed: none — no doc depends on the helm-charts paths that changed (docs-only, no `charts/`, `pkg/`, `cmd/`, or `images.txt` touched); the other 5 repos had zero commits since their last-verified baseline.
+Open gaps: none new. (1) carried from 2026-09-09: `WorkerSlimLSOps._unlabeled_analysis_request` transitional shim, worth a live-cluster spot-check. (2) carried: engine SaaS-only FSx PVC mount, out of KB scope. (3) carried: pruning top-panel stats file (`dataset_balancing_stats.json`) still not produced by engine master — re-verify once merged. (4) carried from 2026-08-31: `editor-file-name-row`/`editor-rename-file-input` dead test-ids in 06-ui-inspection.md; node-server job-history page-size 100 unreferenced by any doc. helm-charts baseline bumped to `4843cacd`; other 5 repos unchanged so their baselines were left as-is.
+
 ## 2026-09-11 — manual refresh (all repos → master; no drift)
 Reviewed: helm-charts `4aa78f5a..5f20c664` (3 changed files, all under `qa-knowledge/**` from the prior KB-update PR — no manifest-glob match); engine, node-server, web-ui, leap-cli, code-loader all unchanged (baseline SHA == current `origin/master` HEAD).
 Changed: none — no doc depends on the helm-charts paths that changed (docs-only, no `charts/`, `pkg/`, `cmd/`, or `images.txt` touched); the other 5 repos had zero commits since their last-verified baseline.
