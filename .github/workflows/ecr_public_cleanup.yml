@@ -1,0 +1,137 @@
+name: ECR Public Cleanup
+
+# Deletes images from public.ecr.aws/tensorleap on request. ECR Public has no
+# lifecycle policies, so this is the only way images ever leave the registry.
+# The logic lives in scripts/ecr-public-cleanup.py; this workflow only wires
+# inputs, credentials and reporting around it. Dry run is the default: a real
+# deletion needs dry_run unchecked AND the exact confirm phrase.
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "'all' = engine, engine-generic, node-server, web-ui | or a comma-separated subset of those four. No other repository can be cleaned."
+        required: false
+        default: "all"
+      classes:
+        description: "Comma-separated classes to delete: feature, untagged, master. Version images (tags like 1.6.72-...) are never deletable. master must be added explicitly."
+        required: false
+        default: "feature,untagged"
+      older_than_days:
+        description: "Only images pushed at least this many days ago. 0 = any age."
+        required: false
+        default: "90"
+      dry_run:
+        description: "checked = plan only: list what would be deleted, delete nothing | unchecked = really delete (requires confirm)"
+        required: false
+        type: boolean
+        default: true
+      confirm:
+        description: "Type exactly DELETE FROM PUBLIC ECR to allow a real deletion. Ignored when dry_run is checked."
+        required: false
+        default: ""
+      protect_chart_pins:
+        description: "checked = never delete the tags pinned by *-latest-image on master (plus their engine-generic variants) | unchecked = no protection beyond version tags"
+        required: false
+        type: boolean
+        default: true
+
+# Two overlapping runs would race on the same digests; queue them instead.
+concurrency:
+  group: ecr-public-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    env:
+      REPOS: ${{ inputs.repos }}
+      CLASSES: ${{ inputs.classes }}
+      OLDER_THAN_DAYS: ${{ inputs.older_than_days }}
+      DRY_RUN_INPUT: ${{ inputs.dry_run }}
+      CONFIRM: ${{ inputs.confirm }}
+      OUT_DIR: ecr-public-cleanup-out
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN_INPUT" = "true" ]; then
+            echo "🧪 DRY RUN: listing only, nothing will be deleted"
+          elif [ "$CONFIRM" = "DELETE FROM PUBLIC ECR" ]; then
+            echo "🔥 REAL DELETION requested by ${{ github.actor }}: repos=$REPOS classes=$CLASSES older_than_days=$OLDER_THAN_DAYS"
+          else
+            echo "❌ dry_run is unchecked but confirm is not exactly 'DELETE FROM PUBLIC ECR'; refusing to delete" >&2
+            exit 1
+          fi
+
+      # Same static key release_airgap_pack.yml uses: IAM user "helm-charts" in the
+      # utils account (aws-env terraform/global/helm-charts-iam.tf), which owns the
+      # public registry. To move to OIDC later: add `id-token: write` under
+      # permissions and replace the two key inputs with
+      # `role-to-assume: arn:aws:iam::170591776583:role/<role>`.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # The chart on master pins one master-<sha> tag per component. Deleting those
+      # would break `leap server install` for everyone, so turn them into keep globs
+      # that also cover the -amd64/-arm64/-stable and engine-generic -py3x variants.
+      # (pippin is pinned too, but this workflow never touches the pippin repo.)
+      - name: Build keep-file from chart pins
+        if: ${{ inputs.protect_chart_pins }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > keep.txt
+          for repo in engine node-server web-ui; do
+            ref="$(cat "${repo}-latest-image")"
+            tag="${ref##*:}"
+            echo "${repo}:${tag}*" >> keep.txt
+            if [ "$repo" = "engine" ]; then
+              echo "engine-generic:${tag}*" >> keep.txt
+            fi
+          done
+          echo "🔒 protecting chart pins:"
+          cat keep.txt
+
+      - name: Run cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--repos "$REPOS" --classes "$CLASSES" --older-than-days "$OLDER_THAN_DAYS" --out "$OUT_DIR")
+          if [ -f keep.txt ]; then
+            args+=(--keep-file keep.txt)
+          fi
+          if [ "$DRY_RUN_INPUT" != "true" ]; then
+            args+=(--no-dry-run --confirm "$CONFIRM")
+          fi
+          python3 scripts/ecr-public-cleanup.py "${args[@]}"
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$OUT_DIR/summary.md" ]; then
+            cat "$OUT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No summary produced (the run failed before scanning)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecr-public-cleanup-${{ github.run_id }}
+          path: ${{ env.OUT_DIR }}/
+          retention-days: 90
+          if-no-files-found: ignore

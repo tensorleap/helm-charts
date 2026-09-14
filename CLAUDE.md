@@ -23,6 +23,7 @@ make update-images    # regenerate images.txt
 make test             # go test ./...
 make lint             # golangci-lint
 go run . install --local   # run installer against local charts
+AWS_PROFILE=utils make ecr-public-cleanup ARGS="--help"   # delete images from public ECR on request (dry-run by default)
 ```
 
 ## Versioning
