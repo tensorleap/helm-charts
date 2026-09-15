@@ -20,6 +20,14 @@ rules:
     verbs:
       - list
       - get
+  # kubectl describe (job log bundles) lists events; without this it prints "Events: <none>"
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - list
+      - get
   - apiGroups:
       - ''
     resources:
