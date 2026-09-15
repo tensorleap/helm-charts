@@ -7,7 +7,8 @@ branch build that CI pushes to public.ecr.aws/tensorleap stays until something
 deletes it. This script is that something: it lists a repository, classifies
 every image by its tags, and expires the classes you ask for once they are at
 least N days old. Only engine, engine-generic, node-server and web-ui can be
-cleaned; `--repos all` (the default) means those four.
+cleaned; `--repos all` (the default) means those four. N can never be below 90:
+anything younger is assumed to still matter to somebody.
 
 Classes (the strictest one wins per image, because deleting a digest removes
 ALL of its tags):
@@ -70,7 +71,9 @@ REGION = "us-east-1"  # the only region the ECR Public API exists in
 DELETABLE_CLASSES = ("feature", "master", "untagged")
 # The only repositories this tool may touch; `--repos all` means these four.
 CLEANABLE_REPOS = ("engine", "engine-generic", "node-server", "web-ui")
-DEFAULT_OLDER_THAN_DAYS = 90
+# Hard floor: nothing younger than this can be deleted, whatever the caller asks.
+MIN_OLDER_THAN_DAYS = 90
+DEFAULT_OLDER_THAN_DAYS = MIN_OLDER_THAN_DAYS
 DEFAULT_OUT = "ecr-public-cleanup-out"
 RETRYABLE_ERRORS = ("Throttling", "TooManyRequests", "RequestLimitExceeded")
 CSV_COLUMNS = ["repo", "digest", "class", "age_days", "pushed_at", "size_bytes",
@@ -249,8 +252,6 @@ def render_summary_md(summary: dict) -> str:
         " `naive_GB` sums `imageSizeInBytes` per manifest; shared layers are counted more than once,"
         " so the real storage drop is smaller.",
     ]
-    if summary["older_than_days"] == 0:
-        lines.append("- ⚠️ `older_than_days` is 0: age is not filtering anything.")
     lines += [
         "",
         "| repo | scanned | version | master | feature | untagged | candidates | naive_GB"
@@ -351,14 +352,25 @@ def self_test() -> None:
     records, stats = plan_repo("engine", images, Opts, now)
     assert {r["digest"]: r["action"] for r in records}["sha256:b"] == "skipped-keep" and stats["skipped_keep"] == 1
 
-    Opts.classes = {"feature"}
-    Opts.older_than_days = 0
-    records, _ = plan_repo("engine", images, Opts, now)
-    assert {r["digest"]: r["action"] for r in records}["sha256:d"] == "candidate"
+    assert check_older_than_days(MIN_OLDER_THAN_DAYS) == MIN_OLDER_THAN_DAYS
+    for too_low in (0, 1, MIN_OLDER_THAN_DAYS - 1):
+        try:
+            check_older_than_days(too_low)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"{too_low} days must be rejected")
 
     assert resolve_repos("all") == list(CLEANABLE_REPOS)
     assert resolve_repos(" web-ui, engine ") == ["web-ui", "engine"]
     log("✅ self-test passed")
+
+
+def check_older_than_days(value: int) -> int:
+    if value < MIN_OLDER_THAN_DAYS:
+        raise ValueError(f"--older-than-days {value} is below the hard minimum of {MIN_OLDER_THAN_DAYS};"
+                         " younger images are never deleted")
+    return value
 
 
 def resolve_repos(value: str) -> list[str]:
@@ -383,7 +395,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                    help=f"comma-separated classes to delete from {', '.join(DELETABLE_CLASSES)} (default: feature)."
                         " 'version' is never accepted.")
     p.add_argument("--older-than-days", type=int, default=DEFAULT_OLDER_THAN_DAYS,
-                   help=f"only images pushed at least N days ago (default {DEFAULT_OLDER_THAN_DAYS}; 0 = any age)")
+                   help=f"only images pushed at least N days ago (default and hard minimum {MIN_OLDER_THAN_DAYS})")
     p.add_argument("--keep-file", help="file with one repo:glob per line; matching images are never deleted")
     p.add_argument("--no-dry-run", action="store_true", help="really delete (also needs --confirm)")
     p.add_argument("--confirm", default="", help=f'must be exactly "{CONFIRM_PHRASE}" together with --no-dry-run')
@@ -397,8 +409,10 @@ def main(argv: list[str]) -> int:
     if args.self_test:
         self_test()
         return 0
-    if args.older_than_days < 0:
-        die("--older-than-days must be >= 0")
+    try:
+        check_older_than_days(args.older_than_days)
+    except ValueError as exc:
+        die(str(exc))
 
     classes = {c.strip() for c in args.classes.split(",") if c.strip()}
     bad = sorted(classes - set(DELETABLE_CLASSES))
@@ -424,8 +438,6 @@ def main(argv: list[str]) -> int:
     mode = "🧪 DRY RUN" if dry_run else "🔥 REAL DELETION"
     log(f"{mode}: repos={','.join(repos)} classes={','.join(sorted(classes))} older_than_days={args.older_than_days}"
         f" keep_globs={sum(len(v) for v in keep.values())}")
-    if args.older_than_days == 0:
-        log("⚠️  --older-than-days 0: age is not filtering anything")
 
     now = datetime.now(timezone.utc)
     out_dir = Path(args.out)

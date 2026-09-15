@@ -15,7 +15,7 @@ This document describes all GitHub Actions workflows and reusable actions in the
 - **`_install_server.yml`** - Reusable workflow to install Tensorleap server using leap-cli
 - **`release_airgap_pack.yml`** - Builds and uploads airgap pack to S3 (callable + manual)
 - **`update_images.yml`** - Waits for web-ui build, updates image tags in charts
-- **`ecr_public_cleanup.yml`** - Manual: deletes feature-branch / untagged / master images from the public ECR registry (dry run by default)
+- **`ecr_public_cleanup.yml`** - Weekly (Sunday night) and manual: deletes feature-branch / untagged images at least 90 days old from the public ECR registry; manual runs are dry run by default and can add `master`
 
 ### CI Workflows
 - **`ci.yml`** - CI on push to master: Installs server from local Go build
@@ -325,14 +325,15 @@ This document describes all GitHub Actions workflows and reusable actions in the
 **Purpose:** Delete images from `public.ecr.aws/tensorleap` on request. ECR Public has no lifecycle policies, so nothing else ever removes the images every branch build pushes there. The logic is in `scripts/ecr-public-cleanup.py` (also runnable locally via `make ecr-public-cleanup`); the workflow wires inputs, the `helm-charts` IAM user credentials and reporting around it.
 
 **Triggers:**
-- `workflow_dispatch` (manual) with inputs: `repos` (`all` = engine, engine-generic, node-server, web-ui, or a subset; nothing else can be cleaned), `classes` (`feature,untagged` by default; `master` must be added explicitly; `version` images such as `1.6.72-<sha>` are never deletable), `older_than_days` (default 90), `dry_run` (default checked), `confirm` (must be `DELETE FROM PUBLIC ECR` for a real run), `protect_chart_pins` (default checked: the tags in `*-latest-image` on master are never deleted)
+- `schedule`: every Sunday 20:00 UTC (23:00 Israel summer time). A scheduled run is a **real deletion** with the defaults: all four repos, `feature,untagged`, at least 90 days old, chart pins protected.
+- `workflow_dispatch` (manual) with inputs: `repos` (`all` = engine, engine-generic, node-server, web-ui, or a subset; nothing else can be cleaned), `classes` (`feature,untagged` by default; `master` must be added explicitly; `version` images such as `1.6.72-<sha>` are never deletable), `older_than_days` (default 90, **hard minimum 90**, enforced by both the workflow and the script), `dry_run` (default checked), `confirm` (must be `DELETE FROM PUBLIC ECR` for a real run), `protect_chart_pins` (default checked: the tags in `*-latest-image` on master are never deleted)
 
 **Flow:**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Job: cleanup (concurrency group: ecr-public-cleanup)            │
-│   ├─ Validate inputs (refuse real run without confirm phrase)   │
+│   ├─ Validate inputs (floor 90 days; manual real run needs confirm)│
 │   ├─ Configure AWS credentials (helm-charts IAM user, us-east-1)│
 │   ├─ Build keep-file from *-latest-image (if protect_chart_pins)│
 │   ├─ Run scripts/ecr-public-cleanup.py                          │
