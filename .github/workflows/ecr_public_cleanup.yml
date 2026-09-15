@@ -41,7 +41,7 @@ on:
         required: false
         default: ""
       protect_chart_pins:
-        description: "checked = never delete the tags pinned by *-latest-image on master (plus their engine-generic variants) | unchecked = no protection beyond version tags"
+        description: "checked = never delete the tags pinned by *-latest-image on master or by the aws-git-ops-dev/-prod default values (plus their engine-generic variants) | unchecked = no protection beyond version tags"
         required: false
         type: boolean
         default: true
@@ -129,7 +129,7 @@ jobs:
           done
           for gitops in aws-git-ops-dev aws-git-ops-prod; do
             for repo in engine node-server; do
-              tag="$(gh api "repos/tensorleap/${gitops}/contents/tensorleap-default-values/${repo}-values.yaml" --jq .content | base64 -d | sed -n 's/^image_tag: *//p')"
+              tag="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/tensorleap/${gitops}/contents/tensorleap-default-values/${repo}-values.yaml" | sed -n 's/^image_tag: *"\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p')"
               if [ -z "$tag" ]; then
                 echo "❌ no image_tag in ${gitops} ${repo}-values.yaml; refusing to run without the SaaS pins" >&2
                 exit 1
