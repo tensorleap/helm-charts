@@ -1,12 +1,22 @@
 name: ECR Public Cleanup
 
-# Deletes images from public.ecr.aws/tensorleap on request. ECR Public has no
-# lifecycle policies, so this is the only way images ever leave the registry.
-# The logic lives in scripts/ecr-public-cleanup.py; this workflow only wires
-# inputs, credentials and reporting around it. Dry run is the default: a real
-# deletion needs dry_run unchecked AND the exact confirm phrase.
+# Deletes images from public.ecr.aws/tensorleap. ECR Public has no lifecycle
+# policies, so this is the only way images ever leave the registry. The logic
+# lives in scripts/ecr-public-cleanup.py; this workflow only wires inputs,
+# credentials and reporting around it.
+#
+# Two ways in:
+#   * schedule: every Sunday night (Israel time) it REALLY DELETES with the
+#     defaults below: all four repos, feature + untagged images at least 90
+#     days old, chart pins protected. The schedule itself is the approval.
+#   * workflow_dispatch: dry run by default; a real deletion needs dry_run
+#     unchecked AND the exact confirm phrase.
+# Nothing younger than 90 days can be deleted either way; the script enforces
+# the same floor.
 
 on:
+  schedule:
+    - cron: "0 20 * * 0"  # Sunday 20:00 UTC = 23:00 Israel (summer) / 22:00 (winter)
   workflow_dispatch:
     inputs:
       repos:
@@ -18,7 +28,7 @@ on:
         required: false
         default: "feature,untagged"
       older_than_days:
-        description: "Only images pushed at least this many days ago. 0 = any age."
+        description: "Only images pushed at least this many days ago. Hard minimum 90; lower values are refused."
         required: false
         default: "90"
       dry_run:
@@ -48,11 +58,15 @@ jobs:
     permissions:
       contents: read
     env:
-      REPOS: ${{ inputs.repos }}
-      CLASSES: ${{ inputs.classes }}
-      OLDER_THAN_DAYS: ${{ inputs.older_than_days }}
-      DRY_RUN_INPUT: ${{ inputs.dry_run }}
-      CONFIRM: ${{ inputs.confirm }}
+      # Scheduled runs have no inputs, so every value falls back to the defaults
+      # and the run is a real deletion (dry_run=false, confirm phrase supplied).
+      SCHEDULED: ${{ github.event_name == 'schedule' }}
+      REPOS: ${{ inputs.repos || 'all' }}
+      CLASSES: ${{ inputs.classes || 'feature,untagged' }}
+      OLDER_THAN_DAYS: ${{ inputs.older_than_days || '90' }}
+      DRY_RUN_INPUT: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
+      CONFIRM: ${{ github.event_name == 'schedule' && 'DELETE FROM PUBLIC ECR' || inputs.confirm }}
+      MIN_OLDER_THAN_DAYS: "90"
       OUT_DIR: ecr-public-cleanup-out
     steps:
       - name: Checkout repository
@@ -62,7 +76,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$DRY_RUN_INPUT" = "true" ]; then
+          if ! [[ "$OLDER_THAN_DAYS" =~ ^[0-9]+$ ]] || [ "$OLDER_THAN_DAYS" -lt "$MIN_OLDER_THAN_DAYS" ]; then
+            echo "❌ older_than_days=$OLDER_THAN_DAYS is below the hard minimum of $MIN_OLDER_THAN_DAYS days; refusing" >&2
+            exit 1
+          fi
+          if [ "$SCHEDULED" = "true" ]; then
+            echo "⏰ SCHEDULED REAL DELETION with defaults: repos=$REPOS classes=$CLASSES older_than_days=$OLDER_THAN_DAYS"
+          elif [ "$DRY_RUN_INPUT" = "true" ]; then
             echo "🧪 DRY RUN: listing only, nothing will be deleted"
           elif [ "$CONFIRM" = "DELETE FROM PUBLIC ECR" ]; then
             echo "🔥 REAL DELETION requested by ${{ github.actor }}: repos=$REPOS classes=$CLASSES older_than_days=$OLDER_THAN_DAYS"
@@ -88,7 +108,7 @@ jobs:
       # that also cover the -amd64/-arm64/-stable and engine-generic -py3x variants.
       # (pippin is pinned too, but this workflow never touches the pippin repo.)
       - name: Build keep-file from chart pins
-        if: ${{ inputs.protect_chart_pins }}
+        if: ${{ github.event_name == 'schedule' || inputs.protect_chart_pins }}
         shell: bash
         run: |
           set -euo pipefail
