@@ -16,6 +16,45 @@ ingress-nginx:
       patch:
         image:
           digest: ""
+    # The controller writes its runtime state into /etc/ingress-controller:
+    # the fake certificate, dhparam and per-secret PEMs under ssl/, annotation
+    # auth files under auth/, and opentelemetry.toml under telemetry/ on every
+    # config reload. The image ships all three as uid 101 mode 0755 — writable
+    # only because the process owns them.
+    # Those directories live in the containerd snapshot tree, bind-mounted from
+    # the host (/var/lib/tensorleap/standalone/containerd), so any host-side
+    # operation that does not preserve ownership — a data-dir move across
+    # devices, a backup restore — leaves them owned by root, and the controller
+    # then dies at startup with "unexpected error storing fake SSL Cert ...
+    # permission denied" (ssl/), or comes up unable to reload NGINX with
+    # "open /etc/ingress-controller/telemetry/opentelemetry.toml: permission
+    # denied" until the liveness probe kills it. That state is sticky: it
+    # survives pod deletion and reboots, because every new pod stacks on the
+    # same on-disk layers.
+    # Mount emptyDirs over the three paths instead. kubelet creates them fresh
+    # per pod and fsGroup (www-data, gid 82) makes them group-writable, so
+    # startup no longer depends on host snapshot ownership. geoip/ is
+    # deliberately left alone: it is populated by an init container when
+    # maxmindLicenseKey is set, and extraVolumeMounts only reaches the
+    # controller container, so shadowing it would hide that download.
+    # Ref BF-1092.
+    podSecurityContext:
+      fsGroup: 82
+      fsGroupChangePolicy: OnRootMismatch
+    extraVolumes:
+      - name: ingress-controller-ssl
+        emptyDir: {}
+      - name: ingress-controller-auth
+        emptyDir: {}
+      - name: ingress-controller-telemetry
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: ingress-controller-ssl
+        mountPath: /etc/ingress-controller/ssl
+      - name: ingress-controller-auth
+        mountPath: /etc/ingress-controller/auth
+      - name: ingress-controller-telemetry
+        mountPath: /etc/ingress-controller/telemetry
     resources:
       requests:
         memory: "128Mi"
