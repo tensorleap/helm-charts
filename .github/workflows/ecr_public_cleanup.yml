@@ -41,7 +41,7 @@ on:
         required: false
         default: ""
       protect_chart_pins:
-        description: "checked = never delete the tags pinned by *-latest-image on master (plus their engine-generic variants) | unchecked = no protection beyond version tags"
+        description: "checked = never delete the tags pinned by *-latest-image on master or by the aws-git-ops-dev/-prod default values (plus their engine-generic variants) | unchecked = no protection beyond version tags"
         required: false
         type: boolean
         default: true
@@ -103,25 +103,41 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # The chart on master pins one master-<sha> tag per component. Deleting those
-      # would break `leap server install` for everyone, so turn them into keep globs
-      # that also cover the -amd64/-arm64/-stable and engine-generic -py3x variants.
-      # (pippin is pinned too, but this workflow never touches the pippin repo.)
-      - name: Build keep-file from chart pins
+      # The chart on master pins one master-<sha> tag per component, and the SaaS
+      # clusters (aws-git-ops-dev/-prod tensorleap-default-values) pin their own.
+      # Deleting those would break `leap server install` or a running tenant, so
+      # turn them into keep globs that also cover the -amd64/-arm64/-stable and
+      # engine-generic -py3x variants. (pippin is pinned too, but this workflow
+      # never touches the pippin repo.)
+      - name: Build keep-file from chart and SaaS pins
         if: ${{ github.event_name == 'schedule' || inputs.protect_chart_pins }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           : > keep.txt
+          keep() {
+            echo "$1:$2*" >> keep.txt
+            if [ "$1" = "engine" ]; then
+              echo "engine-generic:$2*" >> keep.txt
+            fi
+          }
           for repo in engine node-server web-ui; do
             ref="$(cat "${repo}-latest-image")"
-            tag="${ref##*:}"
-            echo "${repo}:${tag}*" >> keep.txt
-            if [ "$repo" = "engine" ]; then
-              echo "engine-generic:${tag}*" >> keep.txt
-            fi
+            keep "$repo" "${ref##*:}"
           done
-          echo "🔒 protecting chart pins:"
+          for gitops in aws-git-ops-dev aws-git-ops-prod; do
+            for repo in engine node-server; do
+              tag="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/tensorleap/${gitops}/contents/tensorleap-default-values/${repo}-values.yaml" | sed -n 's/^image_tag: *"\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p')"
+              if [ -z "$tag" ]; then
+                echo "❌ no image_tag in ${gitops} ${repo}-values.yaml; refusing to run without the SaaS pins" >&2
+                exit 1
+              fi
+              keep "$repo" "$tag"
+            done
+          done
+          echo "🔒 protecting chart and SaaS pins:"
           cat keep.txt
 
       - name: Run cleanup
