@@ -96,8 +96,10 @@ downed dependency marks the pod unready without restart-looping it.
   getApiKeyByCode, activate, startTrial, refreshLocalAuth, resolveConcurrentUsersConflict, logout
 - `/projects` — addProject, getProjects, deleteProject, loadModel, importProject,
   exportProject, uploadProject, downloadProject
-- `/versions` — push, pushOverride, initExperiment, loadVersion, setActiveVersion,
-  get*SlimVersions, getCodeSnapshotUploadUrl, tagModel, deleteVersion, getVersionsEpochs
+- `/versions` — push, pushOverride, initExperiment, loadVersion, getVersionModelGraph,
+  setActiveVersion, get*SlimVersions, getCodeSnapshotUploadUrl, tagModel, deleteVersion,
+  getVersionsEpochs *(the model graph is fetched separately from `loadVersion` — see
+  below)*
 - `/jobs` — getSlimJobs, getTeamJobs, getJobLogs, stopJob, terminateJob, terminateAllJobs, warmup
 - `/evaluate` — evaluate, continueEvaluate, resetEvaluate, updateEvaluateArtifact, continueUpdateEvaluate
 - `/sessionmetrics` — getXYChart, getHeatmapChart, getTableChart, getConfusionMatrixTable,
@@ -128,6 +130,11 @@ downed dependency marks the pod unready without restart-looping it.
 `version.resources → {inference_artifact_id, vis_artifact_id, es_model_id,
 es_metrics_index, es_inspection_index}` (links a version to its bucket artifacts +
 ES indices). **`dashboards.items` stores only dashlet config**, not chart data.
+**A version's model graph is not on the `versions` document** — it lives in blob
+storage at `organizations/<team>/projects/<proj>/versions/<versionId>/model_graph.json`
+(written by the engine's import-model worker, read via node-server's
+`getVersionModelGraph`); `undefined`/no blob means the version's model import
+hasn't completed. (Migrated from an inline `versions.data` field.)
 
 **Elasticsearch index resolution (critical for "empty dashlet" debugging).**
 Indices are **not** named by node-server — they come from the version doc's
