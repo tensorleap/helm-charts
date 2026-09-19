@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-09-19 — manual refresh (all repos → master; no drift)
+Reviewed: helm-charts `c64035c9..5b378bce` (the prior two KB-update PRs' own doc edits under `qa-knowledge/**` only — no manifest-glob match); engine, node-server, web-ui, leap-cli, code-loader all unchanged (baseline SHA == current `origin/master` HEAD).
+Changed: none — no doc depends on the helm-charts paths that changed (docs-only, no `charts/`, `pkg/`, `cmd/`, or `images.txt` touched); the other 5 repos had zero commits since their last-verified baseline.
+Open gaps: none new. Carried unresolved from 2026-09-18: (1) node-server job-log-tarball/support-bundle feature (`getPodsLogsTarball`/`getPodDescribeCommandLogs`) undocumented in 05-testing-utils.md/10-verification-toolbox.md. (2) ImageBBox job-wide label-filter enrichment could be added to 09-job-catalog.md/03-data-flows.md. (3) failure-aligned LS training's best-effort exception handling unmentioned in 07-failure-modes.md. (4) `WorkerSlimLSOps._unlabeled_analysis_request` transitional shim, worth a live-cluster spot-check. (5) engine SaaS-only FSx PVC mount, out of KB scope. (6) pruning top-panel stats file (`dataset_balancing_stats.json`) still not produced by engine master — re-verify once merged. (7) `editor-file-name-row`/`editor-rename-file-input` dead test-ids in 06-ui-inspection.md; node-server job-history page-size 100 unreferenced by any doc. (8) synthetic-calibration checkpoint/journal writer (`CheckpointStore.load_latest`) still write-only with no wired resume path — re-check once a resume call site appears. helm-charts baseline bumped to `5b378bce`; other 5 repos unchanged so their baselines were left as-is.
+
 ## 2026-09-18 — manual refresh (all repos → master; no drift)
 Reviewed: helm-charts `49c35bae..c64035c9` (the prior KB-update PR's own doc edits under `qa-knowledge/**` only — no manifest-glob match); engine, node-server, web-ui, leap-cli, code-loader all unchanged (baseline SHA == current `origin/master` HEAD).
 Changed: none — no doc depends on the helm-charts paths that changed (docs-only, no `charts/`, `pkg/`, `cmd/`, or `images.txt` touched); the other 5 repos had zero commits since their last-verified baseline.
