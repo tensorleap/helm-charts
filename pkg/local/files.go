@@ -174,6 +174,47 @@ func copyDirPreservingAttrs(src, dst string, useSudo bool) error {
 	return runMaybeSudo(useSudo, "cp", "-a", src, dst)
 }
 
+// WriteFileAtomic writes data to path by writing a temp file in the same
+// directory and renaming it over path. This is how the installer records its
+// state (manifest, params) in the shared data dir, where several local users
+// take turns: ubuntu installs, ssm-user upgrades. Files there are created
+// with whatever the umask left of 0777 — 0755 in practice — so a plain
+// os.WriteFile by a different user fails with EACCES and the recorded state
+// goes stale while the cluster moves on (found on an EC2 runner: manifest said
+// 1.6.52-rc.0, helm was running 1.6.81-rc.0; BF-1092). Renaming needs only
+// write access to the directory, which the data-dir tree grants everyone, and
+// replaces the old file regardless of who owns it (no sticky bit is set).
+//
+// perm is applied to the temp file with Chmod, so it is exact rather than
+// umask-masked; callers pass 0666 so the next user can read and rewrite it.
+func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file in %s: %w", dir, err)
+	}
+	tmpPath := tmp.Name()
+	// Remove the temp file on any failure below; after a successful rename it
+	// no longer exists and Remove is a harmless no-op.
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("failed to write %s: %w", tmpPath, err)
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("failed to chmod %s: %w", tmpPath, err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("failed to close %s: %w", tmpPath, err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("failed to replace %s: %w", path, err)
+	}
+	return nil
+}
+
 // FileSystemStatus holds information about the existence of a directory and the permissions related to it.
 type FileSystemStatus struct {
 	Path                       string
