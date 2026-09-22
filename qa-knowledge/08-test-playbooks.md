@@ -152,10 +152,15 @@ job only via the concurrent-evaluate-limit picker on `leap push -e`.)
 | Step | Back-end | Front-end |
 |---|---|---|
 | Stop | node-server publishes to `job-control-channel-<jobId>` (RabbitMQ); engine main pod receives stop | job → `STOPPED` |
-| Terminate | k8s Job/pods deleted | job → `TERMINATED`; runtime pods (`-l jobId=<jobId>`) removed |
+| Terminate | node-server writes Mongo `TERMINATED` and notifies **immediately** (API returns `sent_terminate_signal`); log collection + k8s Job/pod delete run **detached** afterward, best-effort (`node-server/src/jobs/logic.ts` `terminateJob`) | job → `TERMINATED` right away; runtime pods (`-l jobId=<jobId>`) follow shortly after, not necessarily in the same instant |
 
 **Pass:** status reaches `STOPPED`/`TERMINATED` in Mongo **and** the per-job pods
-are gone. A job stuck `STARTED` after stop → suspect RabbitMQ control path or a
+are gone — for Terminate, poll for pod removal rather than expecting it in the
+same instant as the status flip, since teardown is detached from the API
+response. If the detached delete fails or hasn't landed, `handleActiveJobsReport`
+re-issues `deleteK8sJob` on every subsequent `active_jobs_report` while the
+orchestrator still reports a `TERMINATED`/`STOPPED` job, until it actually
+disappears. A job stuck `STARTED` after stop → suspect RabbitMQ control path or a
 non-responsive pod (orchestrator should still reconcile).
 
 ---
