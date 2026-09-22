@@ -141,12 +141,7 @@ func MoveOrCopyDirectory(srcStatus, dstStatus FileSystemStatus) error {
 	}
 	if err := RunCommand(mvArgs...); err != nil {
 		log.Warnf("Failed to move directory, attempting to copy: %v", err)
-		cpArgs := []string{"cp", "-r", srcStatus.Path, dstStatus.Path}
-		if isStorageMovePermissionNeeded {
-			log.Warn("Copy operation requires sudo permissions")
-			cpArgs = append([]string{"sudo"}, cpArgs...)
-		}
-		if err := RunCommand(cpArgs...); err != nil {
+		if err := copyDirPreservingAttrs(srcStatus.Path, dstStatus.Path, isStorageMovePermissionNeeded); err != nil {
 			return fmt.Errorf("copy operation failed: %v", err)
 		}
 
@@ -156,6 +151,27 @@ func MoveOrCopyDirectory(srcStatus, dstStatus FileSystemStatus) error {
 	}
 
 	return nil
+}
+
+// copyDirPreservingAttrs copies src to dst as an exact replica. The -a is
+// load-bearing: plain `cp -r` recreates every entry owned by the copying user
+// (root, when this needs sudo) with modes masked by the umask. This copy is the
+// fallback for moving the whole data dir, which holds the containerd snapshot
+// tree — and those files must keep the uids baked into the image layers. The
+// ingress-nginx controller, for one, runs as uid 101 and can write
+// /etc/ingress-controller/ssl only because the image ships it as uid 101 mode
+// 0755; reowning it to root makes the controller fail at startup for every pod
+// from then on, surviving restarts and reboots (BF-1092). -a also keeps
+// symlinks, hardlinks and the device nodes overlayfs uses as whiteouts.
+//
+// The fallback fires whenever the move crosses a device boundary (mv returns
+// EXDEV), which is exactly the case this matters for: relocating the data dir
+// onto an attached volume.
+func copyDirPreservingAttrs(src, dst string, useSudo bool) error {
+	if useSudo {
+		log.Warn("Copy operation requires sudo permissions")
+	}
+	return runMaybeSudo(useSudo, "cp", "-a", src, dst)
 }
 
 // FileSystemStatus holds information about the existence of a directory and the permissions related to it.

@@ -64,33 +64,29 @@ func SetDataDir(previous, flag string) error {
 	return nil
 }
 
+// InitStandaloneDir makes sure the shared data dir and the subdirs we manage
+// exist and are world-writable, so a second local user can maintain an install
+// another user created (ubuntu installs, ssm-user upgrades).
+//
+// This used to run `sudo chmod -R 777` over the whole tree, gated on the top
+// dir not already being 0777 — so it healed nothing after the first install,
+// which leaves that dir at exactly 0777. Same class of bug as the early return
+// removed from EnsureDirExists in 059b204b/#407: a self-heal that never runs.
+//
+// Recursing was also the wrong tool. The tree holds every app's storage and the
+// containerd snapshots, so a full walk costs minutes on a real install, prompts
+// for sudo on every start, and would leave every image layer world-writable.
+// Heal the directories we actually manage instead, on every run, through
+// EnsureDirExists — which escalates only inside the data dir and never follows
+// symlinks. Files below them keep the ownership and modes they were created
+// with, which is what containerd and the container images require.
 func InitStandaloneDir() error {
 	standaloneDir := GetServerDataDir()
-	_, err := os.Stat(standaloneDir)
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(standaloneDir); os.IsNotExist(err) {
 		log.Printf("Creating directory: %s (you may be asked to enter the root user password)", standaloneDir)
-		mkdirCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo mkdir -p %s", standaloneDir))
-		if err := mkdirCmd.Run(); err != nil {
-			return err
-		}
-
-		log.Println("Setting directory permissions")
-		chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
-		if err := chmodCmd.Run(); err != nil {
-			return err
-		}
-	} else if err != nil {
+	}
+	if err := EnsureDirExists(standaloneDir); err != nil {
 		return err
-	} else {
-		log.Printf("Directory %s already exists, check permission", standaloneDir)
-		info, err := os.Stat(standaloneDir)
-		if err != nil || info.Mode().Perm() != 0777 {
-			log.Printf("Setting directory permissions (you may be asked to enter the root user password)")
-			chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
-			if err := chmodCmd.Run(); err != nil {
-				return err
-			}
-		}
 	}
 
 	return initStandaloneSubDirs()
@@ -100,18 +96,7 @@ func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
 	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
 	for _, dir := range subDirs {
-		fullPath := path.Join(standaloneDir, dir)
-		_, err := os.Stat(fullPath)
-		if os.IsNotExist(err) {
-			log.Printf("Creating directory: %s", fullPath)
-			if err := os.MkdirAll(fullPath, 0777); err != nil {
-				return err
-			}
-			// the permission of the directory not set to 0777 even if we set it in the MkdirAll
-			if err := os.Chmod(fullPath, 0777); err != nil {
-				return err
-			}
-		} else if err != nil {
+		if err := EnsureDirExists(path.Join(standaloneDir, dir)); err != nil {
 			return err
 		}
 	}
