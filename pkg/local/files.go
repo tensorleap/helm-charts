@@ -174,19 +174,13 @@ func copyDirPreservingAttrs(src, dst string, useSudo bool) error {
 	return runMaybeSudo(useSudo, "cp", "-a", src, dst)
 }
 
-// WriteFileAtomic writes data to path by writing a temp file in the same
-// directory and renaming it over path. This is how the installer records its
-// state (manifest, params) in the shared data dir, where several local users
-// take turns: ubuntu installs, ssm-user upgrades. Files there are created
-// with whatever the umask left of 0777 — 0755 in practice — so a plain
-// os.WriteFile by a different user fails with EACCES and the recorded state
-// goes stale while the cluster moves on (found on an EC2 runner: manifest said
-// 1.6.52-rc.0, helm was running 1.6.81-rc.0; BF-1092). Renaming needs only
-// write access to the directory, which the data-dir tree grants everyone, and
-// replaces the old file regardless of who owns it (no sticky bit is set).
+// WriteFileAtomic writes data to path via a temp file in the same directory
+// that is renamed over path. Rename only needs write access to the directory
+// (the data dir is world-writable) and replaces the target regardless of who
+// owns it, so a second local user can update files created by the first —
+// plain os.WriteFile fails there with EACCES (BF-1092).
 //
-// perm is applied to the temp file with Chmod, so it is exact rather than
-// umask-masked; callers pass 0666 so the next user can read and rewrite it.
+// perm is applied with Chmod so it is exact, not umask-masked.
 func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*.tmp")

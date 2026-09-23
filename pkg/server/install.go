@@ -47,11 +47,6 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return nil, err
 	}
 
-	// The charts are installed at this point; what remains is bookkeeping and
-	// cleanup. Recording the installed state is not optional though — every
-	// later upgrade, info and reinstall decision reads it — so a failure here
-	// is reported instead of discarded (it used to be `_ =`, which is how an
-	// upgrade by a second local user left a manifest claiming the old version).
 	if err := SaveInstallation(mnf, installationParams); err != nil {
 		log.SendCloudReport("error", "Failed saving installation state", "Failed", &map[string]interface{}{"error": err.Error()})
 		return nil, fmt.Errorf("tensorleap is installed, but recording the installation state under %s failed: %w", local.GetServerDataDir(), err)

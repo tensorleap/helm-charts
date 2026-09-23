@@ -56,10 +56,6 @@ func TestCopyDirPreservingAttrs(t *testing.T) {
 	})
 }
 
-// The installer records its state in files another local user may own; a
-// plain os.WriteFile then fails with EACCES and the state goes stale. A
-// read-only file stands in for the other-owner case (its owner cannot open it
-// for writing either), and the rename must still replace it.
 func TestWriteFileAtomic(t *testing.T) {
 	tests := []struct {
 		name     string
