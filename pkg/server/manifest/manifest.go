@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"gopkg.in/yaml.v3"
 )
@@ -125,7 +126,9 @@ func (mnf *InstallationManifest) Save(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal installation manifest: %w", err)
 	}
-	err = os.WriteFile(path, b, 0777)
+	// Atomic replace rather than os.WriteFile: the manifest may be owned by
+	// another local user (see local.WriteFileAtomic).
+	err = local.WriteFileAtomic(path, b, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to write installation manifest: %w", err)
 	}

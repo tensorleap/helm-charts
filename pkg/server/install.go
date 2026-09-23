@@ -47,7 +47,10 @@ func Install(ctx context.Context, mnf *manifest.InstallationManifest, isAirgap b
 		return nil, err
 	}
 
-	_ = SaveInstallation(mnf, installationParams)
+	if err := SaveInstallation(mnf, installationParams); err != nil {
+		log.SendCloudReport("error", "Failed saving installation state", "Failed", &map[string]interface{}{"error": err.Error()})
+		return nil, fmt.Errorf("tensorleap is installed, but recording the installation state under %s failed: %w", local.GetServerDataDir(), err)
+	}
 	err = cleanImagesFromContainerd(ctx, mnf, k3d.CONTAINER_NAME)
 	if err != nil {
 		log.SendCloudReport("error", "Failed cleaning images from containerd", "Failed", &map[string]interface{}{"error": err.Error()})

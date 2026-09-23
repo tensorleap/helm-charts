@@ -174,6 +174,41 @@ func copyDirPreservingAttrs(src, dst string, useSudo bool) error {
 	return runMaybeSudo(useSudo, "cp", "-a", src, dst)
 }
 
+// WriteFileAtomic writes data to path via a temp file in the same directory
+// that is renamed over path. Rename only needs write access to the directory
+// (the data dir is world-writable) and replaces the target regardless of who
+// owns it, so a second local user can update files created by the first —
+// plain os.WriteFile fails there with EACCES (BF-1092).
+//
+// perm is applied with Chmod so it is exact, not umask-masked.
+func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file in %s: %w", dir, err)
+	}
+	tmpPath := tmp.Name()
+	// Remove the temp file on any failure below; after a successful rename it
+	// no longer exists and Remove is a harmless no-op.
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("failed to write %s: %w", tmpPath, err)
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("failed to chmod %s: %w", tmpPath, err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("failed to close %s: %w", tmpPath, err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("failed to replace %s: %w", path, err)
+	}
+	return nil
+}
+
 // FileSystemStatus holds information about the existence of a directory and the permissions related to it.
 type FileSystemStatus struct {
 	Path                       string
