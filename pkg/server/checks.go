@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/tensorleap/helm-charts/pkg/helm"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
@@ -89,8 +90,27 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 			modeString(previousInstallationParams.IsAirgap), modeString(installationParams.IsAirgap))
 	}
 
-	shouldReinstall := isChartsRequiredReinstall || IsK3sImageChange || isAppVersionChanged || isInfraHelmChartParamsChanged || isCreateClusterParamsChanged || isInstallationModeChanged
-	if shouldReinstall {
+	// Name the condition that forces the reinstall. Until now the only trace was
+	// "Reinstall required during upgrade", which is how a comparison flapping on
+	// map iteration order went unnoticed for months.
+	var reasons []string
+	for _, c := range []struct {
+		hit  bool
+		name string
+	}{
+		{isChartsRequiredReinstall, "helm releases require reinstall"},
+		{IsK3sImageChange, fmt.Sprintf("k3s image changed (%s -> %s)", currentK3sImage, newK3sImage)},
+		{isAppVersionChanged, fmt.Sprintf("appVersion changed (%s -> %s)", previousMnf.AppVersion, mnf.AppVersion)},
+		{isInfraHelmChartParamsChanged, "infra helm values params changed"},
+		{isCreateClusterParamsChanged, "k3d cluster params changed"},
+		{isInstallationModeChanged, "installation mode changed"},
+	} {
+		if c.hit {
+			reasons = append(reasons, c.name)
+		}
+	}
+	if len(reasons) > 0 {
+		log.Infof("Cluster reinstall required: %s", strings.Join(reasons, "; "))
 		return true, nil
 	}
 
