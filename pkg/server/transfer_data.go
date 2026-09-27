@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/tensorleap/helm-charts/pkg/local"
@@ -68,6 +69,15 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 	err = Uninstall(ctx, false, false, false)
 	if err != nil {
 		return false, fmt.Errorf("failed to uninstall: %v", err)
+	}
+
+	// The container image cache is a derivative of the local registry and is
+	// re-pulled by the install that follows, so drop it rather than move
+	// gigabytes of root-owned image layers whose ownership a copy can lose.
+	cacheDir := filepath.Join(previousDataPath, local.CONTAINERD_DIR_NAME)
+	log.Printf("Dropping container image cache %s (rebuilt from the local registry on install)", cacheDir)
+	if err := local.RemovePath(cacheDir); err != nil {
+		return false, fmt.Errorf("failed to drop image cache %s: %w", cacheDir, err)
 	}
 
 	log.Printf("Moving storage from %s to %s", previousDataPath, currentDataPath)

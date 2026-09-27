@@ -74,7 +74,7 @@ func DownloadIfNotCached(repo, chartName, version string) (string, error) {
 	cacheDir := local.GetHelmCacheDir()
 	cachedPath := filepath.Join(cacheDir, chartName, fmt.Sprintf("%s.tgz", version))
 	cachedDir := filepath.Dir(cachedPath)
-	err := local.EnsureDirExists(cachedDir)
+	err := local.EnsureSharedDir(cachedDir)
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +92,7 @@ func DownloadIfNotCached(repo, chartName, version string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	chartFile, err := os.OpenFile(cachedPath, os.O_CREATE|os.O_WRONLY, 0777)
+	chartFile, err := os.OpenFile(cachedPath, os.O_CREATE|os.O_WRONLY, 0o664)
 	if err != nil {
 		return "", err
 	}

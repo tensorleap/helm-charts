@@ -64,33 +64,37 @@ func SetDataDir(previous, flag string) error {
 	return nil
 }
 
-func InitStandaloneDir() error {
-	standaloneDir := GetServerDataDir()
-	_, err := os.Stat(standaloneDir)
-	if os.IsNotExist(err) {
-		log.Printf("Creating directory: %s (you may be asked to enter the root user password)", standaloneDir)
-		mkdirCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo mkdir -p %s", standaloneDir))
-		if err := mkdirCmd.Run(); err != nil {
-			return err
-		}
+// sharedGroupSetup is EnsureSharedGroup; tests replace it so the directory
+// policy can be exercised without touching the host's groups.
+var sharedGroupSetup = EnsureSharedGroup
 
-		log.Println("Setting directory permissions")
-		chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
-		if err := chmodCmd.Run(); err != nil {
-			return err
-		}
-	} else if err != nil {
+// Directory policy for the data dir tree (see the note in files.go):
+//   - shared:  humans write here through the CLI; group-owned 2775
+//   - storage: pods write here with their own uids; world-writable
+//   - cache:   only root inside the k3s node writes here; plain 0755, never
+//     copied on a data-dir transfer, rebuilt from the local registry
+var (
+	sharedDataSubDirs  = []string{MANIFEST_DIR_NAME, LOGS_DIR_NAME, HELM_CACHE_DIR_NAME}
+	storageDataSubDirs = []string{STORAGE_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, REGISTRY_DIR_NAME}
+	cacheDataSubDirs   = []string{CONTAINERD_DIR_NAME}
+)
+
+// InitStandaloneDir makes sure the shared group exists with the current user
+// active in it, then that the data dir and the subdirs we manage exist with
+// the permissions their policy calls for. It runs on every command, so a
+// second local user can maintain an install another user created (ubuntu
+// installs, ssm-user upgrades) and drift is healed each time.
+func InitStandaloneDir() error {
+	if err := sharedGroupSetup(); err != nil {
+		log.Warnf("Shared group setup incomplete, other local users may be unable to operate this install: %v", err)
+	}
+
+	standaloneDir := GetServerDataDir()
+	if _, err := os.Stat(standaloneDir); os.IsNotExist(err) {
+		log.Printf("Creating directory: %s (you may be asked to enter the root user password)", standaloneDir)
+	}
+	if err := EnsureSharedDir(standaloneDir); err != nil {
 		return err
-	} else {
-		log.Printf("Directory %s already exists, check permission", standaloneDir)
-		info, err := os.Stat(standaloneDir)
-		if err != nil || info.Mode().Perm() != 0777 {
-			log.Printf("Setting directory permissions (you may be asked to enter the root user password)")
-			chmodCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo chmod -R 777 %s", standaloneDir))
-			if err := chmodCmd.Run(); err != nil {
-				return err
-			}
-		}
 	}
 
 	return initStandaloneSubDirs()
@@ -98,20 +102,18 @@ func InitStandaloneDir() error {
 
 func initStandaloneSubDirs() error {
 	standaloneDir := GetServerDataDir()
-	subDirs := []string{STORAGE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME, LOGS_DIR_NAME, MANIFEST_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME, HELM_CACHE_DIR_NAME}
-	for _, dir := range subDirs {
-		fullPath := path.Join(standaloneDir, dir)
-		_, err := os.Stat(fullPath)
-		if os.IsNotExist(err) {
-			log.Printf("Creating directory: %s", fullPath)
-			if err := os.MkdirAll(fullPath, 0777); err != nil {
-				return err
-			}
-			// the permission of the directory not set to 0777 even if we set it in the MkdirAll
-			if err := os.Chmod(fullPath, 0777); err != nil {
-				return err
-			}
-		} else if err != nil {
+	for _, dir := range sharedDataSubDirs {
+		if err := EnsureSharedDir(path.Join(standaloneDir, dir)); err != nil {
+			return err
+		}
+	}
+	for _, dir := range storageDataSubDirs {
+		if err := EnsureDirExists(path.Join(standaloneDir, dir)); err != nil {
+			return err
+		}
+	}
+	for _, dir := range cacheDataSubDirs {
+		if err := EnsurePrivateDir(path.Join(standaloneDir, dir)); err != nil {
 			return err
 		}
 	}
@@ -167,36 +169,22 @@ func PurgeData() error {
 	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, CONTAINERD_DIR_NAME, MANIFEST_DIR_NAME, HELM_CACHE_DIR_NAME} {
 		path := path.Join(GetServerDataDir(), dir)
 		log.Infof("Removing directory: %s", path)
-		err := os.RemoveAll(path)
-
-		// if failed to remove directory, try to remove it with sudo
-		if err != nil {
-			rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", path))
-
-			if err := rmCmd.Run(); err != nil {
-				log.SendCloudReport("error", "Failed purge data", "Failed", &map[string]interface{}{"error": err.Error()})
-				return err
-			}
+		if err := RemovePath(path); err != nil {
+			log.SendCloudReport("error", "Failed purge data", "Failed", &map[string]interface{}{"error": err.Error()})
+			return err
 		}
 	}
 	return nil
 }
 
+// CleanupCacheData removes the caches (helm charts, container images, registry
+// data); all of them are rebuilt by the next install.
 func CleanupCacheData() error {
 	log.Infof("Cleaning up cache data")
-	err := os.RemoveAll(GetHelmCacheDir())
-	if err != nil {
-		return err
-	}
-	err = os.RemoveAll(GetContainerdDataDir())
-	if err != nil {
-		return err
-	}
-
-	registryDataDir := path.Join(GetServerDataDir(), REGISTRY_DIR_NAME)
-	err = os.RemoveAll(registryDataDir)
-	if err != nil {
-		return err
+	for _, dir := range []string{HELM_CACHE_DIR_NAME, CONTAINERD_DIR_NAME, REGISTRY_DIR_NAME} {
+		if err := RemovePath(path.Join(GetServerDataDir(), dir)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -207,26 +195,17 @@ func ClearAppData() error {
 	// Remove storage directory (contains keycloak db, elasticsearch data, etc.)
 	storagePath := path.Join(GetServerDataDir(), STORAGE_DIR_NAME)
 	log.Infof("Removing directory: %s", storagePath)
-	err := os.RemoveAll(storagePath)
-	if err != nil {
-		// if failed to remove directory, try to remove it with sudo
-		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", storagePath))
-		if err := rmCmd.Run(); err != nil {
-			log.SendCloudReport("error", "Failed to clear app data", "Failed", &map[string]interface{}{"error": err.Error()})
-			return err
-		}
+	if err := RemovePath(storagePath); err != nil {
+		log.SendCloudReport("error", "Failed to clear app data", "Failed", &map[string]interface{}{"error": err.Error()})
+		return err
 	}
 
 	// Remove manifests directory (installation config)
 	manifestsPath := path.Join(GetServerDataDir(), MANIFEST_DIR_NAME)
 	log.Infof("Removing directory: %s", manifestsPath)
-	err = os.RemoveAll(manifestsPath)
-	if err != nil {
-		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", manifestsPath))
-		if err := rmCmd.Run(); err != nil {
-			log.SendCloudReport("error", "Failed to clear manifests", "Failed", &map[string]interface{}{"error": err.Error()})
-			return err
-		}
+	if err := RemovePath(manifestsPath); err != nil {
+		log.SendCloudReport("error", "Failed to clear manifests", "Failed", &map[string]interface{}{"error": err.Error()})
+		return err
 	}
 
 	return nil
@@ -238,12 +217,9 @@ func ClearAppData() error {
 func RemoveDataSubDir(subDir string) error {
 	target := path.Join(GetServerDataDir(), subDir)
 	log.Infof("Removing: %s", target)
-	if err := os.RemoveAll(target); err != nil {
-		rmCmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo rm -rf %s", target))
-		if err := rmCmd.Run(); err != nil {
-			log.SendCloudReport("error", "Failed removing data path", "Failed", &map[string]interface{}{"path": target, "error": err.Error()})
-			return err
-		}
+	if err := RemovePath(target); err != nil {
+		log.SendCloudReport("error", "Failed removing data path", "Failed", &map[string]interface{}{"path": target, "error": err.Error()})
+		return err
 	}
 	return nil
 }
