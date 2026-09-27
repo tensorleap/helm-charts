@@ -28,7 +28,14 @@ spec:
           # MOUNTHPATH) and node-server (STORAGE_MOUNT_PATH) read/write that layout directly through
           # the shared PVC. Newer MinIO releases use the xl format (object = directory + xl.meta),
           # which breaks all direct filesystem access — do not bump without removing those paths.
-          image: "quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z"
+          #
+          # Hosted in our own ECR Public registry since 2026-09: MinIO withdrew its community
+          # distribution (Docker Hub minio/* deleted ~09-11, dl.min.io 410 since ~09-20, and from
+          # 09-24 ~13:00 UTC anonymous pulls of quay.io/minio/minio answer 401), which left every
+          # fresh install stuck on this pod in ImagePullBackOff. The copy is byte-identical to
+          # quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
+          # (manifest list sha256:50417297de9410ff0538d7518e7f02b2dd67f9fbd93e81e64337273ee717ba88).
+          image: "public.ecr.aws/tensorleap/minio:RELEASE.2021-12-20T22-07-16Z"
           imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
