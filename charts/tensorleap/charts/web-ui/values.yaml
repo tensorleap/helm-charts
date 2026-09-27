@@ -1,4 +1,4 @@
-image_tag: 1.6.82-359693c5
+image_tag: 1.6.83-359693c5
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
