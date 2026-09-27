@@ -194,6 +194,18 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
     generates simulation parameters itself, so `simulations_data` is sent empty) —
     this one **does** spawn redis+generic+streaming.
   Tell them apart by the pod signature / `jobType` label, not the subType.
+- **Auto mode can now resume a killed job instead of restarting from scratch:**
+  `POST /datasetcuration/continueAutoSyntheticData {projectId, jobId}` (node-server
+  `continueAutoSyntheticData`, `logic.ts`) re-submits the predecessor's params with
+  `previous_synthetic_job_ids`/`continued_from_job_uid` set (`syntheticLineage`) so the
+  new `SYNTHETIC` job's request carries the continuation handshake. Engine-side
+  (`WorkerSyntheticJob._run_synthetic`, `workersynthetic.py`) loads the latest
+  `CheckpointStore` entry for the digest and, if its `lineage_job_uid` is in this job's
+  lineage **and** `model_id`/`epoch`/schema/simulations all match the current request,
+  fast-path-resumes from the checkpoint's stage (skipping calibration entirely when the
+  predecessor had already reached persisting) instead of recalibrating from scratch; any
+  mismatch is logged as a warning and falls back to a fresh run. This resolves a
+  previously-open gap: the checkpoint/journal writer existed with no call site before.
 
 ### Splitting (resplitting)
 The 7th of 8 `SLIM_LS` request types: `slim_request_type=resplitting`, worker
