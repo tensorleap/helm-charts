@@ -28,7 +28,9 @@ spec:
           # MOUNTHPATH) and node-server (STORAGE_MOUNT_PATH) read/write that layout directly through
           # the shared PVC. Newer MinIO releases use the xl format (object = directory + xl.meta),
           # which breaks all direct filesystem access — do not bump without removing those paths.
-          image: "quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z"
+          # MinIO no longer serves this release (quay.io/minio is 401 since 2026-09-24), so it comes
+          # from our own mirror of the same image.
+          image: "public.ecr.aws/tensorleap/minio:RELEASE.2021-12-20T22-07-16Z"
           imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
