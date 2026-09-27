@@ -13,7 +13,7 @@ public.ecr.aws/tensorleap/engine-generic:1.6.82-f402bf39-py312
 public.ecr.aws/tensorleap/engine-generic:1.6.82-f402bf39-py38
 public.ecr.aws/tensorleap/engine-generic:1.6.82-f402bf39-py39
 public.ecr.aws/tensorleap/engine:1.6.82-f402bf39
-public.ecr.aws/tensorleap/node-server:1.6.82-59cf8978
+public.ecr.aws/tensorleap/node-server:1.6.82-c673baed
 public.ecr.aws/tensorleap/pippin:master-3412341e
 public.ecr.aws/tensorleap/web-ui:1.6.82-359693c5
 quay.io/keycloak/keycloak:26.3.2
