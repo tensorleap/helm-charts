@@ -191,10 +191,19 @@ func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
 	if runtime.GOOS != "linux" {
 		return nil
 	}
-	// Drop a login-shell export so KUBECONFIG points at the shared file. sharedPath
-	// is a plain filesystem path (no shell metachars), so this is safe to quote.
-	return local.RunCommand("sudo", "sh", "-c",
-		"echo 'export KUBECONFIG="+sharedPath+"' > /etc/profile.d/tensorleap-kubeconfig.sh")
+	// Drop a login-shell profile script so every local user's shell finds the
+	// install with no per-user setup:
+	//   KUBECONFIG   → kubectl/helm reach the shared, group-readable kubeconfig
+	//   TL_DATA_DIR  → the leap CLI finds the data dir, so a custom --data-dir is
+	//                  discoverable by other users without re-passing the flag
+	// Both are plain filesystem paths with no shell metacharacters, so echoing
+	// them is safe. This replaces the older kubeconfig-only drop-in, which is
+	// removed so an upgrade doesn't leave two files behind.
+	dataDir := local.GetServerDataDir()
+	script := "echo 'export KUBECONFIG=" + sharedPath + "' > /etc/profile.d/tensorleap.sh && " +
+		"echo 'export TL_DATA_DIR=" + dataDir + "' >> /etc/profile.d/tensorleap.sh && " +
+		"rm -f /etc/profile.d/tensorleap-kubeconfig.sh"
+	return local.RunCommand("sudo", "sh", "-c", script)
 }
 
 // writeSharedKubeConfigFile writes the cluster kubeconfig to the stable shared

@@ -65,7 +65,7 @@ func newTensorleapKubectlCommand() *cobra.Command {
 // setDefaultKubeConfig points `leap server tools kubectl` at the standalone
 // kubeconfig the installer keeps current, so it reaches the live cluster in ALL
 // shell contexts — not only login shells where the installer's
-// /etc/profile.d/tensorleap-kubeconfig.sh drop-in exports KUBECONFIG. A non-login
+// /etc/profile.d/tensorleap.sh drop-in exports KUBECONFIG. A non-login
 // shell (e.g. a CI `run:` step) leaves KUBECONFIG unset and would otherwise fall
 // back to ~/.kube/config, which drifts stale because k3d picks a new random API
 // port each install (see pkg/k3d.createClusterConfig).

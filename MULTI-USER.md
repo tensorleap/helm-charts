@@ -57,11 +57,13 @@ variables pointing at it:
 | `TL_DATA_DIR` | `/var/lib/tensorleap/standalone` (or your `--data-dir`) | Where Tensorleap stores its data; the CLI reads this to find the install. |
 | `KUBECONFIG`  | `$TL_DATA_DIR/manifests/kubeconfig.yaml`            | Shared kubeconfig. |
 
-On **Linux** the installer drops `/etc/profile.d/tensorleap-kubeconfig.sh`
-exporting `KUBECONFIG`, so on a fresh login `kubectl` usually just works. On
+On **Linux** the installer drops `/etc/profile.d/tensorleap.sh` exporting both
+`KUBECONFIG` and `TL_DATA_DIR` (the latter carries your actual `--data-dir`, so
+other users find the install without re-passing the flag). On a fresh login
+`kubectl` and `leap` just work, for every user, with no per-user setup. On
 **mac** there is no equivalent system-wide drop-in, so add the exports to your
-shell rc. The manual steps are also useful if that file is missing or you
-installed to a custom `--data-dir`:
+shell rc. The manual steps below are only needed on mac, or if that file is
+missing:
 
 ```bash
 sudo tee /etc/profile.d/tensorleap.sh >/dev/null <<'EOT'
