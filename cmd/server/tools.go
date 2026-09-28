@@ -7,6 +7,7 @@ import (
 	k3dcmd "github.com/k3d-io/k3d/v5/cmd"
 	"github.com/spf13/cobra"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/server"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -77,10 +78,21 @@ func newTensorleapKubectlCommand() *cobra.Command {
 //     can't be resolved.
 func setDefaultKubeConfig(ctx context.Context, configFlags *genericclioptions.ConfigFlags) {
 	if configFlags.KubeConfig != nil && *configFlags.KubeConfig != "" {
-		return // explicit --kubeconfig wins
+		return // explicit --kubeconfig wins; the caller chose their own file
 	}
+	// The shared kubeconfig is group-readable only (cluster-admin creds). Make
+	// sure this caller carries the tensorleap group before kubectl opens it, so
+	// a brand-new account (e.g. an ssm-user the SSM agent created after the
+	// install) can read it on its first command rather than getting permission
+	// denied. This must run BEFORE the $KUBECONFIG check below: a login shell
+	// already has KUBECONFIG exported by the installer's /etc/profile.d drop-in,
+	// pointing at that same group-only file, so returning early here would skip
+	// the group activation exactly when it is needed. Best-effort and
+	// non-interactive; a no-op when there is no install or the caller is already
+	// a member.
+	local.ActivateSharedGroup()
 	if os.Getenv("KUBECONFIG") != "" {
-		return // respect a user-set $KUBECONFIG
+		return // respect a user-set $KUBECONFIG (typically the shared file itself)
 	}
 	path, err := k3d.ResolveSharedKubeConfig(ctx)
 	if err != nil {

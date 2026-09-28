@@ -121,14 +121,53 @@ func syncSharedGroupMembers(gid int) error {
 	if len(toAdd) == 0 {
 		return nil
 	}
-	log.Printf("Adding %s to group %s (you may be asked to enter the root user password)", strings.Join(toAdd, ", "), SHARED_GROUP_NAME)
+	log.Printf("Adding %s to group %s", strings.Join(toAdd, ", "), SHARED_GROUP_NAME)
 	var firstErr error
 	for _, name := range toAdd {
-		if err := runAsRoot("usermod", "-aG", SHARED_GROUP_NAME, name); err != nil && firstErr == nil {
-			firstErr = fmt.Errorf("usermod -aG %s %s: %w", SHARED_GROUP_NAME, name, err)
+		// Non-interactive: adding another account is done on their behalf, so a
+		// caller without cached sudo credentials is warned, never prompted.
+		if err := runAsRootQuiet("usermod", "-aG", SHARED_GROUP_NAME, name); err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
 	return firstErr
+}
+
+// ActivateSharedGroup makes the current process carry the shared group for a
+// read-only command such as `leap server tools kubectl`, when an install
+// already exists. Unlike EnsureSharedGroup it never creates the group and never
+// prompts for a password: a missing group means there is no install to join, so
+// it does nothing; it best-effort adds accounts with `sudo -n`; and it re-execs
+// under sg only when that made the caller a member. It never hard-fails — the
+// read command still falls through to its own behaviour if group access turns
+// out to be genuinely unavailable.
+//
+// This is what lets a brand-new account (an ssm-user the SSM agent created after
+// the install) reach the group-readable shared kubeconfig on its very first
+// command, without a prior lifecycle command or a re-login.
+func ActivateSharedGroup() {
+	if runtime.GOOS != "linux" {
+		return
+	}
+	gid, ok := lookupSharedGroupGID()
+	if !ok {
+		return // no group yet => no install to join
+	}
+	if os.Geteuid() == 0 || processHasGroup(gid) {
+		return // root, or already carrying the group => nothing to do
+	}
+	if err := syncSharedGroupMembers(gid); err != nil {
+		log.Warnf("Could not sync group %s membership: %v", SHARED_GROUP_NAME, err)
+	}
+	if !isSharedGroupMember(currentUserName(), gid) {
+		log.Warnf("%s is not a member of group %s; shared files such as the kubeconfig may be unreadable. An admin can add you: sudo usermod -aG %s %s (then log out and back in)",
+			currentUserName(), SHARED_GROUP_NAME, SHARED_GROUP_NAME, currentUserName())
+		return
+	}
+	log.Infof("Activating group %s for this run", SHARED_GROUP_NAME)
+	if err := reexecWithSharedGroup(); err != nil {
+		log.Warnf("Could not activate group %s for this run: %v", SHARED_GROUP_NAME, err)
+	}
 }
 
 func sharedGroupMembersToAddFromHost(gid int) ([]string, error) {

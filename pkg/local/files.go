@@ -253,6 +253,23 @@ func runAsRoot(args ...string) error {
 	return runMaybeSudo(true, args...)
 }
 
+// runAsRootQuiet runs a command as root without ever prompting for a password
+// (sudo -n) and captures its output instead of streaming it, so a
+// "sudo: a password is required" line never reaches the user. The returned
+// error carries the output for logging. Used for best-effort group membership
+// sync, where a caller without cached sudo credentials must never be blocked on
+// a prompt and the failure is only advisory.
+func runAsRootQuiet(args ...string) error {
+	if os.Geteuid() != 0 {
+		args = append([]string{"sudo", "-n"}, args...)
+	}
+	out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
 // MoveOrCopyDirectory tries to rename the directory, on failure tries to copy
 func MoveOrCopyDirectory(srcStatus, dstStatus FileSystemStatus) error {
 	// Ensure the parent directory of the destination exists. Only create it

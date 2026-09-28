@@ -142,3 +142,23 @@ func TestSharedGroupGIDIsAbsentOffLinux(t *testing.T) {
 	}
 	require.False(t, ok)
 }
+
+func TestActivateSharedGroupNoGroupIsNoop(t *testing.T) {
+	// With no shared group on the host (the common case off an installed Linux
+	// box: mac dev, CI, a machine before first install), ActivateSharedGroup
+	// must do nothing and never prompt or error.
+	prev := lookupSharedGroupGID
+	lookupSharedGroupGID = func() (int, bool) { return -1, false }
+	t.Cleanup(func() { lookupSharedGroupGID = prev })
+	ActivateSharedGroup() // must not panic, prompt, or re-exec
+}
+
+func TestActivateSharedGroupAlreadyMemberIsNoop(t *testing.T) {
+	// When the process already carries the group, ActivateSharedGroup returns
+	// without touching sudo or re-executing.
+	skipOnWindows(t)
+	prev := lookupSharedGroupGID
+	lookupSharedGroupGID = func() (int, bool) { return os.Getegid(), true }
+	t.Cleanup(func() { lookupSharedGroupGID = prev })
+	ActivateSharedGroup() // effective gid == "shared" gid => processHasGroup true => no-op
+}
