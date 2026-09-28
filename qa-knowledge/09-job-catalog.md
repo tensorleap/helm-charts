@@ -118,6 +118,7 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 - **Outputs:** per-insight docs in mongo `insights` (status `InReview`, stamped with `insightsCounter`); `versions.resources.csv_blob_path` + `vis_resources.insights_revision`; bumps `populationExplorationDigestSeedCount` once (→ one pop-exp re-run). Engine uploads the insights CSV to the bucket; reads `es_metrics_index`.
 - **Success:** job FINISHED + `insights` docs at the current `insightsCounter` + `#insight-card` cards under `#insights-list` + `csv_blob_path` populated.
 - **Failure / gotchas:** SLIM pod OOM (insights load latent spaces in one pod, no scaling) → FAILED; **empty insights list → FINISHED with no cards** (often mistaken for failure); revision mismatch → UI shows wrong-revision/empty list.
+- **Out-of-Distribution insights are hidden from this panel and its summary** (`InsightsListPanel.tsx`/`InsightSummary.tsx` filter out `ScatterInsightType.OutOfDistribution`) — the `insights` docs still exist, but OOD surfaces only via the Unlabeled Analysis top panel's drill-down (see below).
 
 ### Dataset Balancing  ·  Synthetic Data Generation  ·  Labeling Recommendation (DS Curation)
 All are launched from the **DS Curation** toolbar button → `DatasetCurationDialog`
@@ -250,7 +251,11 @@ low-performance "aggressor" clusters, and a per-sample trust/confidence score
   (`web-ui/src/dashboard/DashboardContext.tsx`), gated by `useTopPanelUnlabeledAnalysisRecord`
   (`web-ui/src/dashboard/top-panel/useTopPanelState.ts`) and rendered by
   `web-ui/src/dashboard/top-panel/UnlabeledAnalysisTopPanel.tsx` — same one-panel-at-a-time pattern
-  as Domain Gap/Pruning's top panels. Uses icon `web-ui/src/ui/icons/ood-cluster-icon.svg`.
+  as Domain Gap/Pruning's top panels. Uses icon `web-ui/src/ui/icons/ood-cluster-icon.svg`. An OOD
+  card's drill-down (`OodDrillDown`/`DrillDownCard`) includes a **Correlated Metadata** section
+  (`DrillDownCorrelatedMetadata`, shared row-building via `correlatedRows` with
+  `GenericInsightTopPanel.tsx`) ranking the cluster's metadata by mutual information, unique-value
+  chips first.
 - **Note:** `WorkerSlimLSOps._unlabeled_analysis_request` (`workerslimlsops.py`) still contains a
   fallback path that re-tags a `synthetic_calibration`-shaped request as `unlabeled_analysis`,
   described in its docstring as a transitional shim from "before node knows how to send
