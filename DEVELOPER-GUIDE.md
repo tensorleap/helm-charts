@@ -47,41 +47,59 @@ tags on this repository — the Go module proxy picks up any semver tag, making
 it available to downstream consumers (primarily `leap-cli`). There is no
 separate publish step or registry push.
 
-### Release steps
+Release Production tags the module and releases the matching `leap-cli` in the
+same run, so a regular release needs nothing done by hand.
 
-1. **Bump the installer version** in `pkg/version/version.go`. The exported
-   `Version` constant is the single source of truth and must match the Git tag.
-2. **Decide the version bump**:
-   - Patch bump for bug fixes and non-breaking changes.
-   - Minor bump when the update requires users to upgrade their CLI (e.g.
-     changes to exported APIs consumed by `leap-cli`, or behavior changes that
-     require a new installer). See `.cursor/rules/go-code.mdc` for the
-     external-stability contract around `pkg/server.RunInstallCmd` and similar
-     entry points.
-3. **Open a PR and merge to `master`**. The `Go CI` workflow
+### Changing the installer
+
+1. **Open a PR and merge to `master`**. The `Go CI` workflow
    (`.github/workflows/go_ci.yml`) runs `make check-fmt`, `go build`,
    `golangci-lint`, and `make test` on any change under `go.mod`, `go.sum`,
    `main.go`, `cmd/**`, or `pkg/**`.
-4. **Tag and push from `master`**. A `Makefile` helper derives the tag from the
-   compiled binary so it always matches `pkg/version/version.go`:
+2. **Leave the patch version alone.** At release time
+   `scripts/resolve-installer-version.sh` picks the version for the exact
+   installer code being shipped:
+   - it reuses `v<version.go>` when that tag already holds the same code;
+   - it creates the tag when it doesn't exist yet;
+   - otherwise it takes the next free patch and writes it into `version.go` on
+     the version branch.
 
-   ```bash
-   git checkout master && git pull
-   make create_go_tag                        # creates annotated tag, e.g. v0.10.4
-   git push origin "$(go run . --version)"   # publishes the tag
-   ```
+   The manifest's `installerVersion`, `leap server --info` and the tag always
+   agree.
+3. **Bump the minor by hand only when users must upgrade their CLI.** Edit
+   `const Version` in `pkg/version/version.go` (e.g. `v0.10.x` → `v0.11.0`).
+   Typical reasons: changes to exported APIs consumed by `leap-cli`
+   (`pkg/server.RunInstallCmd` and similar entry points), or installer behavior
+   an older CLI can't handle. After a minor change, older CLIs refuse the new
+   manifests and newer CLIs refuse older ones (`ValidateInstallerVersion` in
+   `pkg/server/checks.go`).
 
-   Once the tag is pushed, `go get github.com/tensorleap/helm-charts@<tag>`
-   will resolve to it via `proxy.golang.org`.
-5. **Update `leap-cli`** to consume the new version:
-   - Bump the `github.com/tensorleap/helm-charts` requirement in `leap-cli`'s
-     `go.mod`.
-   - Run `go mod tidy`.
-   - Open a PR, merge to `master`, then tag `leap-cli` with a matching
-     version to cut a new CLI release.
+### How the CLI is released
 
-These steps keep the installer module, the tag, and the `leap-cli` release in
-lockstep.
+For the newest version, Release Production runs `_release_cli.yml` twice. The
+first run is a dry run before anything is published: if the CLI doesn't build
+or its tests fail, the release stops. The second run, after the manifest is out,
+does the release:
+
+1. Regenerates `leap-cli`'s Go API client (`pkg/tensorleapapi`) from the
+   node-server image the release ships (`scripts/regen-leap-cli-api.sh`). It
+   reads the spec out of the published image, so no NPM_TOKEN is needed.
+2. Pins `leap-cli`'s `go.mod` to the installer tag.
+3. Builds and tests, commits to `leap-cli`'s `X.Y.Z` branch, and pushes the next
+   `v0.0.N` tag. The tag runs `leap-cli`'s own "Create release".
+4. Release Production then installs that exact manifest and CLI pair.
+
+**CLI-only fix between releases:** cherry-pick it onto the newest `leap-cli`
+version branch, then dispatch **Release CLI** with that version and `dry_run`
+unchecked.
+
+Don't tag `leap-cli` `master` by hand. Master doesn't carry the releases'
+`go.mod` and API client commits, so a CLI built from it would replace the latest
+CLI with an older installer and API client.
+
+A fix to the installer code itself ships as a product patch: run Patch, then
+Release Production. Release CLI refuses to run when the installer code on the
+branch no longer matches its tag.
 
 # Installer Upgrade Mechanism
 Upgrades can involve:
