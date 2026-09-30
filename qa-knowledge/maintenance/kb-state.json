@@ -1,30 +1,30 @@
 {
   "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
-  "last_verified_utc": "2026-09-29",
+  "last_verified_utc": "2026-09-30",
   "repos": {
     "helm-charts": {
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "3e990523618e9a8229e5c48b004036c570d313ec"
+      "built_from_sha": "0524306e985a7c0b884f0d4040f98505844c2111"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "d7000fb3156a6ecf0afb11ba223e52398aebfc6c"
+      "built_from_sha": "cdc13c7a950b9c0d883bb6ce11bad72ed3524fb9"
     },
     "node-server": {
       "remote": "git@github.com:tensorleap/node-server.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "bcfd4699a02e8c8b9f916ae9614f470132ff1c11"
+      "built_from_sha": "b412f9533ef0c487fc0ab80354c7f9416047a24c"
     },
     "web-ui": {
       "remote": "git@github.com:tensorleap/web-ui.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "fcffdded1ae6fffdc0f115b198ff34a67ee07cd3"
+      "built_from_sha": "bf2f536b1bd07ee71852f19a4195f4385eaa98eb"
     },
     "leap-cli": {
       "remote": "git@github.com:tensorleap/leap-cli.git",
@@ -36,7 +36,7 @@
       "remote": "git@github.com:tensorleap/code-loader.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "3b5127b71d2a6891ce9230b68cfdcb5ea2ea448d"
+      "built_from_sha": "109405d2b11aca4ca27f4bb3a652c10c1e9acfc5"
     }
   }
 }
