@@ -117,6 +117,14 @@ A dashlet passes through layered states. Decide pass/fail by combining a
 - For Population Exploration: it transitions
   `population-exploration-processing` → `population-exploration-dashlet`
   (the scatter map appears).
+- For Population Exploration **re-visualization** (filters/version changed after
+  data already rendered): the dashlet keeps the previous scatter map visible
+  (dimmed/desaturated canvas) and overlays a small status pill instead of
+  reverting to the processing placeholder — text-only, no `id`/`data-testid`:
+  "Refreshing population…" → "Updated · just now · `<n>` samples" (auto-hides
+  after ~3s) or "Refresh failed" with a "Retry" button on error
+  (`ScatterAnalyzerView.tsx`, `usePopulationExploration.ts`). Assert on this
+  pill's text via DOM snapshot/accessible-name, not a selector.
 
 ### Tie the UI state back to the back-end
 - `No results found` → check `GET /_cat/indices | grep <teamId>` and

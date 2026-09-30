@@ -14,6 +14,43 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-09-30 — manual refresh (all repos → master)
+Reviewed: engine d7000fb3..cdc13c7a, node-server bcfd4699..b412f953, web-ui
+fcffdded..bf2f536b, code-loader 3b5127b7..109405d2, leap-cli (unchanged),
+helm-charts 3e990523..0524306e (only qa-knowledge/maintenance files changed).
+Docs checked: 02-components, 03-data-flows, 05-testing-utils, 06-ui-inspection,
+07-failure-modes, 08-test-playbooks, 09-job-catalog (01-architecture,
+04-job-types-and-lifecycle, 10-verification-toolbox not impacted per manifest).
+Changed:
+- 06-ui-inspection.md — documented the new Population Exploration
+  re-visualization status pill ("Refreshing population…" / "Updated · just
+  now · N samples" / "Refresh failed" + Retry), which now keeps the stale
+  scatter map visible instead of reverting to the processing placeholder
+  (`ScatterAnalyzerView.tsx`, `usePopulationExploration.ts`).
+- 09-job-catalog.md — documented the new Generate Insights drill-down
+  (`parentInsightId` on `generateInsights`, threaded to engine as
+  `parent_insight_id` on `SlimInsightsCalculationRequest` /
+  `WorkerSlimLSOps.insights_calculation`; same SLIM_LS job, no new job type)
+  and the `applyInsightsStatus` batching change (single `insightId` →
+  `insightIds[]`, `updateOne` → `updateMany`).
+- 02-components.md, 03-data-flows.md, 05-testing-utils.md,
+  07-failure-modes.md, 08-test-playbooks.md — no drift found; reviewed all
+  changed files in their manifest scope, no cited claim was stale.
+Open gaps:
+- New "model-computed custom latent space" feature (engine
+  `metricsrunner.py`/`workerstreaminghandler.py` compute/reduce/clip/drop
+  path, code-loader `leapbinder_decorators.py`/`leaploaderbase.py` new
+  validation + `CustomLatentSpaceComputedAt`/`LatentSpaceReduction` enums,
+  new engine-facing entry points `run_model_latent_space`,
+  `get_model_custom_latent_space_specs`) is not yet documented anywhere in
+  the KB (02-components, 07-failure-modes, 08-test-playbooks, 09-job-catalog
+  all flagged it as out-of-scope for a "patch what's stale" pass since it's
+  net-new, not a correction). Worth a dedicated doc pass once the feature is
+  stable/used in practice — not confirmed end-to-end against a live cluster.
+- Which web-ui UI element triggers the new `parentInsightId` drill-down flow
+  (which button/panel) was not identified — backend/engine contract evidence
+  is solid, but the UI entry point is unconfirmed.
+
 ## 2026-09-29 — manual refresh (all repos → master; no drift)
 Reviewed: helm-charts `23e266c0..3e990523` (the prior two KB-update PRs' own doc edits under `qa-knowledge/**` — `09-job-catalog.md`, `GAPS.md`, `kb-state.json` — no manifest-glob match, no source change), engine `3fb9d69e..d7000fb3` (BF-1258 dataset-curation perf fix: `coreset_furthest_first_batched`'s auto-infer mode (`k=None`, used by Labeling Recommendation) previously scanned the entire unlabeled pool with no bound, turning a >100k-sample pool into an O(n²) traversal that could take days; now caps the pool at `AUTO_INFER_POOL_CAP=20_000` via random subsampling before the furthest-first search (mapping selected indices back to the original pool at the end), and adds ETA/duration logging — reviewed against 03-data-flows.md and 09-job-catalog.md's Labeling Recommendation row: neither names `coreset_furthest_first_batched`, the knee-finding algorithm, or any pool-size/performance characteristic at this granularity, so nothing to correct), web-ui `6ac34833..fcffdded` (`InsightCardText.tsx`'s `InsightDataGrid` drops the `enableExpand`/"Show More"/"Show Less" footer-toggle in favor of a fixed 5-row `MAX_VISIBLE_ROWS` with internal scroll (used by `CorrelatedMetadataOnCluster` and `MetricsTable`); `useInsightScrollPersist.ts` stops calling `stopPropagation` on the drawer's scroll handler (was blocking scroll-chaining to ancestor containers) and just tracks position; `XYChart.tsx` adds `throttledEvents={[]}` (disables visx's mouse-event throttling); `theme.tsx` tweaks the MUI DataGrid header background/separator-clipping — reviewed against 06-ui-inspection.md and 02-components.md: neither names `InsightDataGrid`, `enableExpand`, the Show More/Less control, or any DataGrid theming detail, so nothing to correct), node-server/leap-cli/code-loader unchanged (baseline SHA == current `origin/master` HEAD).
 Changed: none — no doc asserted anything either diff invalidated.
