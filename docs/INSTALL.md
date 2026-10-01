@@ -64,6 +64,11 @@ curl -s https://tensorleap.yourcompany.com/auth/realms/tensorleap | jq .realm
 Open `https://tensorleap.yourcompany.com/` in your browser. First-time setup
 instructions are on the welcome screen.
 
+## Password reset
+
+There is no email-based reset. An operator sets a temporary password from inside
+the Keycloak pod; see "Resetting a forgotten password" in the repository README.
+
 ## Upgrade
 
 Re-run the same command with a newer `--version`. Helm performs a rolling
