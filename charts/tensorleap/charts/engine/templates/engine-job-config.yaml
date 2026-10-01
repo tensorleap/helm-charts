@@ -22,6 +22,9 @@ data:
       image: {{ .Values.generic_calculator_image }}:{{ .Values.image_tag }}-py312
   defaultGpuType: {{ .Values.gpu | ternary "gpu" "cpu" }}
   defaultCpuType: cpu
+{{- if .Values.gpu_count }}
+  gpuCount: {{ .Values.gpu_count | quote }}
+{{- end }}
   machineTypes: |
     - id: cpu
       displayName: CPU
