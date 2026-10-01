@@ -25,3 +25,28 @@ Show [here](https://helm.tensorleap.ai/latest_airgap_versions.html) the latest A
    Your custom release is now ready to be installed. Visit the releases section of the `helm-charts` repository to find a release name that starts with the custom name you provided earlier. Copy the release name and use one of the following commands:
    - `leap server install -t [release-name]`
    - `leap server upgrade -t [release-name]`
+## Resetting a forgotten password
+
+Passwords are stored in Keycloak and there is no email-based reset. An operator
+resets them from the machine where the server is installed:
+
+```bash
+leap server reset-password user@example.com
+```
+
+It sets a temporary password (printed once), signs the user out everywhere, and
+Keycloak forces a new password at the next browser login. `leap auth login -u/-p`
+works again after that. Existing API keys are unaffected.
+
+Without `leap server` (plain helm install), run the same steps with kubectl:
+
+```bash
+kubectl -n tensorleap exec -i keycloak-0 -- bash -s <<'SCRIPT'
+set -euo pipefail
+KC=/opt/keycloak/bin/kcadm.sh; CFG=/tmp/kcadm.config
+"$KC" config credentials --config "$CFG" --server http://localhost:8080/auth --realm master --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+ID=$("$KC" get users --config "$CFG" -r tensorleap -q email=user@example.com -q exact=true --fields id --format csv --noquotes)
+"$KC" set-password --config "$CFG" -r tensorleap --userid "$ID" --new-password 'Temp-Passw0rd' --temporary
+"$KC" create users/"$ID"/logout --config "$CFG" -r tensorleap
+SCRIPT
+```
