@@ -1,9 +1,12 @@
 package server
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/tensorleap/helm-charts/pkg/local"
 )
 
 func TestGetCreateK3sClusterParams(t *testing.T) {
@@ -90,6 +93,45 @@ func TestGetServerHelmValuesParams(t *testing.T) {
 		helmParams := params.GetServerHelmValuesParams("unknown")
 		assert.False(t, helmParams.KeycloakEnabled, "Keycloak should be disabled when DisabledAuth is true")
 	})
+
+	t.Run("GpuCount follows the explicit --gpus count", func(t *testing.T) {
+		params := InstallationParams{Gpus: 2}
+		helmParams := params.GetServerHelmValuesParams("unknown")
+		assert.Equal(t, uint(2), helmParams.GpuCount)
+	})
+}
+
+func TestDetectGpuCount(t *testing.T) {
+	t.Cleanup(func() { checkNvidiaGPU = local.CheckNvidiaGPU })
+	stub := func(n int, err error) {
+		checkNvidiaGPU = func() ([]local.GPU, error) {
+			if err != nil {
+				return nil, err
+			}
+			return make([]local.GPU, n), nil
+		}
+	}
+
+	tests := []struct {
+		name     string
+		params   InstallationParams
+		detected int
+		err      error
+		expected uint
+	}{
+		{"cpu install", InstallationParams{}, 4, nil, 0},
+		{"explicit count", InstallationParams{Gpus: 2}, 4, nil, 2},
+		{"specific uuids", InstallationParams{GpuDevices: "GPU-a,GPU-b,GPU-c"}, 4, nil, 3},
+		{"old-style indexes", InstallationParams{GpuDevices: "0,1"}, 4, nil, 2},
+		{"all uses detection", InstallationParams{GpuDevices: allGpuDevices}, 4, nil, 4},
+		{"all, detection fails", InstallationParams{GpuDevices: allGpuDevices}, 0, errors.New("no nvidia-smi"), 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stub(tt.detected, tt.err)
+			assert.Equal(t, tt.expected, detectGpuCount(&tt.params))
+		})
+	}
 }
 
 func TestGetEngineProxyEnv(t *testing.T) {
