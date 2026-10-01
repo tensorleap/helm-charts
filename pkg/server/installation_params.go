@@ -434,6 +434,26 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 	}
 }
 
+var checkNvidiaGPU = local.CheckNvidiaGPU
+
+func detectGpuCount(params *InstallationParams) uint {
+	if !params.IsUseGpu() {
+		return 0
+	}
+	if params.Gpus > 0 {
+		return params.Gpus
+	}
+	if params.GpuDevices != allGpuDevices {
+		return uint(len(strings.Split(params.GpuDevices, ",")))
+	}
+	gpus, err := checkNvidiaGPU()
+	if err != nil {
+		log.Warnf("Failed detecting GPU count: %v", err)
+		return 0
+	}
+	return uint(len(gpus))
+}
+
 func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, error) {
 	if IsUseDefaultPropOption() {
 		return true, nil // In non-interactive mode, continue without validation
@@ -866,6 +886,7 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 
 	return &helm.ServerHelmValuesParams{
 		Gpu:                    params.IsUseGpu(),
+		GpuCount:               detectGpuCount(params),
 		LocalDataDirectories:   dataContainerPaths,
 		DisableDatadogMetrics:  params.DisableMetrics,
 		Domain:                 params.Domain,
