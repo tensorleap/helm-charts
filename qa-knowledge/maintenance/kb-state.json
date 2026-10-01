@@ -1,18 +1,18 @@
 {
   "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
-  "last_verified_utc": "2026-09-30",
+  "last_verified_utc": "2026-10-01",
   "repos": {
     "helm-charts": {
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "0524306e985a7c0b884f0d4040f98505844c2111"
+      "built_from_sha": "1683552bd306836dd52a35e10461f3d4ebc5082e"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "cdc13c7a950b9c0d883bb6ce11bad72ed3524fb9"
+      "built_from_sha": "426ee8e0cb12889747725e97b415cdbcd503ebc5"
     },
     "node-server": {
       "remote": "git@github.com:tensorleap/node-server.git",
@@ -24,19 +24,19 @@
       "remote": "git@github.com:tensorleap/web-ui.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "bf2f536b1bd07ee71852f19a4195f4385eaa98eb"
+      "built_from_sha": "3a016d58d0e6c6b5877b2347e21fe6b751657bc8"
     },
     "leap-cli": {
       "remote": "git@github.com:tensorleap/leap-cli.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "936429a3100dff53ad239e884b83d4e1d91a70cf"
+      "built_from_sha": "ef4d63f9bba0676b8ac1f3ce71e6a5ba3ad48b9c"
     },
     "code-loader": {
       "remote": "git@github.com:tensorleap/code-loader.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "109405d2b11aca4ca27f4bb3a652c10c1e9acfc5"
+      "built_from_sha": "f2fcd37cdfbe4c9d3430a6eecdcec914a036ca89"
     }
   }
 }

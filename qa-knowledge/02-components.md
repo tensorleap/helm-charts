@@ -286,7 +286,9 @@ deps pinned exactly; bundled tarballs updated via `helm dependency build`.
 `[--purge|--cleanup|--clear-data|--custom]`,
 `run`/`up`/`start`, `stop`/`down`, `check` *(stub — prints only "Check command")*,
 `pack`/`pack-installation` (airgap), `create-manifest`, **`tools`** (embedded k3d +
-kubectl pre-wired to context `k3d-tensorleap`).
+kubectl pre-wired to context `k3d-tensorleap`), `reset-password <email> [--password]`
+(execs into the Keycloak pod, sets a temporary password via `kcadm` and revokes the
+user's sessions — the only password-reset path, there is no email-based flow).
 
 **Single-gateway rule (for code-aware tests/repro):** all Helm ops go through
 `pkg/helm`; k3d through `pkg/k3d`; docker through `pkg/docker`. Names/limits are
@@ -315,7 +317,8 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
   **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples}`
   (implies `--eval`; `samples` evaluates only newly added samples and skips the
   run-eval prompt), `--no-wait`, `--novis`, `--yes`.
-- `leap projects {create,init,list,select,info,delete,copy,export,import,publish,push,set-secret}`.
+- `leap projects {create,init,list,select,info,delete,export,import,publish,push,set-secret}`.
+  (`copy` was removed — it was broken; use `export`/`import` to move a project across envs.)
 - `leap run {list,logs <runId>,info <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
 - `leap server …` — cluster lifecycle + embedded `kubectl`/`k3d`.
 
