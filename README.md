@@ -38,10 +38,12 @@ It sets a temporary password (printed once), signs the user out everywhere, and
 Keycloak forces a new password at the next browser login. `leap auth login -u/-p`
 works again after that. Existing API keys are unaffected.
 
-Without `leap server` (plain helm install), run the same steps with kubectl:
+Without `leap server` (plain helm install, or a cloud cluster), run the same
+steps with kubectl against whichever Keycloak pod the chart created:
 
 ```bash
-kubectl -n tensorleap exec -i keycloak-0 -- bash -s <<'SCRIPT'
+POD=$(kubectl -n tensorleap get pod -l app.kubernetes.io/name=keycloakx -o jsonpath='{.items[0].metadata.name}')
+kubectl -n tensorleap exec -i "$POD" -- bash -s <<'SCRIPT'
 set -euo pipefail
 KC=/opt/keycloak/bin/kcadm.sh; CFG=/tmp/kcadm.config
 "$KC" config credentials --config "$CFG" --server http://localhost:8080/auth --realm master --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
