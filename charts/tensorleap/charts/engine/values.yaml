@@ -29,6 +29,9 @@ total_memory_bytes: ""
 total_memory_source: ""
 installation_memory_reserve_bytes: ""
 gpu: false
+# Number of GPUs the installation has; set by the installer. 0 = unknown, the
+# "GPUs per run" setting then stays a free number input instead of a dropdown.
+gpu_count: 0
 gpuTolerations: []
 
 additional_pvcs: []

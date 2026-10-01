@@ -28,6 +28,7 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 		expected := Record{
 			"tensorleap-engine": Record{
 				"gpu":                  params.Gpu,
+				"gpu_count":            params.GpuCount,
 				"localDataDirectories": params.LocalDataDirectories,
 				"http_proxy":           "",
 				"https_proxy":          "",
