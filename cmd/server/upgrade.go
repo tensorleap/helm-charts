@@ -64,6 +64,7 @@ func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.Installatio
 	if err := server.ValidateStandaloneDir(); err != nil {
 		return nil, err
 	}
+	local.WarnIfImageCacheReowned()
 
 	installationParams, found, err := server.InitInstallationParamsFromPreviousOrAsk()
 	if err != nil {

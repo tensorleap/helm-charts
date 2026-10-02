@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -175,15 +176,12 @@ func updateContainerCPU(containerID, cpuLimit string) error {
 	return nil
 }
 
-// writeSharedKubeConfig writes the cluster kubeconfig to a stable, world-
-// readable path in the data dir so any local user's kubectl/helm can point at
+// writeSharedKubeConfig writes the cluster kubeconfig to a stable path in the
+// data dir so every member of the tensorleap group can point kubectl/helm at
 // it via $KUBECONFIG (both tools honor it). On Linux it also drops a
 // /etc/profile.d entry exporting KUBECONFIG so login shells pick it up
 // automatically; macOS has no equivalent drop-in, so mac users export it from
 // their shell rc (see MULTI-USER.md).
-// ponytail: the kubeconfig holds cluster-admin creds, so world-readable = any
-// local user is cluster-admin. Fine on a shared dev box (data dir is already
-// 777); switch to a group + 640 if not.
 func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
 	sharedPath, err := writeSharedKubeConfigFile(ctx, cluster)
 	if err != nil {
@@ -193,26 +191,51 @@ func writeSharedKubeConfig(ctx context.Context, cluster *Cluster) error {
 	if runtime.GOOS != "linux" {
 		return nil
 	}
-	// Drop a login-shell export so KUBECONFIG points at the shared file. sharedPath
-	// is a plain filesystem path (no shell metachars), so this is safe to quote.
-	return local.RunCommand("sudo", "sh", "-c",
-		"echo 'export KUBECONFIG="+sharedPath+"' > /etc/profile.d/tensorleap-kubeconfig.sh")
+	// Drop a login-shell profile script so every local user's shell finds the
+	// install with no per-user setup:
+	//   KUBECONFIG   → kubectl/helm reach the shared, group-readable kubeconfig
+	//   TL_DATA_DIR  → the leap CLI finds the data dir, so a custom --data-dir is
+	//                  discoverable by other users without re-passing the flag
+	// Both are plain filesystem paths with no shell metacharacters, so echoing
+	// them is safe. This replaces the older kubeconfig-only drop-in, which is
+	// removed so an upgrade doesn't leave two files behind.
+	dataDir := local.GetServerDataDir()
+	script := "echo 'export KUBECONFIG=" + sharedPath + "' > /etc/profile.d/tensorleap.sh && " +
+		"echo 'export TL_DATA_DIR=" + dataDir + "' >> /etc/profile.d/tensorleap.sh && " +
+		"rm -f /etc/profile.d/tensorleap-kubeconfig.sh"
+	return local.RunCommand("sudo", "sh", "-c", script)
 }
 
 // writeSharedKubeConfigFile writes the cluster kubeconfig to the stable shared
-// path in the data dir and makes it world-readable, returning that path. Unlike
+// path in the data dir, returning that path. The file carries cluster-admin
+// credentials, so it is readable by the tensorleap group only (0660). It is
+// written next to its final path and renamed into place, which replaces a file
+// another member created instead of failing to open it for writing. Unlike
 // writeSharedKubeConfig it does NOT touch shell profiles — that login-shell
 // wiring is install-only, whereas this file write is also used to self-heal a
 // missing shared kubeconfig at kubectl time (see ResolveSharedKubeConfig).
 func writeSharedKubeConfigFile(ctx context.Context, cluster *Cluster) (string, error) {
 	sharedPath := local.GetKubeConfigPath()
-	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, cluster, sharedPath,
-		&k3dCluster.WriteKubeConfigOptions{OverwriteExisting: true}); err != nil {
+	kubeConfig, err := k3dCluster.KubeconfigGet(ctx, runtimes.SelectedRuntime, cluster)
+	if err != nil {
 		return "", err
 	}
-	// World-accessible so any local user can read it (matches the 777 data dir).
-	if err := os.Chmod(sharedPath, 0777); err != nil {
+	tmp, err := os.CreateTemp(filepath.Dir(sharedPath), "."+filepath.Base(sharedPath)+".*.tmp")
+	if err != nil {
+		return "", fmt.Errorf("creating temp kubeconfig next to %s: %w", sharedPath, err)
+	}
+	tmpPath := tmp.Name()
+	_ = tmp.Close()
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	if err := k3dCluster.KubeconfigWriteToPath(ctx, kubeConfig, tmpPath); err != nil {
 		return "", err
+	}
+	if err := local.SetSharedFilePerms(tmpPath, 0o660); err != nil {
+		return "", err
+	}
+	if err := os.Rename(tmpPath, sharedPath); err != nil {
+		return "", fmt.Errorf("replacing %s: %w", sharedPath, err)
 	}
 	return sharedPath, nil
 }

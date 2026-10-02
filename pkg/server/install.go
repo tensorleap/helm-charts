@@ -169,6 +169,9 @@ func InitCluster(ctx context.Context, mnf, previousMnf *manifest.InstallationMan
 
 	clusterNotExists := cluster == nil
 	if clusterNotExists {
+		if err := local.RepairReownedImageCache(); err != nil {
+			log.Warnf("Could not check the container image cache: %v", err)
+		}
 		cluster, err = k3d.CreateCluster(ctx, mnf, installationParams.GetCreateK3sClusterParams(), local.GetContainerdDataDir())
 		if err != nil {
 			createNew = true

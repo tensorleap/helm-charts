@@ -194,7 +194,7 @@ func generateRandomName(seed *int64) (string, error) {
 
 func persistHostname(hostname string) error {
 	filePath := local.GetInstallationHostnamePath()
-	err := os.WriteFile(filePath, []byte(hostname), 0777)
+	err := local.WriteFileAtomic(filePath, []byte(hostname), 0o664)
 
 	if err != nil {
 		return fmt.Errorf("error persisting hostname: %v", err)

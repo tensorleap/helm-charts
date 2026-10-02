@@ -1018,7 +1018,7 @@ func (params *InstallationParams) Save() error {
 	}
 	// Atomic replace rather than os.WriteFile: params.yaml may be owned by
 	// another local user (see local.WriteFileAtomic).
-	return local.WriteFileAtomic(local.GetInstallationParamsPath(), b, 0666)
+	return local.WriteFileAtomic(local.GetInstallationParamsPath(), b, 0o664)
 }
 
 var ErrNoInstallationParams = fmt.Errorf("no installation params")

@@ -43,3 +43,8 @@ func SetPermissionFromFileInfo(perms *FileSystemStatus, info fs.FileInfo) error 
 
 	return nil
 }
+
+// fileOwner is unavailable on windows; callers treat ok == false as "cannot judge".
+func fileOwner(info fs.FileInfo) (uid, gid int, ok bool) {
+	return 0, 0, false
+}
