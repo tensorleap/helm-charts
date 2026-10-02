@@ -2,6 +2,7 @@ package k3d
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/tensorleap/helm-charts/pkg/helm"
@@ -110,15 +111,32 @@ func BuildZotSyncRegistries(mfs *manifest.InstallationManifest) []helm.ZotSyncRe
 		hostPrefixes[host][prefix] = struct{}{}
 	}
 
+	// Emit hosts and prefixes in sorted order. The result is compared with
+	// reflect.DeepEqual against a second call on the previous manifest in
+	// IsNeedsToReinstall; ranging over the maps here made that comparison
+	// flap on map iteration order alone (8 hosts → the two calls agreed about
+	// 1 time in 13), so nearly every `upgrade` recreated the cluster with
+	// "Reinstall required" and no other reason.
+	hosts := make([]string, 0, len(hostPrefixes))
+	for host := range hostPrefixes {
+		hosts = append(hosts, host)
+	}
+	sort.Strings(hosts)
+
 	var registries []helm.ZotSyncRegistry
-	for host, prefixes := range hostPrefixes {
+	for _, host := range hosts {
 		upstreamURL, ok := registryURLMap[host]
 		if !ok {
 			upstreamURL = fmt.Sprintf("https://%s", host)
 		}
 
-		var content []helm.ZotSyncContent
-		for prefix := range prefixes {
+		prefixes := make([]string, 0, len(hostPrefixes[host]))
+		for prefix := range hostPrefixes[host] {
+			prefixes = append(prefixes, prefix)
+		}
+		sort.Strings(prefixes)
+		content := make([]helm.ZotSyncContent, 0, len(prefixes))
+		for _, prefix := range prefixes {
 			content = append(content, helm.ZotSyncContent{Prefix: prefix})
 		}
 
