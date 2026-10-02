@@ -30,7 +30,7 @@ AWS_PROFILE=utils make ecr-public-cleanup ARGS="--help"   # delete images from p
 
 - Bump `charts/tensorleap/Chart.yaml` `version:` on every chart-affecting change. **Minor-version bumps (`1.5.x → 1.6.0`) signal that cluster reinstall is required** — the installer compares minor versions to decide reinstall (see `DEVELOPER-GUIDE.md`).
 - Bump `charts/tensorleap-infra/Chart.yaml` when infra changes.
-- Bump `pkg/version/version.go` for installer (Go CLI) changes, then tag the repo.
+- Installer (Go CLI) versions: don't bump the patch in `pkg/version/version.go` or tag by hand. Release Production assigns and tags the installer version for the exact code it ships, then releases the matching `leap-cli` (`_release_cli.yml`). Bump the minor by hand only when older CLIs must upgrade (see `DEVELOPER-GUIDE.md`).
 
 ## Go conventions
 
@@ -47,7 +47,7 @@ AWS_PROFILE=utils make ecr-public-cleanup ARGS="--help"   # delete images from p
 
 ### External-facing stability
 
-`pkg/server.RunInstallCmd` and similar are consumed by `leap-cli` (separate repo). Do **not** change signatures without coordinating a `leap-cli` bump (see `DEVELOPER-GUIDE.md`).
+`pkg/server.RunInstallCmd` and similar are consumed by `leap-cli` (separate repo). Do **not** change signatures without coordinating a `leap-cli` bump (see `DEVELOPER-GUIDE.md`). A break surfaces at release time: Release Production's leap-cli dry run builds leap-cli against the release and stops it.
 
 ## Helm / K8s manifest conventions
 

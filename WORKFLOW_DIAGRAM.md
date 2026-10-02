@@ -8,11 +8,12 @@ This document describes all GitHub Actions workflows and reusable actions in the
 
 ### Main Release Workflows
 - **`release_candidate.yml`** - Creates RC branch, bumps version, releases charts and RC manifest
-- **`release_production.yml`** - Removes RC suffix, pins image tags to the release version, releases charts, releases production manifest, generates release notes, notifies Slack
+- **`release_production.yml`** - Preflight checks (contracts, installer version, leap-cli dry run), then removes RC suffix, pins image tags to the release version, tags the installer module, releases charts and production manifest, generates release notes, releases leap-cli and the airgap pack, installs the exact manifest + CLI pair, notifies Slack
 - **`patch.yml`** - Manual patch workflow: Bumps the patch version (or only the RC suffix when `bump` is unchecked), releases charts and manifest
 
 ### Supporting Workflows
 - **`_install_server.yml`** - Reusable workflow to install Tensorleap server using leap-cli
+- **`_release_cli.yml`** ("Release CLI") - Releases leap-cli for a production version (callable + manual; dry-run mode)
 - **`release_airgap_pack.yml`** - Builds and uploads airgap pack to S3 (callable + manual)
 - **`update_images.yml`** - Waits for web-ui build, updates image tags in charts
 - **`ecr_public_cleanup.yml`** - Weekly (Sunday night) and manual: deletes feature-branch / untagged images at least 90 days old from the public ECR registry; manual runs are dry run by default and can add `master`
@@ -106,15 +107,23 @@ This document describes all GitHub Actions workflows and reusable actions in the
 
 ## Workflow: `release_production.yml`
 
-**Purpose:** Release production version of charts and manifest.
+**Purpose:** Release a production version in one run. That covers the charts,
+the manifest, release notes, the airgap pack and, when this is the newest
+version, a matching leap-cli.
 
 **Triggers:**
-- `workflow_dispatch` (manual) - Run from an RC/patch branch (`X.X.X`)
+- `workflow_dispatch` (manual) - Run from an RC/patch branch (`X.X.X`). Only one
+  run at a time (`concurrency: release-production`).
 
-> Releasing from `master` no longer works: the image tags on master carry the
-> `master-` prefix and there is no matching `X.X.X-<sha>` image in ECR, so the
-> tag-pinning step fails the run. Cut a branch with `release_candidate.yml`
-> (or `patch.yml`) and release from it.
+**Inputs:**
+- `release_cli` (checkbox, default checked): also release leap-cli. It is
+  skipped automatically when `X.X.X` is older than the latest `manifest-*`
+  release, so a hotfix on an older line never replaces the latest CLI.
+
+> Releasing from `master` no longer works. The image tags on master carry the
+> `master-` prefix and there is no matching `X.X.X-<sha>` image in ECR. The
+> preflight also refuses any branch whose name isn't the chart version. Cut a
+> branch with `release_candidate.yml` (or `patch.yml`) and release from it.
 
 **Flow:**
 
@@ -122,8 +131,27 @@ This document describes all GitHub Actions workflows and reusable actions in the
 ┌───────────────────────────────────────────────────────────────┐
 │                  🚀 release_production.yml                    │
 │                  (Manual Trigger)                             │
-│                  Run from: RC branch (X.X.X) or master        │
+│                  Run from: RC/patch branch (X.X.X)            │
 └──────────────────────┬────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: preflight (publishes nothing)                              │
+│   ├─ Get release version (must equal the branch name)           │
+│   ├─ Decide whether to release leap-cli                         │
+│   │   └─ release_cli input, and X.X.X ≥ latest manifest-*       │
+│   ├─ Check contracts (scripts/check-release-contracts.sh)       │
+│   │   └─ api-client / engine-contract pins at the web-ui,       │
+│   │      node-server and engine commits being shipped           │
+│   └─ Plan the installer version (dry run)                       │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: cli-dry-run (only when releasing leap-cli)                 │
+│   └─ Uses _release_cli.yml with dry_run: true                   │
+│       └─ A CLI that doesn't build or test stops the release     │
+└──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -137,9 +165,13 @@ This document describes all GitHub Actions workflows and reusable actions in the
 │   │   └─ master-<sha> → X.X.X-<sha> (engine, engine-generic,   │
 │   │      node-server, web-ui); pippin stays on master-<sha>     │
 │   │   └─ Fails if the version-prefixed tag is not in ECR        │
+│   ├─ Set the installer version (resolve-installer-version.sh)   │
+│   │   └─ reuse or create v<version.go>, or bump version.go to   │
+│   │      the next free patch when the tag holds other code      │
 │   ├─ Set up Helm                                                │
 │   ├─ Extract image names (make build-helm, make update-images)  │
 │   ├─ Commit version changes                                     │
+│   ├─ Tag the installer module (vA.B.N)                          │
 │   ├─ Release Charts (release-chart action)                      │
 │   ├─ Release Manifest (release-manifest action)                 │
 │   │   └─ Tag: manifest-X.X.X                                   │
@@ -147,29 +179,78 @@ This document describes all GitHub Actions workflows and reusable actions in the
 │   ├─ Generate Release Notes & Update Jira fixVersion            │
 │   ├─ Commit Release Notes                                       │
 │   └─ Notify Slack - Release Complete                            │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Job: release-airgap                                             │
-│   └─ Uses release_airgap_pack.yml                               │
-│       └─ manifest_name: manifest-X.X.X                          │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
+└──────────────┬──────────────────────────────┬───────────────────┘
+               │                              │
+               ▼                              ▼
+┌──────────────────────────────┐ ┌──────────────────────────────┐
+│ Job: release-cli             │ │ Job: release-airgap          │
+│   └─ Uses _release_cli.yml   │ │   └─ Uses                    │
+│       └─ leap-cli v0.0.N     │ │      release_airgap_pack.yml │
+│                              │ │   then notify-slack-airgap   │
+└──────────────┬───────────────┘ └──────────────┬───────────────┘
+               └──────────────┬─────────────────┘
+                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ Job: install-server                                             │
 │   └─ Uses _install_server.yml                                   │
-│       └─ tag: manifest-X.X.X                                    │
+│       ├─ tag: manifest-X.X.X                                    │
+│       └─ cli_tag: the leap-cli just released (latest if none)   │
 └─────────────────────────────────────────────────────────────────┘
+
+Job: notify-slack-cli posts the leap-cli result, or why it was skipped, and the
+contracts line in the release thread.
 ```
 
 **Outputs:**
 - Production manifest release (`manifest-X.X.X`)
+- Installer module tag (`vA.B.N`)
+- leap-cli release (`v0.0.N`), committed on leap-cli branch `X.X.X`
 - Airgap pack uploaded to S3
 - Release notes updated
 - Jira fixVersion created/updated
 - Slack notification
+
+---
+
+## Workflow: `_release_cli.yml` ("Release CLI")
+
+**Purpose:** Release leap-cli for a production version. The CLI pins that
+release's exact installer code and node-server API.
+
+**Triggers:**
+- `workflow_call`: Release Production calls it twice, once as a dry run before
+  anything is published and once for real.
+- `workflow_dispatch` (manual): re-run a failed CLI release, or ship a CLI-only
+  fix cherry-picked onto the newest leap-cli version branch.
+
+**Inputs:**
+- `version` (required): the production version, which is also the branch name
+  in helm-charts and leap-cli.
+- `dry_run` (default `false` when called, `true` when dispatched): regenerate,
+  build and test only; push nothing.
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Job: release-cli (one real release at a time)                   │
+│   ├─ Check out helm-charts tooling + the X.X.X release branch   │
+│   ├─ Refuse an unreleased or older version (real run only)      │
+│   ├─ Check out leap-cli X.X.X (master if the branch is missing) │
+│   ├─ Regenerate pkg/tensorleapapi (regen-leap-cli-api.sh)       │
+│   │   └─ swagger.json from the shipped node-server image,       │
+│   │      node-server's own generator script at the same commit  │
+│   ├─ Pin the installer module                                   │
+│   │   ├─ dry run: replace with the release checkout             │
+│   │   └─ real run: go get helm-charts@vA.B.N (must match code)  │
+│   ├─ Build and test leap-cli                                    │
+│   ├─ Commit to leap-cli X.X.X and push (real run only)          │
+│   ├─ Tag the next v0.0.N, or reuse the tag on HEAD (real run)   │
+│   └─ Wait for leap-cli's "Create release" (real run only)       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Outputs:** `cli_tag`, `installer_version`, `api_version`
 
 ---
 
@@ -231,7 +312,9 @@ This document describes all GitHub Actions workflows and reusable actions in the
 - `workflow_call` only (reusable)
 
 **Inputs:**
-- `tag` (required): Manifest tag to install
+- `tag` (optional): Manifest tag to install (empty = latest)
+- `cli_tag` (optional): leap-cli release to install (empty = latest). Release
+  Production passes the CLI it just released.
 
 **Flow:**
 
@@ -239,7 +322,7 @@ This document describes all GitHub Actions workflows and reusable actions in the
 ┌─────────────────────────────────────────────────────────────────┐
 │ Job: install-server (timeout: 30 minutes)                       │
 │   ├─ Install leap-cli                                           │
-│   │   └─ curl install.sh from leap-cli repo                     │
+│   │   └─ curl install.sh from leap-cli repo (TAG=cli_tag)       │
 │   │   └─ Validate success                                       │
 │   └─ Install Tensorleap server                                  │
 │       └─ leap server install -t <tag>                           │
