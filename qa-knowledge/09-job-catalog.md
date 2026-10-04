@@ -139,7 +139,7 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
 | endpoint | `/datasetcuration/generateDatasetBalancing` | `/datasetcuration/generateSyntheticData` | `/datasetcuration/generateLabels` |
 | `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
-| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json}` + `dataset_balancing_stats.json` (node-server checks for/exposes it as `statsFileUrl`; ⚠️ engine `master` doesn't write this file yet — see gotcha below) | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
+| bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json, dataset_balancing_stats.json}` (node-server exposes the stats file as `statsFileUrl`) | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
 | UI tab | PRUNING | SYNTHETIC | LABEL NEXT (tab value `UNLABELED`) |
 | validation block | no model / no dashboard / no pop-exp dashlet | "Target is empty" / "No sources added" | "No model selected" |
 
@@ -165,11 +165,13 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
   (`PruningTopPanel.tsx`), replaces the dashboard's global filters with the
   run's training-split cluster filter, and joins the run's version to the
   dashboard's selection — same one-batched-write shape as `applyDomainGapTopPanel`.
-  **⚠️ Currently dormant:** `statsFileUrl` is only set once the bucket has
-  `dataset_balancing_stats.json`, which engine `master` doesn't produce yet
-  (in progress on a separate branch) — so today every PRUNING row only has
-  `filterFileUrl`, and the row falls back to the pre-existing "Apply filter to
-  Population Exploration" action instead. Re-check once the engine side ships.
+  **No longer dormant:** engine now writes `dataset_balancing_stats.json`
+  (`DatasetBalancing.upload_balancing_stats`, `engine/src_tensorleap/trainer/ds_curation/dataset_balancing.py`)
+  and `@tensorleap/api-client`/`@tensorleap/engine-contract` were regenerated with
+  `statsFileUrl`/`DatasetBalancingStats` — the web-ui's hand-mirrored
+  `DatasetBalancingRecord`/`DatasetBalancingStats` shim types (former
+  `datasetBalancingTypes.ts`) were deleted in favor of the real generated types,
+  so PRUNING rows now get the richer action once the job has finished.
 - **Synthetic Data Generation → "Apply as dashboard top panel":** same pattern on
   the SYNTHETIC tab — a row with both `filterFileUrl` and `statsFileUrl` (cast as
   `SyntheticDataWithStats` in web-ui, since `@tensorleap/api-client` hasn't
@@ -220,8 +222,19 @@ groups samples by `keep_together_metadata`, stratifies across `split_across_meta
   `{projectId, versionId, splitsToResplit, keepTogetherMetadata, splitAcrossMetadata}`;
   `subType='Splitting'`, `preferCpu=true`. UI validation: "No model selected".
 - **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `splitting-<jobId>`.
-- **Outputs:** mongo `datasetsplitting` entity; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` — the CSV is named `<jobUid>.csv` by the engine (uid = job.cid), only the filter filename is fixed.
+- **Outputs:** mongo `datasetsplitting` entity (now tracking `hasStatsFile`); bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json, resplitting_stats.json}` — the CSV is named `<jobUid>.csv` by the engine (uid = job.cid), only the filter/stats filenames are fixed (`Resplitting.upload_resplitting_stats`, `engine/src_tensorleap/trainer/ds_curation/resplitting.py`; `RESPLITTING_STATS_FILENAME`, `node-server/src/utils/storage.ts`).
 - **Success:** job FINISHED + a new row in the SPLITTING tab's DataGridPro.
+- **Apply as dashboard top panel:** same pattern as Dataset Balancing — a row
+  with both `statsFileUrl` and `filterFileUrl` shows an "Apply as dashboard top
+  panel" action (`handleApplyTopPanelClick` in web-ui `SplittingTabContent.tsx`)
+  that mounts a 6th top-panel kind (`kind: 'resplitting'`,
+  `applyResplittingTopPanel`/`useTopPanelResplittingRecord` in
+  `DashboardContext.tsx`/`useTopPanelState.ts`) rendering the split-movement
+  matrix / before-vs-after split sizes / domain-gap and metadata-coverage
+  distributions from the stats blob (`ResplittingTopPanel.tsx`), replaces the
+  dashboard's global filters with the run's resplit-samples cluster filter, and
+  joins the run's version to the dashboard's selection — same
+  one-batched-write shape as `applyDomainGapTopPanel`/`applyPruningTopPanel`.
 
 ### Unlabeled Analysis  *(new SLIM_LS subtype)*
 An 8th `SLIM_LS` request type: `slim_request_type=unlabeled_analysis`
