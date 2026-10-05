@@ -94,8 +94,9 @@ downed dependency marks the pod unready without restart-looping it.
 **REST surface (selected, all under `/api/v2`):**
 - `/auth` — login, localAuth, whoAmI, getAuthStatus, getAuthProvider, keygen,
   getApiKeyByCode, activate, startTrial, refreshLocalAuth, resolveConcurrentUsersConflict, logout
-- `/projects` — addProject, getProjects, deleteProject, loadModel, importProject,
-  exportProject, uploadProject, downloadProject
+- `/projects` — addProject, updateProjectMeta, getProjects, loadModel, deleteProject,
+  getCurrentProjectVersion, getColorSupplierData *(importProject/exportProject/
+  uploadProject/downloadProject were removed — see the `leap projects` note below)*
 - `/versions` — push, pushOverride, initExperiment, loadVersion, getVersionModelGraph,
   setActiveVersion, get*SlimVersions, getCodeSnapshotUploadUrl, tagModel, deleteVersion,
   getVersionsEpochs *(the model graph is fetched separately from `loadVersion` — see
@@ -317,8 +318,10 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
   **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples}`
   (implies `--eval`; `samples` evaluates only newly added samples and skips the
   run-eval prompt), `--no-wait`, `--novis`, `--yes`.
-- `leap projects {create,init,list,select,info,delete,export,import,publish,push,set-secret}`.
-  (`copy` was removed — it was broken; use `export`/`import` to move a project across envs.)
+- `leap projects {create,init,list,select,info,delete,push,set-secret}`.
+  (`copy`, `export`, `import`, and `publish` were all removed, along with the
+  `leap hub` command group — there is now no way to move a project across envs
+  via the CLI.)
 - `leap run {list,logs <runId>,info <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
 - `leap server …` — cluster lifecycle + embedded `kubectl`/`k3d`.
 

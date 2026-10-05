@@ -49,7 +49,7 @@ in `~/.claude/settings.json`). Setup/troubleshoot: `/datadog:ddsetup`,
 | `engine` | Tensorleap-side engine job containers (engine, image-dependencies-builder) |
 | `engine-pod` | **user-code** generic-process deployment pods (metrics/encoders/dataloaders) |
 | `node-server` | node-server deployment (+ mongodb sidecar) |
-| `node-job` | node-server job pods (Export/Import Project) |
+| `node-job` | node-server job pods (the `EXPORT_PROJECT`/`IMPORT_PROJECT` node-job `JobType` category was removed; the only remaining BatchV1Api-created pod is the one-off `migrate-sessions-to-versions` admin script) |
 | `web-ui` | front-end RUM service |
 
 > "engine pods" is ambiguous — search **both** `engine` (TL processing) and
