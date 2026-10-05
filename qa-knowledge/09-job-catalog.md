@@ -30,7 +30,6 @@ glance what *should* be there:
 | `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting, Unlabeled Analysis** |
 | `ANALYZE_GRAPH` | **NOTHING** — engine main pod only | (graph static analysis, a phase of import) |
 | `WARMUP` | a sleep-placeholder GPU **Job** (`engine-warmup-*`) | Warmup |
-| node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | one **node** Job pod (node-server image), no engine pods | Export/Copy/Import Project |
 
 **SLIM_LS is the big one to internalize:** eight different SLIM_LS request types run as a
 *single* `SLIM_LS` pod. If you expect `redis-<jobId>`/`generic-process`/`streaming-handler`
@@ -62,8 +61,6 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 | (Graph analyze) | `ANALYZE_GRAPH` | `WorkerGraphAnalyzer` | `analyze-graph-<jobId>` | none persisted (pushed to UI) | network-editor node shapes/types |
 | Streaming Samples Vis | `STREAMING_SAMPLES_VIS` | `WorkerStreamingSamplesVis` + `StreamingVisRunner` | `streaming-samples-vis-<jobId>` | none (in-memory push to UI) | live visualizer preview (source `streaming-samples`) |
 | Warmup | k8s placeholder Job | sleep pod (engine `WARMUP` branch is a no-op) | `engine-warmup-<teamId>-<machineTypeId>` | none (reserves GPU capacity) | no UI surface |
-| Export / Copy Project | node job `EXPORT_PROJECT` | node-server in-pod runner | `export-project-<jobId>` / `copy-project-<jobId>` | bucket tar.gz (+ remote PUT for copy) | DownloadExportProjectDialog (hidden from Runs list) |
-| Import Project | node job `IMPORT_PROJECT` | node-server in-pod runner | `import-project-<jobId>` | new mongo project + restored ES indices + bucket files | hub/projects table + Runs and Processes table |
 | Evaluate *(see [03](03-data-flows.md))* | `TRAINING` | `WorkerTrainer` | `evaluate-<jobId>` | ES `es_metrics_index` + bucket latent space | dashlets render with data |
 
 ---
@@ -336,24 +333,20 @@ model graph renders in the version's network/graph view.
 
 ---
 
-## Project jobs (node jobs — no engine pods)
+## Project jobs — REMOVED
 
-Export/Copy/Import Project run in an **in-pod node-server runner** (the node-server
-image started with `JOB_*` env, `isProcessJob()`), created from `node-job-template-cm`.
-They are **not** engine jobs (excluded from engine active-jobs reconciliation).
-
-### Export / Copy Project (`EXPORT_PROJECT`)
-- **Trigger:** Projects table → "Download / Export Project" → `POST /projects/exportProject` (Copy = export then HTTP PUT the tar.gz to the target env's upload URL). Synchronous download: `GET /projects/downloadProject/{projectId}` (no job).
-- **subType:** `Copy Project` when `copyToUrl` is set, else `Export Project`. **Hidden from the default Runs list.**
-- **Outputs:** tar.gz in the bucket (mongo dump + project storage files + project ES indices + team data). If a cached export exists and no `copyToUrl`, **no k8s job** is created (job inserted FINISHED).
-- **Stages:** Export (→ Copy). **Failure:** export build error → FAILED; Copy PUT non-2xx → "Copy project failed with status …".
-
-### Import Project (`IMPORT_PROJECT`)
-- **Trigger:** Hub gallery (`#hub-gallery`) "Import" → `#import-project-dialog`, or Projects table "Upload project". `POST /projects/importProject` `{importUrl, projectMeta}`. May chain a PUSH for the imported model.
-- **Stages:** Download → Import Data (mongo) → Import code-integration → Import Elastic (reindex) → Import Storage (bucket).
-- **Outputs:** new project (status `importing`→`visible`) + restored project-scoped collections (versions/models/codesnapshots/dashboards/issues/tests) + ES indices + bucket files.
-- **Failure:** any stage throws → the partially-created project is **deleted** (job record kept), pod exits 1, status FAILED; duplicate name → UserError.
-- **UI:** new project card in hub/recent-projects + a row in the Runs and Processes table (`#run-and-processes-table-id`); `IMPORT_PROJECT` notifies on completion.
+Export/Copy/Import Project (node jobs `EXPORT_PROJECT`/`IMPORT_PROJECT`, the in-pod
+node-server runner, the Hub gallery, and the Download/Upload/Export project dialogs)
+were deleted entirely: `node-server` #1870 ("Remove project import, export and
+download") dropped the `exportProject`/`importProject`/`downloadProject`/
+`uploadProject`/`getLatestExportedProject` endpoints, the `EXPORT_PROJECT`/
+`IMPORT_PROJECT` `JobType`/`JobSubType` values, and the node-job runner
+(`src/node-jobs/job.ts`); `web-ui` #3502 ("Remove project upload, download and
+export UI") dropped `DownloadExportProjectDialog`/`UploadProjectDialog` and the
+Importing row state. `node-job-template-cm` is retained for an unrelated job
+(`migrate-sessions-to-versions`) — its presence is not evidence this feature is
+still alive. See [02-components.md](02-components.md) and
+[04-job-types-and-lifecycle.md](04-job-types-and-lifecycle.md) for more.
 
 ---
 

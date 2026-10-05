@@ -102,8 +102,11 @@ a bad test or misdiagnose a failure. Each is verified against code.
    publishes the manifest on the `engine-job-creation` queue; the orchestrator
    (engine scheduler) creates the k8s Job — or holds it `QUEUED` when the
    cluster lacks memory (admission). The same queue carries `cancel` and
-   `release` ops; feedback still flows engine → node-server. Only **node jobs**
-   (e.g. IMPORT_PROJECT) are still created directly via `BatchV1Api`.
+   `release` ops; feedback still flows engine → node-server. The **node job**
+   `JobType` category (e.g. the old `EXPORT_PROJECT`/`IMPORT_PROJECT`) was removed
+   entirely (`node-server` #1870) — the only thing still created directly via
+   `BatchV1Api` outside the orchestrator queue is a standalone, manually-run
+   admin script (`scripts/migrate-sessions-to-versions.ts`), not a product job type.
    (`node-server/src/utils/engine.ts`,
    `engine/.../workerenginescheduler/job_creation_consumer.py`)
 

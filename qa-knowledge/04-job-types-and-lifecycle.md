@@ -22,9 +22,11 @@ same list — this is the #1 source of confusion.
 `Evaluate`, `Update Evaluate`, `Population Exploration`, `Labeling Recommendation`,
 `Synthetic Data Generation`, `Dataset Balancing`, `Splitting`, `Domain Gap`,
 `Unlabeled Analysis`, `Visualizers Calculation`, `Sample Analysis`, `Graph Validate`,
-`Fetch Similar`, `Export/Copy/Import Project`, `Code Parse`, `Import Model`, `Push`,
+`Fetch Similar`, `Code Parse`, `Import Model`, `Push`,
 `Generate Insights`, `Streaming Samples Vis`.
-node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT`.
+Project import/export (and the `EXPORT_PROJECT`/`IMPORT_PROJECT` local-only node-job
+types that backed it) was removed (`node-server` #1870); there is no longer a
+node-job-backed `JobType` outside the engine's own enum plus `PUSH`.
 
 ### Mapping examples
 
@@ -38,7 +40,6 @@ node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` |
 | Streaming Samples Vis | `STREAMING_SAMPLES_VIS` | `WorkerStreamingSamplesVis` | `streaming-samples-vis-<jobId>` |
-| Export/Copy/Import Project | node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | in-pod node-server runner | `<subtype>-<jobId>` |
 
 > Full per-subType detail (triggers, data destinations, UI render, failure modes)
 > is in [09-job-catalog.md](09-job-catalog.md). `Code Parse` / `Import Model` /
@@ -58,7 +59,6 @@ node-server also has local-only node-job types `EXPORT_PROJECT`, `IMPORT_PROJECT
 | `SLIM_LS` (Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Splitting, Unlabeled Analysis) | ❌ | ❌ | ❌ — a **single** `SLIM` pod, no companions |
 | `ANALYZE_GRAPH` | ❌ | ❌ | ❌ — engine main pod only |
 | `WARMUP` | ❌ | ❌ | ❌ — placeholder GPU Job `engine-warmup-*` |
-| node job (`EXPORT_PROJECT`/`IMPORT_PROJECT`) | ❌ | ❌ | ❌ — one node-server job pod |
 
 So a QA engineer watching an **Evaluate** should expect, transiently:
 `evaluate-<jobId>` (main pod), `redis-<jobId>` (pod+svc),
