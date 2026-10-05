@@ -77,7 +77,7 @@ jobs:
           echo "Release leap-cli: ${release_cli}${reason:+ (${reason})}"
         shell: bash
 
-      - name: Check contracts between the shipped services
+      - name: Check web-ui's api-client against the shipped node-server
         id: contracts
         env:
           GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}

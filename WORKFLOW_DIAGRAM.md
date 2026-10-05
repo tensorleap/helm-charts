@@ -140,9 +140,9 @@ version, a matching leap-cli.
 │   ├─ Get release version (must equal the branch name)           │
 │   ├─ Decide whether to release leap-cli                         │
 │   │   └─ release_cli input, and X.X.X ≥ latest manifest-*       │
-│   ├─ Check contracts (scripts/check-release-contracts.sh)       │
-│   │   └─ api-client / engine-contract pins at the web-ui,       │
-│   │      node-server and engine commits being shipped           │
+│   ├─ Check api-client (scripts/check-release-contracts.sh)      │
+│   │   └─ web-ui's api-client pin vs the node-server version     │
+│   │      at the commits being shipped                           │
 │   └─ Plan the installer version (dry run)                       │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
