@@ -89,9 +89,13 @@ does the release:
    `v0.0.N` tag. The tag runs `leap-cli`'s own "Create release".
 4. Release Production then installs that exact manifest and CLI pair.
 
+The CLI keeps its own `v0.0.N` numbering: Tensorleap `1.6.86` might ship
+`leap-cli` `v0.0.163`. The Tensorleap version only names the branches the CLI
+is built from, and appears in the tag message.
+
 **CLI-only fix between releases:** cherry-pick it onto the newest `leap-cli`
-version branch, then dispatch **Release CLI** with that version and `dry_run`
-unchecked.
+version branch. Then dispatch **Release CLI** with that Tensorleap version as
+`tensorleap_version` and `dry_run` unchecked. The CLI gets the next `v0.0.N`.
 
 Don't tag `leap-cli` `master` by hand. Master doesn't carry the releases'
 `go.mod` and API client commits, so a CLI built from it would replace the latest

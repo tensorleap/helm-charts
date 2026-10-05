@@ -98,7 +98,7 @@ jobs:
     if: needs.preflight.outputs.release_cli == 'true'
     uses: ./.github/workflows/_release_cli.yml
     with:
-      version: ${{ needs.preflight.outputs.version }}
+      tensorleap_version: ${{ needs.preflight.outputs.version }}
       dry_run: true
     secrets: inherit
 
@@ -368,7 +368,7 @@ jobs:
     if: ${{ !cancelled() && needs.release-production.result == 'success' && needs.preflight.outputs.release_cli == 'true' }}
     uses: ./.github/workflows/_release_cli.yml
     with:
-      version: ${{ needs.release-production.outputs.version }}
+      tensorleap_version: ${{ needs.release-production.outputs.version }}
       dry_run: false
     secrets: inherit
 
@@ -432,6 +432,7 @@ jobs:
           RESULT: ${{ needs.release-cli.result }}
           VERSION: ${{ needs.release-production.outputs.version }}
           CLI_TAG: ${{ needs.release-cli.outputs.cli_tag }}
+          CLI_NOTE: ${{ needs.release-cli.outputs.cli_note }}
           INSTALLER: ${{ needs.release-cli.outputs.installer_version }}
           API: ${{ needs.release-cli.outputs.api_version }}
           SKIP_REASON: ${{ needs.preflight.outputs.cli_skip_reason }}
@@ -441,14 +442,14 @@ jobs:
         run: |
           case "$RESULT" in
             success)
-              text="$(printf '🧰 *leap-cli %s released* for v%s\n• *Installer:* %s\n• *node-server API:* %s\n• *Release:* <https://github.com/tensorleap/leap-cli/releases/tag/%s|%s>' \
-                "$CLI_TAG" "$VERSION" "$INSTALLER" "$API" "$CLI_TAG" "$CLI_TAG")"
+              text="$(printf '🧰 *leap-cli %s* for Tensorleap %s (%s)\n• *Installer:* %s\n• *node-server API:* %s\n• *Release:* <https://github.com/tensorleap/leap-cli/releases/tag/%s|%s>' \
+                "$CLI_TAG" "$VERSION" "$CLI_NOTE" "$INSTALLER" "$API" "$CLI_TAG" "$CLI_TAG")"
               ;;
             skipped)
               text="ℹ️ *leap-cli not released:* ${SKIP_REASON:-skipped}"
               ;;
             *)
-              text="$(printf '⚠️ *leap-cli release failed* for v%s\nRe-run the failed jobs of <%s|this run>, or dispatch *Release CLI* with version %s.' \
+              text="$(printf '⚠️ *leap-cli release failed* for Tensorleap %s\nRe-run the failed jobs of <%s|this run>, or dispatch *Release CLI* with tensorleap_version %s.' \
                 "$VERSION" "$RUN_URL" "$VERSION")"
               ;;
           esac

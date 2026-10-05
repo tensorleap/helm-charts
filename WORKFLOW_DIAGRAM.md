@@ -224,8 +224,10 @@ release's exact installer code and node-server API.
   fix cherry-picked onto the newest leap-cli version branch.
 
 **Inputs:**
-- `version` (required): the production version, which is also the branch name
-  in helm-charts and leap-cli.
+- `tensorleap_version` (required): the Tensorleap (product) version, e.g.
+  `1.6.86`. It is also the version branch name in helm-charts and leap-cli. It
+  is not the CLI version: the CLI keeps its own `v0.0.N` numbering and gets the
+  next number.
 - `dry_run` (default `false` when called, `true` when dispatched): regenerate,
   build and test only; push nothing.
 
@@ -245,12 +247,15 @@ release's exact installer code and node-server API.
 │   │   └─ real run: go get helm-charts@vA.B.N (must match code)  │
 │   ├─ Build and test leap-cli                                    │
 │   ├─ Commit to leap-cli X.X.X and push (real run only)          │
-│   ├─ Tag the next v0.0.N, or reuse the tag on HEAD (real run)   │
+│   ├─ Decide the leap-cli version: the next v0.0.N, or the tag   │
+│   │   already on HEAD (a dry run reports it; a real run pushes) │
+│   ├─ Summarize: leap-cli v0.0.N for Tensorleap X.X.X            │
 │   └─ Wait for leap-cli's "Create release" (real run only)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Outputs:** `cli_tag`, `installer_version`, `api_version`
+**Outputs:** `cli_tag` (e.g. `v0.0.163`), `cli_note`, `installer_version`,
+`api_version`
 
 ---
 
