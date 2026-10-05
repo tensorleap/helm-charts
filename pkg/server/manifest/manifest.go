@@ -118,7 +118,7 @@ func (mnf *InstallationManifest) GetManifestVersion() string {
 
 func (mnf *InstallationManifest) Save(path string) error {
 	log.Infof("Saving installation manifest to %s", path)
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := local.EnsureSharedDir(filepath.Dir(path))
 	if err != nil {
 		return fmt.Errorf("failed to create directory for installation manifest: %w", err)
 	}
@@ -128,7 +128,7 @@ func (mnf *InstallationManifest) Save(path string) error {
 	}
 	// Atomic replace rather than os.WriteFile: the manifest may be owned by
 	// another local user (see local.WriteFileAtomic).
-	err = local.WriteFileAtomic(path, b, 0666)
+	err = local.WriteFileAtomic(path, b, 0o664)
 	if err != nil {
 		return fmt.Errorf("failed to write installation manifest: %w", err)
 	}

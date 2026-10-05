@@ -27,6 +27,7 @@ func NewRunCmd() *cobra.Command {
 				return err
 			}
 			defer close()
+			local.WarnIfImageCacheReowned()
 
 			err = k3d.RunCluster(cmd.Context())
 			if err != nil {
