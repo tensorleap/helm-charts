@@ -125,7 +125,7 @@ Deployment, `redis-<jobId>` Pod+Service.
 
 | Workload | Service:port | Image (snapshot) |
 |---|---|---|
-| web-ui | `tensorleap-web-ui:8080` | `public.ecr.aws/tensorleap/web-ui:master-60094f80` |
+| web-ui | `tensorleap-web-ui:8080` | `public.ecr.aws/tensorleap/web-ui:master-3c394f18` |
 | node-server | `tensorleap-node-server:80` → pod `:4000` | `public.ecr.aws/tensorleap/node-server:master-ffc3e2f0` |
 | mongodb | `mongodb:27017` | `mongo:6.0.5` |
 | rabbitmq | `rabbitmq:5672` (amqp) + `:15672` (mgmt UI) | `rabbitmq:3.9.22` |
@@ -159,7 +159,7 @@ Deployment, `redis-<jobId>` Pod+Service.
 
 - `charts/tensorleap/Chart.yaml` `version` — a **minor** bump (`1.5.x → 1.6.0`)
   signals **cluster reinstall required** (the installer compares minor versions;
-  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.88`, infra `1.1.8`.
+  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.89`, infra `1.1.8`.
 - `pkg/version/version.go` — the Go installer (`leap server`) version. `leap server info` prints it.
 - Reinstall is also triggered by an infra version change or a manifest
   appVersion/schemaVersion change (see `DEVELOPER-GUIDE.md`).

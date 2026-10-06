@@ -112,6 +112,11 @@ downed dependency marks the pod unready without restart-looping it.
 - `/insights`, `/insightsSettings`, `/datasetcuration`, `/sample-collection`,
   `/sessions-tests`, `/issues`, `/notifications`, `/teams`, `/users`, `/settings`,
   `/secret-manager`, `/metadata`, `/projectstate`, `/monitor/healthCheck` (GET)
+- `/ai-access` — getAiAccess, setAiAccess (admin-gated AI-assistant data-access
+  policy: install-level default + optional per-project override/block, gating
+  reads from `/dashboards`, `/sessionmetrics` (via `modelmetrics`), and
+  `/sample-collection`; now exposed in web-ui via the MAIN MENU → "AI ACCESS"
+  item (admin-only) opening `AiAccessDialog.tsx`)
 - `/analysis-export` — listTargets, exportAnalysis, getSampleAssets — a
   versioned public contract (`ANALYSIS_EXPORT_CONTRACT_VERSION`) consumed by
   the external `tensorleap-analysis` skill, not the web-ui
