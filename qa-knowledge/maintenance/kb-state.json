@@ -1,30 +1,30 @@
 {
   "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
-  "last_verified_utc": "2026-10-05",
+  "last_verified_utc": "2026-10-06",
   "repos": {
     "helm-charts": {
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "f18a9e6b0a1208469bf68323639f12c067170a05"
+      "built_from_sha": "236abb8db2a0f95622079c9d327bbc3a98452c57"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "a802641b46497a56dfbfdb0f67bee4be50732d9d"
+      "built_from_sha": "0f0ec506806d31d668797b86fd9568ee4baa8b56"
     },
     "node-server": {
       "remote": "git@github.com:tensorleap/node-server.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "ffc3e2f0da47e30a6befa657f56195557b567640"
+      "built_from_sha": "e9e66fcc52a58e4b0e7fbaf7ab3ac724f0145d1b"
     },
     "web-ui": {
       "remote": "git@github.com:tensorleap/web-ui.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "60094f80a779303cde89409440a24ead96040701"
+      "built_from_sha": "e78c2504c245e6ec4dd289fdabd3262ef9a2826c"
     },
     "leap-cli": {
       "remote": "git@github.com:tensorleap/leap-cli.git",
