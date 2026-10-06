@@ -16,7 +16,7 @@ public.ecr.aws/tensorleap/engine:master-a802641b
 public.ecr.aws/tensorleap/minio:RELEASE.2021-12-20T22-07-16Z
 public.ecr.aws/tensorleap/node-server:master-ffc3e2f0
 public.ecr.aws/tensorleap/pippin:master-3412341e
-public.ecr.aws/tensorleap/web-ui:master-60094f80
+public.ecr.aws/tensorleap/web-ui:master-3c394f18
 quay.io/keycloak/keycloak:26.3.2
 registry.k8s.io/ingress-nginx/controller:v1.10.0
 registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
