@@ -66,8 +66,13 @@ instructions are on the welcome screen.
 
 ## Password reset
 
-There is no email-based reset. An operator sets a temporary password from inside
-the Keycloak pod; see "Resetting a forgotten password" in the repository README.
+Users reset their own password from the "Forgot password?" link on the login
+page; node-server emails them a 6-digit code through Tensorleap's email relay.
+This needs outbound HTTPS from node-server to `email-relay.tensorleap.ai`, and
+the user's email address is sent to Tensorleap. Without that egress (airgapped or
+proxied clusters) the page tells the user to ask their administrator, who sets a
+temporary password from inside the Keycloak pod; see "Resetting a forgotten
+password" in the repository README.
 
 ## Upgrade
 

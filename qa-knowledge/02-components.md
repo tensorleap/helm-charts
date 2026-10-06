@@ -289,7 +289,16 @@ deps pinned exactly; bundled tarballs updated via `helm dependency build`.
 `pack`/`pack-installation` (airgap), `create-manifest`, **`tools`** (embedded k3d +
 kubectl pre-wired to context `k3d-tensorleap`), `reset-password <email> [--password]`
 (execs into the Keycloak pod, sets a temporary password via `kcadm` and revokes the
-user's sessions — the only password-reset path, there is no email-based flow).
+user's sessions — the fallback when self-service email reset can't reach the relay).
+
+**Self-service password reset.** The `tensorleap` Keycloak login theme
+(ConfigMap `keycloak-tensorleap-theme`, mounted at `/opt/keycloak/themes/tensorleap`)
+injects a "Forgot password?" link to web-ui `/reset-password`. node-server
+`POST /api/v2/auth/requestPasswordReset` emails a 6-digit code via
+`email-relay.tensorleap.ai` (needs outbound HTTPS; the user's email is sent to
+Tensorleap), `confirmPasswordReset` sets the password and revokes sessions. No
+egress → 503 `EMAIL_RESET_UNAVAILABLE` and the page shows the admin
+`reset-password` command. (`node-server/src/auth/passwordReset.ts`)
 
 **Single-gateway rule (for code-aware tests/repro):** all Helm ops go through
 `pkg/helm`; k3d through `pkg/k3d`; docker through `pkg/docker`. Names/limits are
