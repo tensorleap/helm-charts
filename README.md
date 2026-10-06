@@ -27,8 +27,16 @@ Show [here](https://helm.tensorleap.ai/latest_airgap_versions.html) the latest A
    - `leap server upgrade -t [release-name]`
 ## Resetting a forgotten password
 
-Passwords are stored in Keycloak and there is no email-based reset. An operator
-resets them from the machine where the server is installed:
+Passwords are stored in Keycloak. Users reset their own password from the
+"Forgot password?" link on the login page: node-server emails a 6-digit code
+(valid 15 minutes) through Tensorleap's email relay. This needs outbound HTTPS
+from node-server to `email-relay.tensorleap.ai`, and the user's email address is
+sent to Tensorleap. Airgapped or proxied installs (node-server gets no proxy
+settings) can't reach the relay, so the page tells the user to ask their
+administrator instead.
+
+An operator can always reset a password from the machine where the server is
+installed:
 
 ```bash
 leap server reset-password user@example.com

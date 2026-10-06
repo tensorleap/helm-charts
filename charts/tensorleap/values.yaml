@@ -137,10 +137,22 @@ keycloakx:
     - name: keycloak-data
       persistentVolumeClaim:
         claimName: keycloak-data
+    # Login theme that adds a "Forgot password?" link (templates/keycloak-theme-cm.yaml)
+    - name: keycloak-tensorleap-theme
+      configMap:
+        name: keycloak-tensorleap-theme
+        items:
+          - key: theme.properties
+            path: login/theme.properties
+          - key: reset-password-link-v1.js
+            path: login/resources/js/reset-password-link-v1.js
 
   extraVolumeMounts: |
     - name: keycloak-data
       mountPath: /opt/keycloak/data
+    - name: keycloak-tensorleap-theme
+      mountPath: /opt/keycloak/themes/tensorleap
+      readOnly: true
 
   health:
     enabled: true

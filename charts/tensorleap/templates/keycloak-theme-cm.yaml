@@ -1,0 +1,25 @@
+{{- if .Values.keycloakx.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-tensorleap-theme
+data:
+  theme.properties: |
+    parent=keycloak.v2
+    import=common/keycloak
+    scripts=js/reset-password-link-v1.js
+  reset-password-link-v1.js: |
+    // Keep identical in helm-charts/charts/tensorleap/templates/keycloak-theme-cm.yaml; rename file on change (browser cache).
+    // ponytail: cloud maps api.<env>.tensorleap.ai -> <env>.tensorleap.ai (mirrors web-ui getApiHost); on-prem basePath = prefix before /auth/.
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.getElementById('kc-form-login');
+      if (!form || !form.querySelector('input[name="password"]')) return;
+      var host = location.host;
+      if (/\.tensorleap\.ai$/.test(location.hostname) && host.indexOf('api.') === 0) host = host.slice(4);
+      var a = document.createElement('a');
+      a.href = location.protocol + '//' + host + location.pathname.split('/auth/')[0] + '/reset-password';
+      a.textContent = 'Forgot password?';
+      var d = document.createElement('div'); d.style.cssText = 'margin-top:1rem;text-align:center'; d.appendChild(a);
+      form.insertAdjacentElement('afterend', d);
+    });
+{{- end }}
