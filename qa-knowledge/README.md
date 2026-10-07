@@ -162,11 +162,15 @@ a bad test or misdiagnose a failure. Each is verified against code.
 12. **`leap server check` is a stub** that only prints "Check command" — it does
     no real validation. Don't rely on it. (`helm-charts/cmd/server/check.go`)
 
-13. **There is no email-based "forgot password" flow.** Keycloak holds the only
-    copy of user passwords, so an operator with access to the install host runs
-    `leap server reset-password <email>` to set a temporary password (execs
-    into the Keycloak pod via `kcadm`, revokes existing sessions); the user must
-    pick a new password at next browser login. (`helm-charts/pkg/server/reset_password.go`)
+13. **"Forgot password?" is driven by node-server, not Keycloak.** Keycloak's
+    built-in reset stays off (no realm SMTP); a login theme script injects the
+    link to web-ui `/reset-password`, and node-server emails a 6-digit code via
+    the Tensorleap relay `email-relay.tensorleap.ai` (needs outbound HTTPS; the
+    user's email is sent to Tensorleap). Airgapped/proxied installs get 503
+    `EMAIL_RESET_UNAVAILABLE`, and an operator runs
+    `leap server reset-password <email>` instead (temporary password via
+    `kcadm`, revokes sessions). (`node-server/src/auth/passwordReset.ts`,
+    `helm-charts/pkg/server/reset_password.go`)
 
 ---
 

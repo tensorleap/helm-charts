@@ -23,6 +23,8 @@ failure surfaces. Use this to **classify** a failure, not just report "it broke"
 | `/socket.io` returns HTML (`index.html`) instead of an engine.io handshake | ingress `/socket.io` path rule not matching (misroute) | `curl` the path; expect engine.io handshake, not HTML |
 | CORS preflight (OPTIONS) fails | served cross-origin / basePath misconfigured | DevTools OPTIONS non-2xx |
 | Live updates stop arriving (UI stale, needs manual refresh) | socket disconnect / `authentication_error`; or RabbitMQ consumer down | WS frame `authentication_error`; or rabbitmq queue depth growing with no consumer |
+| `/reset-password` says email is unavailable (503 `EMAIL_RESET_UNAVAILABLE`) | node-server can't reach `email-relay.tensorleap.ai`: no egress, or a corporate proxy (node-server gets no proxy env); or `PASSWORD_RESET_RELAY_URL` empty | from the node-server pod `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://email-relay.tensorleap.ai/v1/password-reset-code` expects `400`; codes never arrive → grep node-server logs for `relay responded` |
+| No "Forgot password?" link on the login page | `tensorleap` login theme not loaded (ConfigMap `keycloak-tensorleap-theme` missing/unmounted) or a Keycloak upgrade changed `#kc-form-login` | `curl -s '<url>/auth/realms/tensorleap/protocol/openid-connect/auth?client_id=tensorleap-client&response_type=code&redirect_uri=<url>/' \| grep reset-password-link` finds nothing; Keycloak log `Failed to find login theme`; `kubectl get cm keycloak-tensorleap-theme` |
 
 ---
 
