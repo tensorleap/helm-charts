@@ -111,6 +111,12 @@ environment:
    **register**, not login.)
 3. **Use a persistent-session driver** so the Keycloak token survives across
    assertions (re-login per step is slow and flaky).
+   - Exception: `/reset-password` is a standalone, signed-out web-ui route (no
+     Keycloak redirect, see `src/index.tsx`) — test it directly without a
+     session. See the "Forgot password?" item in [README.md](README.md)'s
+     corrected mental model, and the failure modes in
+     [07-failure-modes.md](07-failure-modes.md), for the backend call
+     (`requestPasswordReset`/`confirmPasswordReset`) and the email-relay 503 case.
 4. **Assert** using the selector rules in [06-ui-inspection.md](06-ui-inspection.md):
    prefer `TOUR_SELECTORS_ENUM` element **`id`s** (`#analytics-dashlet`,
    `#population-exploration-circles`, `#sample-analysis-dashlet-loaded-content`,

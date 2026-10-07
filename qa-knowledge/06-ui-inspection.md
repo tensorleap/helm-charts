@@ -76,9 +76,12 @@ nested-path exception). Verify navigation by reading params:
   scheme, **not** standard `Bearer`. node-server branches on the `KBearer` prefix;
   a harness that sends `Bearer` on a browser-style call gets **401 "No token
   provided"**. (`Bearer <apiKey>` is the CLI path.)
-- **socket.io auth is in the handshake `auth` payload**, not an HTTP header:
-  `io(WS_URL,{path:'/socket.io', auth:{Authorization:'KBearer <token>'}})`.
-  Asserting on a WS *header* will mislead.
+- **socket.io auth is in the handshake `auth` payload**, not an HTTP header.
+  `auth` is a **callback**, not a static object — it re-runs on every
+  (re)connect and fetches a fresh token first, so a reconnect after expiry
+  still authenticates: `io(WS_URL,{path:'/socket.io', auth:(cb) =>
+  getFreshToken().then((fresh) => cb({Authorization:`KBearer ${fresh}`}))})`
+  (`useSocketIO.tsx`). Asserting on a WS *header* will mislead.
 - **Single origin**: UI, `/api`, `/auth`, `/session`, `/socket.io` are all the
   same origin (ingress path routing). A cross-origin request is a misconfiguration.
 - **REST base path** is `<origin>/api/v2`, derived from `window.location` + the
