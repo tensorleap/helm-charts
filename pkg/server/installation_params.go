@@ -436,22 +436,22 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 
 var checkNvidiaGPU = local.CheckNvidiaGPU
 
+// The count follows the device list the NVIDIA plugin is given, so it always
+// matches what the cluster can actually schedule.
 func detectGpuCount(params *InstallationParams) uint {
-	if !params.IsUseGpu() {
+	switch devices := params.nvidiaVisibleDevices(); devices {
+	case "":
 		return 0
+	case allGpuDevices:
+		gpus, err := checkNvidiaGPU()
+		if err != nil {
+			log.Warnf("Failed detecting GPU count: %v", err)
+			return 0
+		}
+		return uint(len(gpus))
+	default:
+		return uint(len(strings.Split(devices, ",")))
 	}
-	if params.Gpus > 0 {
-		return params.Gpus
-	}
-	if params.GpuDevices != allGpuDevices {
-		return uint(len(strings.Split(params.GpuDevices, ",")))
-	}
-	gpus, err := checkNvidiaGPU()
-	if err != nil {
-		log.Warnf("Failed detecting GPU count: %v", err)
-		return 0
-	}
-	return uint(len(gpus))
 }
 
 func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, error) {
@@ -968,25 +968,32 @@ func lookupFirstEnv(keys ...string) string {
 	return ""
 }
 
-func (params *InstallationParams) GetInfraHelmValuesParams(syncRegistries []helm.ZotSyncRegistry, registryImage string) *helm.InfraHelmValuesParams {
-
-	nvidiaGpuVisibleDevices := ""
-	nvidiaGpuEnable := params.IsUseGpu()
-
-	if nvidiaGpuEnable {
-		if params.GpuDevices == allGpuDevices {
-			nvidiaGpuVisibleDevices = allGpuDevices
-		} else if params.GpuDevices != "" {
-			nvidiaGpuVisibleDevices = params.GpuDevices
-		} else if params.Gpus > 0 {
-			devices := []string{}
-			for i := 0; i < int(params.Gpus); i++ {
-				devices = append(devices, fmt.Sprint(i))
-			}
-			nvidiaGpuVisibleDevices = strings.Join(devices, ",")
-		} else {
-			nvidiaGpuVisibleDevices = allGpuDevices
+// nvidiaVisibleDevices is the NVIDIA_VISIBLE_DEVICES value for this install:
+// "" when GPUs are not used, "all", or a comma-separated device list.
+func (params *InstallationParams) nvidiaVisibleDevices() string {
+	if !params.IsUseGpu() {
+		return ""
+	}
+	if params.GpuDevices == allGpuDevices {
+		return allGpuDevices
+	}
+	if params.GpuDevices != "" {
+		return params.GpuDevices
+	}
+	if params.Gpus > 0 {
+		devices := []string{}
+		for i := 0; i < int(params.Gpus); i++ {
+			devices = append(devices, fmt.Sprint(i))
 		}
+		return strings.Join(devices, ",")
+	}
+	return allGpuDevices
+}
+
+func (params *InstallationParams) GetInfraHelmValuesParams(syncRegistries []helm.ZotSyncRegistry, registryImage string) *helm.InfraHelmValuesParams {
+	nvidiaGpuEnable := params.IsUseGpu()
+	nvidiaGpuVisibleDevices := params.nvidiaVisibleDevices()
+	if nvidiaGpuEnable {
 		log.Infof("Helm chart NVIDIA_VISIBLE_DEVICES: %s", nvidiaGpuVisibleDevices)
 	}
 
