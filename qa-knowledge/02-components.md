@@ -120,6 +120,18 @@ downed dependency marks the pod unready without restart-looping it.
 - `/analysis-export` — listTargets, exportAnalysis, getSampleAssets — a
   versioned public contract (`ANALYSIS_EXPORT_CONTRACT_VERSION`) consumed by
   the external `tensorleap-analysis` skill, not the web-ui
+- `/mcp` — a stateless MCP (Model Context Protocol) server over HTTP
+  (`src/mcp/router.ts`, mounted as `apiV2Router.use('/mcp', mcpRouter)` →
+  `POST /api/v2/mcp`), gated by the same bearer auth as every other `/api/v2`
+  route (`expressAuthentication(req, 'jwt', ['not-demo'])` — demo accounts
+  excluded, nothing else special). `leap mcp` (leap-cli) is now a thin bridge
+  that relays this endpoint's tools/resources/prompts over stdio to an AI
+  assistant, adding only a local `tl_export_analysis` tool
+  (`leap-cli/pkg/mcp/server.go`); node-server itself owns the tool
+  implementations (`src/mcp/tools/{annotations,code,insights,jobs,query,
+  samples,targets}.ts`). Still agent-tooling by intent, not a product feature
+  — but unlike `/analysis-export`, it is now a directly-callable authenticated
+  HTTP surface, not merely a CLI-internal bridge.
 
 **Mongo collections** (`db: tensorleap`): `jobs`, `versions`, `projects`, `users`,
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
@@ -357,6 +369,6 @@ Encoder contract: `(idx, preprocess: PreprocessResponse) -> np.ndarray` of dtype
 runs the whole binder locally — the cheapest pre-push validation a QA engineer can run.
 
 Enums: `LeapDataType {Image,Text,Graph,HorizontalBar,ImageMask,TextMask,
-ImageWithBBox,ImageWithHeatmap,Video,Audio}`; `MetricDirection {Upward,Downward}`;
+ImageWithBBox,ImageWithHeatmap,Video,Audio,PointCloud}`; `MetricDirection {Upward,Downward}`;
 `DataStateType {training,validation,test,unlabeled,additional}`;
 `DatasetMetadataType {float,string,int,boolean}`.
