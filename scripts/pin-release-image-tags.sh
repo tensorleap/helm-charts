@@ -24,6 +24,8 @@
 #   VERSION=1.6.75 DRY_RUN=1 scripts/pin-release-image-tags.sh   # plan only
 
 set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=lib/release-common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/release-common.sh"
 
 REGISTRY_PATH="tensorleap"
 ENGINE_VALUES="charts/tensorleap/charts/engine/values.yaml"
@@ -36,8 +38,6 @@ GENERIC_TEMPLATE="charts/tensorleap/charts/engine/templates/engine-job-config.ya
 VERSION="${VERSION:-}"
 DRY_RUN="${DRY_RUN:-}"
 
-die() { echo "❌ $*" >&2; exit 1; }
-
 [ -n "$VERSION" ] || die "VERSION is required (e.g. VERSION=1.6.75)"
 [ -f "$ENGINE_VALUES" ] || die "run from the repo root: $ENGINE_VALUES not found"
 
@@ -48,21 +48,7 @@ case "$VERSION" in
 esac
 
 # ---------------------------------------------------------------- helpers ----
-
-# Both tag writers emit `<ref>-<sha8>`, so the commit is always the last
-# dash-separated field. Refuse anything else rather than invent a tag.
-sha_of_tag() {
-  local tag="$1" sha="${1##*-}"
-  [[ "$sha" =~ ^[0-9a-f]{8}$ ]] || die "cannot read a commit sha out of tag '$tag'"
-  printf '%s' "$sha"
-}
-
-read_value() {
-  local file="$1" key="$2" value
-  value="$(grep -E "^${key}: " "$file" | head -1 | awk '{print $2}')"
-  [ -n "$value" ] || die "no '${key}:' in $file"
-  printf '%s' "$value"
-}
+# die, sha_of_tag and read_value come from lib/release-common.sh.
 
 write_value() {
   local file="$1" key="$2" value="$3"

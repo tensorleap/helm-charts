@@ -1,20 +1,119 @@
 name: Release Production
 
+# One run releases everything for version branch X.Y.Z: the charts, the
+# manifest, release notes, the airgap pack and - when X.Y.Z is the newest
+# release - a matching leap-cli. Nothing is published until the preflight checks
+# and a leap-cli dry run pass.
+
 on:
   workflow_dispatch:
+    inputs:
+      release_cli:
+        description: "Also release leap-cli (skipped automatically when this is not the newest version)"
+        required: false
+        default: true
+        type: boolean
 
 # Allow pushing new branches using the provided token
 permissions:
   contents: write
 
+# Releases compute tags from what already exists - one at a time.
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
 jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_cli: ${{ steps.cli.outputs.release_cli }}
+      cli_skip_reason: ${{ steps.cli.outputs.reason }}
+      contracts: ${{ steps.contracts.outputs.contracts }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Everything downstream (image tags, the leap-cli branch, the release
+      # notes link) assumes the branch is named after the version it releases.
+      - name: Get release version
+        id: version
+        run: |
+          VERSION="$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}' | sed 's/-rc\.[0-9]*$//')"
+          if [ "$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Release from the version branch named after the release: '${GITHUB_REF_NAME}' holds chart version ${VERSION}. Cut the branch with Release Candidate or Patch."
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Release version: ${VERSION}"
+        shell: bash
+
+      # install.sh and `leap cli upgrade` hand everyone the latest CLI, so a
+      # hotfix for an older line must not publish one.
+      - name: Decide whether to release leap-cli
+        id: cli
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_CLI: ${{ inputs.release_cli }}
+        run: |
+          source scripts/lib/release-common.sh
+          latest="$(latest_production_version)"
+          if [ "$RELEASE_CLI" != "true" ]; then
+            release_cli=false
+            reason="release_cli was unchecked for this run"
+          elif [ -n "$latest" ] && [ "$(version_cmp "$VERSION" "$latest")" = -1 ]; then
+            release_cli=false
+            reason="${VERSION} is older than the latest release ${latest}, whose CLI stays latest"
+          else
+            release_cli=true
+            reason=""
+          fi
+          echo "release_cli=${release_cli}" >> "$GITHUB_OUTPUT"
+          echo "reason=${reason}" >> "$GITHUB_OUTPUT"
+          echo "Release leap-cli: ${release_cli}${reason:+ (${reason})}"
+        shell: bash
+
+      - name: Check web-ui's api-client against the shipped node-server
+        id: contracts
+        env:
+          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+        run: ./scripts/check-release-contracts.sh
+        shell: bash
+
+      - name: Plan the installer version
+        env:
+          DRY_RUN: "1"
+        run: ./scripts/resolve-installer-version.sh
+        shell: bash
+
+  # Builds and tests the leap-cli this release will ship without pushing
+  # anything, so a CLI that doesn't build stops the release before it starts.
+  cli-dry-run:
+    name: Dry-run leap-cli
+    needs: preflight
+    if: needs.preflight.outputs.release_cli == 'true'
+    uses: ./.github/workflows/_release_cli.yml
+    with:
+      tensorleap_version: ${{ needs.preflight.outputs.version }}
+      dry_run: true
+    secrets: inherit
+
   release-production:
+    needs: [preflight, cli-dry-run]
+    # cli-dry-run is skipped when this run releases no CLI; only its failure
+    # stops the release.
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       slack_message_ts: ${{ steps.slack_release.outputs.ts }}
+      installer_version: ${{ steps.installer.outputs.installer_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,7 +142,7 @@ jobs:
         id: get_version
         run: |
           CHART_VERSION=$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}')
-          echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$CHART_VERSION" >> "$GITHUB_OUTPUT"
           echo "Chart version: $CHART_VERSION"
         shell: bash
 
@@ -59,6 +158,15 @@ jobs:
         env:
           VERSION: ${{ steps.get_version.outputs.version }}
         run: ./scripts/pin-release-image-tags.sh
+        shell: bash
+
+      # leap-cli pins the installer module by tag, so the tag must hold exactly
+      # the installer code this release ships. May bump version.go; runs before
+      # the commit and before Release Manifest, which stamps version.go's value
+      # as the manifest's installerVersion.
+      - name: Set the installer version
+        id: installer
+        run: ./scripts/resolve-installer-version.sh
         shell: bash
 
       - name: Set up Helm
@@ -91,6 +199,19 @@ jobs:
         with:
           message: "Remove -rc.x suffix for production release and update images.txt"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Tag the installer module
+        env:
+          INSTALLER_VERSION: ${{ steps.installer.outputs.installer_version }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/${INSTALLER_VERSION}" >/dev/null; then
+            echo "Installer ${INSTALLER_VERSION} is already tagged"
+          else
+            git tag -a "${INSTALLER_VERSION}" -m "Installer ${INSTALLER_VERSION} (Tensorleap ${VERSION})"
+            git push origin "refs/tags/${INSTALLER_VERSION}"
+          fi
+        shell: bash
 
       - name: Release Charts
         uses: ./.github/actions/release-chart
@@ -239,9 +360,24 @@ jobs:
               ]
             }
 
+  # Commits the regenerated client and installer pin to leap-cli's X.Y.Z
+  # branch, pushes the next v0.0.N tag and waits for leap-cli's release.
+  release-cli:
+    name: Release leap-cli
+    needs: [preflight, release-production]
+    if: ${{ !cancelled() && needs.release-production.result == 'success' && needs.preflight.outputs.release_cli == 'true' }}
+    uses: ./.github/workflows/_release_cli.yml
+    with:
+      tensorleap_version: ${{ needs.release-production.outputs.version }}
+      dry_run: false
+    secrets: inherit
+
+  # The explicit conditions below matter: a job whose dependency chain holds a
+  # skipped job (cli-dry-run, release-cli) is otherwise skipped too.
   release-airgap:
     name: Release Airgap Pack
     needs: release-production
+    if: ${{ !cancelled() && needs.release-production.result == 'success' }}
     uses: ./.github/workflows/release_airgap_pack.yml
     with:
       manifest_name: manifest-${{ needs.release-production.outputs.version }}
@@ -250,6 +386,7 @@ jobs:
   notify-slack-airgap:
     name: Notify Slack - Airgap Pack Ready
     needs: [release-production, release-airgap]
+    if: ${{ !cancelled() && needs.release-production.result == 'success' && needs.release-airgap.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Post airgap link in thread
@@ -273,8 +410,60 @@ jobs:
               ]
             }
 
+  # Installs the exact pair just released. Without a CLI release (skipped or
+  # failed) cli_tag is empty and the latest leap-cli is used, as before.
   install-server:
-    needs: [release-production, release-airgap]
+    needs: [release-production, release-airgap, release-cli]
+    if: ${{ !cancelled() && needs.release-production.result == 'success' && needs.release-airgap.result == 'success' }}
     uses: ./.github/workflows/_install_server.yml
     with:
       tag: manifest-${{ needs.release-production.outputs.version }}
+      cli_tag: ${{ needs.release-cli.outputs.cli_tag }}
+
+  notify-slack-cli:
+    name: Notify Slack - leap-cli
+    needs: [preflight, release-production, release-cli]
+    if: ${{ !cancelled() && needs.release-production.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compose the message
+        id: message
+        env:
+          RESULT: ${{ needs.release-cli.result }}
+          VERSION: ${{ needs.release-production.outputs.version }}
+          CLI_TAG: ${{ needs.release-cli.outputs.cli_tag }}
+          CLI_NOTE: ${{ needs.release-cli.outputs.cli_note }}
+          INSTALLER: ${{ needs.release-cli.outputs.installer_version }}
+          API: ${{ needs.release-cli.outputs.api_version }}
+          SKIP_REASON: ${{ needs.preflight.outputs.cli_skip_reason }}
+          CONTRACTS: ${{ needs.preflight.outputs.contracts }}
+          THREAD_TS: ${{ needs.release-production.outputs.slack_message_ts }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          case "$RESULT" in
+            success)
+              text="$(printf '🧰 *leap-cli %s* for Tensorleap %s (%s)\n• *Installer:* %s\n• *node-server API:* %s\n• *Release:* <https://github.com/tensorleap/leap-cli/releases/tag/%s|%s>' \
+                "$CLI_TAG" "$VERSION" "$CLI_NOTE" "$INSTALLER" "$API" "$CLI_TAG" "$CLI_TAG")"
+              ;;
+            skipped)
+              text="ℹ️ *leap-cli not released:* ${SKIP_REASON:-skipped}"
+              ;;
+            *)
+              text="$(printf '⚠️ *leap-cli release failed* for Tensorleap %s\nRe-run the failed jobs of <%s|this run>, or dispatch *Release CLI* with tensorleap_version %s.' \
+                "$VERSION" "$RUN_URL" "$VERSION")"
+              ;;
+          esac
+          if [ -n "$CONTRACTS" ]; then
+            text="$(printf '%s\n• *Contracts:* %s' "$text" "$CONTRACTS")"
+          fi
+          payload="$(jq -cn --arg channel C0A2J51FBPD --arg ts "$THREAD_TS" --arg text "$text" \
+            '{channel: $channel, thread_ts: $ts, text: $text}')"
+          echo "payload=${payload}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Post in the release thread
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_TOKEN }}
+          payload: ${{ steps.message.outputs.payload }}
