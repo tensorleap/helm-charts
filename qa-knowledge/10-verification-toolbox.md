@@ -21,7 +21,7 @@ most direct evidence for the claim under test. Commands for each tool are in
 | Payloads, artifacts, latent space, scatter/cluster JSON, exports | **MinIO bucket** | The job's real output often lands here before/independent of mongo flags. |
 | Engine dataflow heartbeat (sample/metrics/streaming backlog) | **per-job Redis** | `LLEN` the queues (TRAINING/ANALYZE/PUSH only — SLIM_LS has none). |
 | Custom dependency image built & pushed | **Zot registry** | `/v2/_catalog`, tags. A push/eval hung in the pippin init stage. |
-| Cluster up, install state, chart versions | **k3d / helm / leap server** | `k3d cluster list`, `helm list`, `leap server info`. |
+| Cluster up, install state, chart versions | **k3d / helm / leap server** | `k3d cluster list`, `helm list`, `leap server info`. The installed release version is also surfaced in-app: MAIN MENU footer shows "Tensorleap version X.Y.Z" (`GetEnvironmentInfoResponse.installedServerVersion`, node-server `src/metadata/logic.ts`; hidden when the value is unset/`unknown`). |
 | The **rendered UI**: dashlet drew, selector present, login works | **Playwright** (browser MCP) | Real browser against `:4589`; assert DOM/snapshot. See the recipe below. |
 | Front-end telemetry / a past user session | **Datadog RUM** | `service:web-ui`; the only place browser errors/sessions appear. |
 
