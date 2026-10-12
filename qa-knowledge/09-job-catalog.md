@@ -27,11 +27,11 @@ glance what *should* be there:
 | `EXPORT_MODEL` | per-job **redis** + **generic-process (1)**, no streaming-handler | Export Model |
 | `DRY_RUN_GRAPH` | per-job **redis** + **generic-process (1)**, no streaming-handler | Graph Validate |
 | `STREAMING_SAMPLES_VIS` | per-job **redis** + **generic-process (1)**, no streaming-handler | Streaming Samples Vis |
-| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting, Unlabeled Analysis** |
+| `SLIM_LS` | **NOTHING** — one single `SLIM` pod | **Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation (manual/calibration), Labeling Recommendation, Splitting, Unlabeled Analysis, Fix Aggressor (manual insight)** |
 | `ANALYZE_GRAPH` | **NOTHING** — engine main pod only | (graph static analysis, a phase of import) |
 | `WARMUP` | a sleep-placeholder GPU **Job** (`engine-warmup-*`) | Warmup |
 
-**SLIM_LS is the big one to internalize:** eight different SLIM_LS request types run as a
+**SLIM_LS is the big one to internalize:** nine different SLIM_LS request types run as a
 *single* `SLIM_LS` pod. If you expect `redis-<jobId>`/`generic-process`/`streaming-handler`
 for a Population Exploration or Insights job, you'll think it's broken — there
 won't be any. The defining observable for SLIM_LS is "exactly one engine pod
@@ -55,6 +55,7 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 | Labeling Recommendation | `SLIM_LS` | `WorkerSlimLSOps.labeling_recommendation` | `labeling-recommendation-<jobId>` | mongo `generatedLabels`; bucket `digest_<d>/labeling/*` | row in DS Curation → LABEL NEXT tab grid |
 | Splitting | `SLIM_LS` | `WorkerSlimLSOps.resplitting` | `splitting-<jobId>` | mongo `datasetsplitting`; bucket `digest_<d>/resplitting/{<jobUid>.csv, resplitting_cluster_filter.json}` | row in DS Curation → SPLITTING tab grid |
 | Unlabeled Analysis | `SLIM_LS` | `WorkerSlimLSOps.unlabeled_analysis_task` → `UnlabeledAnalysis.run_unlabeled_analysis` | `unlabeled-analysis-<jobId>` | mongo `unlabeledanalysis`; bucket `vis/<vis_artifact_id>/unlabeled_analysis/<jobId>/stats.json` (analysis_id = jobId, **not** the `digest_<d>` pattern) | row in DS Curation → UNLABELED (`UNLABELED_ANALYSIS` tab value) grid; optional dashboard top panel |
+| Fix Aggressor (manual insight) | `SLIM_LS` | `WorkerSlimLSOps.manual_insight` | `fix-aggressor-<jobId>` (k8s name from subType `Fix Aggressor`) | mongo `manualinsights`; bucket `digest_<d>/manual_insights/<jobId>.json` (a `LowPerformanceInsight` JSON) | DS Curation dialog's **MANUAL_INSIGHT** tab |
 | Push | `PUSH` | `WorkerPush` (CodeParser+ImportModel+ValidateAssets) | `push-<jobId>` | mongo `codesnapshots`,`versions`,`models`; bucket model artifacts | Version Control state PUSHING→PUSHED |
 | Export Model | `EXPORT_MODEL` | `WorkerExportModel` | `export-model-<jobId>` | mongo `exportedmodels`; bucket exported file | exported-models list per version |
 | Graph Validate | `DRY_RUN_GRAPH` | `WorkerGraphValidator` | `graph-validate-<jobId>` | mongo `versions.graphValidationData` | network-editor markers / push state |
@@ -210,7 +211,7 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
   previously-open gap: the checkpoint/journal writer existed with no call site before.
 
 ### Splitting (resplitting)
-The 7th of 8 `SLIM_LS` request types: `slim_request_type=resplitting`, worker
+The 7th of 9 `SLIM_LS` request types: `slim_request_type=resplitting`, worker
 `WorkerSlimLSOps.resplitting`. It re-splits the dataset across train/val/test:
 groups samples by `keep_together_metadata`, stratifies across `split_across_metadata`
 (request `SlimResplittingRequest`, subsets mapped to the engine's numeric
@@ -234,7 +235,7 @@ groups samples by `keep_together_metadata`, stratifies across `split_across_meta
   one-batched-write shape as `applyDomainGapTopPanel`/`applyPruningTopPanel`.
 
 ### Unlabeled Analysis  *(new SLIM_LS subtype)*
-An 8th `SLIM_LS` request type: `slim_request_type=unlabeled_analysis`
+The 8th of 9 `SLIM_LS` request types: `slim_request_type=unlabeled_analysis`
 (`SlimRequestTypeEnum.unlabeled_analysis`, `engine/src_tensorleap/contract/workerslimlsops/request/slimlsopsrequest.py`),
 dispatched to `WorkerSlimLSOps.unlabeled_analysis_task` → `UnlabeledAnalysis.run_unlabeled_analysis`
 (`engine/src_tensorleap/workers/workerslimlsops/workerslimlsops.py`,
@@ -274,6 +275,39 @@ low-performance "aggressor" clusters, and a per-sample trust/confidence score
   `unlabeled_analysis`". node-server's `generateUnlabeledAnalysis` (`logic.ts`) already sends the
   real `slimRequestType: 'unlabeled_analysis'`, so that fallback should be dead in practice — worth
   a live-cluster spot-check if this job ever appears to run with an empty/wrong request shape.
+
+### Fix Aggressor (manual insight)  *(new SLIM_LS subtype)*
+The 9th `SLIM_LS` request type: `slim_request_type=manual_insight`
+(`SlimRequestTypeEnum.manual_insight`, `engine/src_tensorleap/contract/workerslimlsops/request/slimlsopsrequest.py`),
+dispatched to `WorkerSlimLSOps.manual_insight` (`workerslimlsops.py`), which calls
+`InsightsCalculationManager.calculate_manual_insight` → `save_manual_insight`
+(`engine/src_tensorleap/trainer/insights_calculation_manager.py`). It builds a low-performance
+insight from a **user-picked** set of samples instead of an automatically-discovered failure
+cluster: the labeled (training/validation/test) samples matching `es_filters` become the
+insight's core, then it runs through the same extend/severity/metrics/automatic-test/MI/top-panel/
+aggressor-fixing pipeline as an automatic insight (no sub-insights, never published).
+- **Trigger:** Sample Collections drawer → a collection's **Fix Aggressor** action
+  (`handleFixAggressor` in `web-ui/src/sample-collection/CollectionsDrawerContent.tsx`) opens the
+  DS Curation dialog on its **MANUAL_INSIGHT** tab (`ManualInsightTabContent.tsx`), prefilled with
+  the collection's filter and a candidate version (`isManualInsightVersion` — the version must have
+  a `modelId`); submitting → `POST /datasetcuration/generateManualInsight`
+  `{projectId, versionId, filters}` (`node-server/src/dataset-curation/controller.ts`,
+  `logic.ts: generateManualInsight`) — UserError "Fix Aggressor requires at least one filter" if
+  `filters` is empty. `type='SLIM_LS'`, `subType='Fix Aggressor'`, `preferCpu=true`.
+- **Spawns:** a single `SLIM` pod (no redis/generic/streaming), like the other SLIM_LS jobs; k8s job `fix-aggressor-<jobId>`.
+- **Outputs:** mongo `manualinsights` entity (`node-server/src/dataset-curation/db.ts`,
+  `MANUAL_INSIGHT_COLLECTION`) tracking the job ref; bucket
+  `digest_<d>/manual_insights/<jobId>.json` — a `LowPerformanceInsight` JSON written by
+  `BaseStorage.get_manual_insight_path(job_uid)` (engine `basestorage.py`), `job_uid` = job cid, same
+  `digest_<d>` pattern as Dataset Balancing/Labeling/Splitting.
+- **Success:** job FINISHED + a row in the MANUAL_INSIGHT tab's run list
+  (`getManualInsights`/`ManualInsightRun`).
+- **Note:** the contract (`SlimManualInsightRequest`) carries an optional `latent_space_type`
+  (friendly manifest name, stored id, or pre-#2447 `user_custom` name, resolved via the same
+  `resolve_requested_ls_name` helper used elsewhere for custom-LS name compatibility —
+  `engine/src_tensorleap/enginevisualizer/latent_space_manager.py`), but node-server's
+  `generateManualInsight`/`GenerateManualInsightParams` never populates it today — in practice a
+  Fix Aggressor insight always resolves to the **base** latent space.
 
 ---
 
