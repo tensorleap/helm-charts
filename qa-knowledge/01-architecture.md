@@ -159,7 +159,7 @@ Deployment, `redis-<jobId>` Pod+Service.
 
 - `charts/tensorleap/Chart.yaml` `version` — a **minor** bump (`1.5.x → 1.6.0`)
   signals **cluster reinstall required** (the installer compares minor versions;
-  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.93`, infra `1.1.8`.
+  reinstall wipes the cluster). Current snapshot: tensorleap `1.6.100`, infra `1.1.8`.
 - `pkg/version/version.go` — the Go installer (`leap server`) version. `leap server info` prints it.
 - Reinstall is also triggered by an infra version change or a manifest
   appVersion/schemaVersion change (see `DEVELOPER-GUIDE.md`).

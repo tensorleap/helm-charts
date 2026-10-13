@@ -135,7 +135,7 @@ the label "UNLABELED" moved to the brand-new tab (value `UNLABELED_ANALYSIS`, co
 | | Dataset Balancing | Synthetic Data Generation | Labeling Recommendation |
 |---|---|---|---|
 | endpoint | `/datasetcuration/generateDatasetBalancing` | `/datasetcuration/generateSyntheticData` | `/datasetcuration/generateLabels` |
-| `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET) |
+| `slim_request_type` | `dataset_balancing` (algo PRUNING) | `synthetic_calibration` | `labeling_recommendation` (algo CORESET, or **MaxHerding** while training+requested labels stay under 500 — `maxherding.MAX_LABELED`, `engine/src_tensorleap/trainer/ds_curation/maxherding.py`) |
 | mongo entity | `datasetbalancing` | `syntheticdata` | `generatedLabels` |
 | bucket output | `digest_<d>/dataset_balancing/{dataset_balancing-recommendations.csv[.tar.gz], dataset_balancing_cluster_filter.json, dataset_balancing_stats.json}` (node-server exposes the stats file as `statsFileUrl`) | `digest_<d>/synthetic-calibration/{next_trials.csv, best_trials.csv}` + `synthetic_top_panel.json` (both manual and auto flows write this; node-server exposes it as `statsFileUrl`) | `digest_<d>/labeling/{labeling-recommendations.csv, labeling_cluster_filter.json, labeling_stats.json, suggested_cluster.json}` |
 | UI tab | PRUNING | SYNTHETIC | LABEL NEXT (tab value `UNLABELED`) |
