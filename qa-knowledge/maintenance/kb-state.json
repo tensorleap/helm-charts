@@ -1,36 +1,36 @@
 {
   "_note": "Baselines the QA KB was last verified against. The maintenance agent diffs each repo's track_branch HEAD against built_from_sha to find changes, then bumps these values in its PR. If built_from_sha is NOT an ancestor of track_branch HEAD (e.g. a feature-branch baseline), the agent falls back to a time-window diff and treats that repo's docs as full re-verify. A null built_from_sha means the repo was just added to tracking — the first refresh full-verifies its docs, then records a real SHA.",
-  "last_verified_utc": "2026-10-13",
+  "last_verified_utc": "2026-10-14",
   "repos": {
     "helm-charts": {
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "4dcf6840cfd01142f2340251658c746998704fbf"
+      "built_from_sha": "a4a698934c46b304cfbed12236e9e0ac7b1ed1ac"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "1d813a0e0655b649a4811137ece8d062e183f4e1"
+      "built_from_sha": "e9c0c4ad87761766ea19f60d60a1a4426ad0d140"
     },
     "node-server": {
       "remote": "git@github.com:tensorleap/node-server.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "267266a4e92e1a3a80aa1f22f9ee16f788e321e2"
+      "built_from_sha": "a43e8cb680c613cd4964ab845319c50397fbc1fd"
     },
     "web-ui": {
       "remote": "git@github.com:tensorleap/web-ui.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "4c14db366cd1d6285f2a302ab1ffe5713f8faf71"
+      "built_from_sha": "ee3101898b6da9bd5e0775e1544d68b6e48c5932"
     },
     "leap-cli": {
       "remote": "git@github.com:tensorleap/leap-cli.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "106e0bc281b08bc8cdfc20ac2dda9518c6287bf6"
+      "built_from_sha": "8a9313a31a3236be5a2f1cae09419e133b69812f"
     },
     "code-loader": {
       "remote": "git@github.com:tensorleap/code-loader.git",
