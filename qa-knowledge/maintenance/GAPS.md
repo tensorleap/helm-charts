@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-10-17 — manual refresh (all repos → master; no commits since 2026-10-16 baseline; no doc drift)
+Reviewed: helm-charts `97fc8e4b..fc2ccc88` (diff is the prior run's own KB-edit commit under `qa-knowledge/**` only — no manifest-glob match, no source drift); engine, node-server, web-ui, leap-cli, code-loader all unchanged (`origin/master` HEAD == stored baseline SHA for all five — zero new commits since the 2026-10-16 run).
+Changed: none — nothing to re-verify since no source repo moved.
+Open gaps: none new. Carried unresolved, unchanged from prior runs: (1) `09-job-catalog.md` Domain Gap section still doesn't mention the "Select Domain A/B" scatter-highlight action on `DomainGapTopPanel` (logged 2026-10-15, optional). (2) "model-computed custom latent space" feature still undocumented anywhere in the KB. (3) Which web-ui UI element triggers the `parentInsightId` drill-down flow is still unconfirmed. (4) 06-ui-inspection.md's `DataGridPro` claim for `SampleVisDisplay` still looks inaccurate, flagged for a future full re-verify. All baselines bumped: helm-charts `fc2ccc88`; engine unchanged (`e9c0c4ad`); node-server unchanged (`a43e8cb6`); web-ui unchanged (`1a532936`); leap-cli unchanged (`8a9313a3`); code-loader unchanged (`cb93bb7d`).
+
 ## 2026-10-16 — manual refresh (all repos → master; no commits since 2026-10-15 baseline; no doc drift)
 Reviewed: helm-charts `88894501..97fc8e4b` (diff is the prior run's own KB-edit commit under `qa-knowledge/**` only — no manifest-glob match, no source drift); engine, node-server, web-ui, leap-cli, code-loader all unchanged (`origin/master` HEAD == stored baseline SHA for all five — zero new commits since the 2026-10-15 run).
 Changed: none — nothing to re-verify since no source repo moved.
