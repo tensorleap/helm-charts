@@ -6,8 +6,16 @@ on:
       - master
 
 jobs:
+  mirror-images:
+    # Mirror any new or bumped third-party image before it is installed or published.
+    uses: ./.github/workflows/mirror_images.yml
+    permissions:
+      id-token: write
+      contents: read
+
   install-server-local-build:
     name: Install Tensorleap Server from local build
+    needs: mirror-images
     runs-on: ubuntu-16-cores
     timeout-minutes: 30
     steps:

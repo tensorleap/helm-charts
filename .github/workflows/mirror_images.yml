@@ -1,0 +1,76 @@
+name: Mirror Images
+
+# Copies every third-party image the product installs into
+# public.ecr.aws/tensorleap/mirror/<upstream-host>/<upstream-path>
+# (scripts/mirror-images.sh), so a vendor deleting or locking an image can't
+# break installs or the airgap pack.
+#
+# - CI, Patch, Release Candidate and Release Production call it first, so a new
+#   or bumped image is mirrored before anything installs or publishes it.
+# - Weekly it only verifies: an early warning when a vendor moves or removes an
+#   image we use (our copy stays).
+#
+# Pushing uses the github-actions-ecr-public-mirror role (aws-env
+# terraform/global/github-actions-ecr-public-mirror.tf). It trusts branch runs of
+# this repo only; a calling job must grant id-token: write.
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "copy (default), verify or dry-run"
+        required: false
+        type: string
+        default: copy
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "copy = mirror what's missing | verify = check only | dry-run = show what would be copied"
+        required: false
+        type: choice
+        options: [copy, verify, dry-run]
+        default: copy
+  schedule:
+    - cron: "0 5 * * 1" # Mondays 05:00 UTC (08:00 IDT / 07:00 IST), verify only
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror third-party images
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'verify') || 'copy' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./go.mod
+
+      - name: Install crane
+        # The go-containerregistry version go.mod already pins.
+        run: |
+          go install "github.com/google/go-containerregistry/cmd/crane@$(go list -m -f '{{.Version}}' github.com/google/go-containerregistry)"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Configure AWS credentials
+        if: env.MODE == 'copy'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::170591776583:role/github-actions-ecr-public-mirror
+          aws-region: us-east-1
+
+      - name: Mirror images (${{ env.MODE }})
+        run: |
+          case "$MODE" in
+            copy) make mirror-images ;;
+            verify) make mirror-images ARGS="--verify" ;;
+            dry-run) make mirror-images ARGS="--dry-run" ;;
+            *) echo "unknown mode: $MODE" >&2; exit 1 ;;
+          esac

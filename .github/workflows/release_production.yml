@@ -24,6 +24,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  mirror-images:
+    # Mirror any new or bumped third-party image before it is installed or published.
+    uses: ./.github/workflows/mirror_images.yml
+    permissions:
+      id-token: write
+      contents: read
+
   preflight:
     name: Preflight
     runs-on: ubuntu-latest
@@ -103,10 +110,10 @@ jobs:
     secrets: inherit
 
   release-production:
-    needs: [preflight, cli-dry-run]
+    needs: [preflight, cli-dry-run, mirror-images]
     # cli-dry-run is skipped when this run releases no CLI; only its failure
     # stops the release.
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.mirror-images.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -75,6 +75,15 @@ install-existing-cluster:
 ecr-public-cleanup:
 	@python3 scripts/ecr-public-cleanup.py $(ARGS)
 
+# Copy every third-party image the product installs into
+# public.ecr.aws/tensorleap/mirror/<upstream-host>/<upstream-path>, e.g.
+#   AWS_PROFILE=utils make mirror-images        # copy whatever is missing
+#   make mirror-images ARGS="--verify"          # check only, anonymous
+#   make mirror-images ARGS="--dry-run"         # show what would be copied
+# Never overwrites a mirror tag. CI wrapper: .github/workflows/mirror_images.yml
+mirror-images:
+	@./scripts/mirror-images.sh $(ARGS)
+
 # This code run helm template on charts and extracts all image names by simple search of image: [image-name]
 .PHONY: update-images
 update-images:

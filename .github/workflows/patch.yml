@@ -14,6 +14,13 @@ on:
         default: ""
 
 jobs:
+  mirror-images:
+    # Mirror any new or bumped third-party image before it is installed or published.
+    uses: ./.github/workflows/mirror_images.yml
+    permissions:
+      id-token: write
+      contents: read
+
   patch:
     runs-on: ubuntu-latest
     permissions:
@@ -151,7 +158,7 @@ jobs:
           branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
 
   install-server:
-    needs: patch
+    needs: [patch, mirror-images]
     uses: ./.github/workflows/_install_server.yml
     with:
       tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.patch.outputs.version) || needs.patch.outputs.version }}
