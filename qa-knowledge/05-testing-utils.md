@@ -195,7 +195,12 @@ kubectl -n tensorleap exec -it deploy/tensorleap-minio -- sh
 What lives where (paths a QA engineer checks):
 - Job payload JSON: `organizations/<team>/jobs/<jobId>/...`
 - Pods settings: `organizations/<team>/projects/<proj>/pods-settings/<versionId>/k8s_pods_settings.json`
-- Latent space (Evaluate): under the version's `inference_artifact_id` dir
+- Latent space (Evaluate): under the version's `inference_artifact_id` dir, at
+  `inference/<inferenceArtifactId>/latent_space/pca_ready/latent_space_after_pcav<N>{.pickle,/manifest.json}`
+  (the newest `<N>` wins) — same path the Population Exploration dashlet's
+  feature-flagged (`showLatentSpacePath`, off by default) "Latent Space Path" menu
+  action resolves via `POST /visualizations/getLatentSpacePath`
+  (node-server `src/visualizations/logic.ts`)
 - Vis payloads/images: project dir, served to the browser via `/session`
 
 ---
