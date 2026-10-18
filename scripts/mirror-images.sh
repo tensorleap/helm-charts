@@ -33,8 +33,11 @@
 #
 # Copying needs AWS credentials that may push to mirror/* in the utils account
 # (CI: the github-actions-ecr-public-mirror role; locally: AWS_PROFILE=utils).
-# --verify and --dry-run are anonymous. Needs crane and jq, plus go and yq unless
-# --images-file is given. CI wrapper: .github/workflows/mirror_images.yml
+# --verify and --dry-run use them too when present: anonymous reads from public
+# ECR count against a monthly data quota per source IP, which shared CI runners
+# run out of ("TOOMANYREQUESTS: Data limit exceeded"); without credentials they
+# read anonymously. Needs crane and jq, plus go and yq unless --images-file is
+# given. CI wrapper: .github/workflows/mirror_images.yml
 #
 # Kept to bash 3.2 (no mapfile, no associative arrays): macOS still ships it.
 
@@ -108,22 +111,34 @@ is_not_found() {
   return 1
 }
 
-# Prints the digest of $1 (with --platform $2 when given), "missing" when the
-# registry says it doesn't exist. Retries anything else - public ECR answers 429
-# to bursts of anonymous reads - and fails only when that keeps happening.
-digest_of() {
-  local ref="$1" platform="${2:-}" out attempt
+# Runs a read-only crane command and prints its output, or "missing" when the
+# registry says the image doesn't exist. Retries throttling - public ECR answers
+# 429 to bursts of reads - but not the anonymous monthly data limit, which no
+# retry fixes.
+crane_read() {
+  local out attempt
   for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-    if [ -n "$platform" ]; then
-      out="$(crane digest --platform "$platform" "$ref" 2>&1)" && { printf '%s' "$out"; return 0; }
-    else
-      out="$(crane digest "$ref" 2>&1)" && { printf '%s' "$out"; return 0; }
-    fi
+    out="$(crane "$@" 2>"$WORK/read.err")" && { printf '%s' "$out"; return 0; }
+    out="$(cat "$WORK/read.err")"
     if is_not_found "$out"; then printf 'missing'; return 0; fi
+    case "$out" in *"Data limit exceeded"*) break ;; esac
     [ "$attempt" -lt "$MAX_ATTEMPTS" ] && sleep $((attempt * attempt * 2))
   done
   echo "$out" >&2
   return 1
+}
+
+# The digest of $1 (of its $2 platform when given), or "missing".
+digest_of() {
+  if [ -n "${2:-}" ]; then crane_read digest --platform "$2" "$1"; else crane_read digest "$1"; fi
+}
+
+# The platforms of an index, one "os/arch" per line; nothing for a single image.
+platforms_of() {
+  local json
+  json="$(crane_read manifest "$1")" || return 1
+  [ "$json" != missing ] || { echo "$1 not found" >&2; return 1; }
+  printf '%s' "$json" | jq -r '.manifests[]?.platform | "\(.os)/\(.architecture)"' | sort -u
 }
 
 # Runs "$@" until it succeeds, backing off between attempts.
@@ -134,11 +149,6 @@ with_retry() {
     [ "$attempt" -lt "$MAX_ATTEMPTS" ] && sleep $((attempt * attempt * 2))
   done
   return 1
-}
-
-# The platforms of an index, one "os/arch" per line; nothing for a single image.
-platforms_of() {
-  crane manifest "$1" | jq -r '.manifests[]?.platform | "\(.os)/\(.architecture)"' | sort -u
 }
 
 ensure_repo() {
@@ -156,19 +166,15 @@ ensure_repo() {
 }
 
 login() {
-  # A private docker config so a local run doesn't write into ~/.docker.
-  export DOCKER_CONFIG="$WORK/docker"
-  mkdir -p "$DOCKER_CONFIG"
-  aws ecr-public get-login-password --region "$ECR_PUBLIC_REGION" |
-    crane auth login public.ecr.aws -u AWS --password-stdin >/dev/null 2>&1 ||
-    die "cannot log in to public.ecr.aws - are AWS credentials for the utils account set?"
+  aws ecr-public get-login-password --region "$ECR_PUBLIC_REGION" 2>/dev/null |
+    crane auth login public.ecr.aws -u AWS --password-stdin >/dev/null 2>&1
 }
 
 # Copies $1 to $2: byte-for-byte when upstream only has the platforms we keep,
 # otherwise an index filtered down to them.
 copy_image() {
   local src="$1" dst="$2" platforms extra p
-  platforms="$(with_retry platforms_of "$src")" || return 1
+  platforms="$(platforms_of "$src")" || return 1
   extra=""
   for p in $platforms; do
     case " $PLATFORMS " in *" $p "*) ;; *) extra="$extra $p" ;; esac
@@ -187,20 +193,20 @@ copy_image() {
     { cat "$WORK/copy.err" >&2; return 1; }
 }
 
-# Compares the kept platforms of $1 (upstream) and $2 (mirror). Prints
-# "same", "moved", "gone" (upstream no longer has it) or "error".
+# Compares the kept platforms of $1 (upstream) and $2 (mirror). Prints "same",
+# "moved", "gone" (upstream no longer has it), "upstream-error" or "mirror-error".
 compare() {
   local src="$1" dst="$2" platforms p u m
-  u="$(digest_of "$src")" || { printf 'error'; return 0; }
+  u="$(digest_of "$src")" || { printf 'upstream-error'; return 0; }
   [ "$u" != missing ] || { printf 'gone'; return 0; }
-  m="$(digest_of "$dst")" || { printf 'error'; return 0; }
+  m="$(digest_of "$dst")" || { printf 'mirror-error'; return 0; }
   [ "$u" != "$m" ] || { printf 'same'; return 0; }
-  platforms="$(with_retry platforms_of "$src")" || { printf 'error'; return 0; }
+  platforms="$(platforms_of "$src")" || { printf 'upstream-error'; return 0; }
   [ -n "$platforms" ] || { printf 'moved'; return 0; } # single image with another digest
   for p in $PLATFORMS; do
     case " $(echo $platforms) " in *" $p "*) ;; *) continue ;; esac
-    u="$(digest_of "$src" "$p")" || { printf 'error'; return 0; }
-    m="$(digest_of "$dst" "$p")" || { printf 'error'; return 0; }
+    u="$(digest_of "$src" "$p")" || { printf 'upstream-error'; return 0; }
+    m="$(digest_of "$dst" "$p")" || { printf 'mirror-error'; return 0; }
     [ "$u" = "$m" ] || { printf 'moved'; return 0; }
   done
   printf 'same'
@@ -208,7 +214,17 @@ compare() {
 
 # --- main ---------------------------------------------------------------------
 
-[ "$MODE" != copy ] || login
+# A private docker config: a local run doesn't touch ~/.docker, and reads stay
+# anonymous unless the login below works.
+export DOCKER_CONFIG="$WORK/docker"
+mkdir -p "$DOCKER_CONFIG"
+if login; then
+  echo "Logged in to public.ecr.aws"
+elif [ "$MODE" = copy ]; then
+  die "cannot log in to public.ecr.aws - are AWS credentials for the utils account set?"
+else
+  echo "No AWS credentials - reading public ECR anonymously (subject to its per-IP data limit)"
+fi
 
 ROWS=""
 FAILED=0
@@ -243,7 +259,8 @@ for ref in $images; do
         same) add_row "✅ ok" "$dst" "matches upstream" ;;
         moved) add_row "⚠️ upstream moved" "$dst" "\`$src\` now points elsewhere; the mirror keeps the copied snapshot" ;;
         gone) add_row "⚠️ upstream gone" "$dst" "\`$src\` no longer exists upstream; the mirror still has it" ;;
-        *) add_row "⚠️ unchecked" "$dst" "could not read \`$src\`" ;;
+        upstream-error) add_row "⚠️ unchecked" "$dst" "could not read upstream \`$src\`" ;;
+        *) add_row "⚠️ unchecked" "$dst" "could not read the mirror" ;;
       esac ;;
     dry-run:missing)
       add_row "➕ would copy" "$dst" "from \`$src\`" ;;

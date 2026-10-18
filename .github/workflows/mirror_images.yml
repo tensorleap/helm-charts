@@ -59,8 +59,10 @@ jobs:
           go install "github.com/google/go-containerregistry/cmd/crane@$(go list -m -f '{{.Version}}' github.com/google/go-containerregistry)"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      # Every mode logs in: anonymous reads from public ECR share a monthly data
+      # quota per source IP, and GitHub's runner IPs run out of it
+      # ("TOOMANYREQUESTS: Data limit exceeded").
       - name: Configure AWS credentials
-        if: env.MODE == 'copy'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::170591776583:role/github-actions-ecr-public-mirror
