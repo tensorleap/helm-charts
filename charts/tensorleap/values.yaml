@@ -7,7 +7,10 @@ ingress-nginx:
   controller:
     extraArgs:
       default-ssl-certificate: tensorleap/tls-secret
+    # Third-party images come from our mirror (public.ecr.aws/tensorleap/mirror/<upstream-host>/<path>).
     image:
+      registry: public.ecr.aws
+      image: tensorleap/mirror/registry.k8s.io/ingress-nginx/controller
       digest: ""
     config:
       enable-snippets: "true"
@@ -15,6 +18,8 @@ ingress-nginx:
     admissionWebhooks:
       patch:
         image:
+          registry: public.ecr.aws
+          image: tensorleap/mirror/registry.k8s.io/ingress-nginx/kube-webhook-certgen
           digest: ""
     resources:
       requests:
@@ -55,6 +60,8 @@ global:
 
 keycloakx:
   enabled: true
+  image:
+    repository: public.ecr.aws/tensorleap/mirror/quay.io/keycloak/keycloak
   replicas: 1
   cache:
     stack: custom # <— IMPORTANT
@@ -168,6 +175,8 @@ keycloakx:
 
 datadog:
   enabled: true
+  # Prefixes every Datadog image (agent, and the cluster agent if enabled).
+  registry: public.ecr.aws/tensorleap/mirror/gcr.io/datadoghq
   clusterAgent:
     enabled: false
   datadog:

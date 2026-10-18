@@ -20,4 +20,4 @@ localBucketPath: ""
 pipIndexUrl: ""
 pipExtraIndexUrl: ""
 
-mongodb_image: docker.io/library/mongo:6.0.5
+mongodb_image: public.ecr.aws/tensorleap/mirror/docker.io/library/mongo:6.0.5

@@ -45,6 +45,7 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 	}
 
 	// make sure cluster is running before checking if it needs to be reinstalled (for helm checking)
+	useK3dToolsImage(previousMnf)
 	err = k3d.RunCluster(ctx)
 	if err != nil {
 		log.SendCloudReport("warning", "Failed to run cluster, try to recreate", "Running",

@@ -25,6 +25,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # The pack pulls every image of the release from public ECR. Anonymous pulls
+      # share a monthly data quota per source IP, which GitHub's runner IPs run out
+      # of ("TOOMANYREQUESTS: Data limit exceeded"); logged-in pulls don't count
+      # against it. `go run . pack` sends these credentials (pkg/docker).
+      - name: Log in to public ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:

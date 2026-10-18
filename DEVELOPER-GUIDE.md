@@ -24,6 +24,40 @@ A YAML file capturing a snapshot of the installation, including images and tags,
 ### Image list
 A document detailing the list of images in use, generated either by the `update-images` workflow or manually by `make update-images`.
 
+### Third-party images
+Every third-party image the product installs is pulled from our own copy at
+`public.ecr.aws/tensorleap/mirror/<upstream-host>/<upstream-path>:<same tag>`, e.g.
+`public.ecr.aws/tensorleap/mirror/docker.io/library/mongo:6.0.5`, so a vendor deleting or
+locking an image (quay.io/minio, Sep 2026) can't break installs or the airgap pack. That covers the
+chart images, the installer images (`pkg/server/manifest/utils.go`) and k3s's own
+`docker.io/rancher/*` images, which the installer redirects with a k3s `registries.yaml` rewrite
+(`pkg/k3d/utils.go`).
+
+The copies are made by hand. To add or bump a third-party image, **copy it first, then change the
+reference**:
+
+```bash
+aws sso login --profile utils
+aws ecr-public create-repository --region us-east-1 --profile utils \
+  --repository-name mirror/docker.io/library/mongo        # once per new image
+aws ecr-public get-login-password --region us-east-1 --profile utils \
+  | crane auth login public.ecr.aws -u AWS --password-stdin
+crane index filter docker.io/library/mongo:6.0.6 --platform linux/amd64 --platform linux/arm64 \
+  -t public.ecr.aws/tensorleap/mirror/docker.io/library/mongo:6.0.6
+```
+
+- Use `crane copy <upstream> <mirror>` instead when upstream has no platforms besides linux/amd64
+  and linux/arm64: the copy is then byte-for-byte, with the same digest. `index filter` drops the
+  rest (Docker Hub ships Windows images too) and keeps each platform image's digest.
+- Never overwrite a tag that already exists in the mirror.
+- Bumping k3s means mirroring every image in that k3s release's `k3s-images.txt` first. A
+  `rancher/*` image missing from the mirror has no fallback: k3s 1.26 applies the rewrite to the
+  Docker Hub fallback too.
+- Manifests from before the mirror (1.6.100 and older) still pull from the vendors, and
+  1.6.84–1.6.100 pull `public.ecr.aws/tensorleap/minio`, so that repository must stay.
+- crane: `go install github.com/google/go-containerregistry/cmd/crane@v0.19.1` (the version
+  `go.mod` pins).
+
 ## Installation Process
 The installation process we utilize k3d to create a local cluster and a Docker registry. Every installation begins with an installation manifest
 

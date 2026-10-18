@@ -29,6 +29,7 @@ func NewRunCmd() *cobra.Command {
 			defer close()
 			local.WarnIfImageCacheReowned()
 
+			server.UseInstalledK3dToolsImage()
 			err = k3d.RunCluster(cmd.Context())
 			if err != nil {
 				return err

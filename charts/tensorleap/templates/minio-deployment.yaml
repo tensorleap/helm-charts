@@ -29,8 +29,9 @@ spec:
           # the shared PVC. Newer MinIO releases use the xl format (object = directory + xl.meta),
           # which breaks all direct filesystem access — do not bump without removing those paths.
           # MinIO no longer serves this release (quay.io/minio is 401 since 2026-09-24), so it comes
-          # from our own mirror of the same image.
-          image: "public.ecr.aws/tensorleap/minio:RELEASE.2021-12-20T22-07-16Z"
+          # from our mirror of the same image. Releases 1.6.84-1.6.100 pull public.ecr.aws/tensorleap/minio,
+          # which must stay.
+          image: "public.ecr.aws/tensorleap/mirror/quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z"
           imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
