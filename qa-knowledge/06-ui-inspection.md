@@ -27,7 +27,7 @@ the rules here matter.
 | Population Exploration | `add-population-exploration-dashlet-button`, `population-exploration-dashlet`, `population-exploration-processing`, `population-exploration-visualize-button`, `population-exploration-color-by`, `population-exploration-size-by` |
 | Sample Analysis | `sample-analysis-dashlet`, `sample-analysis-dashlet-loaded-content` |
 | Analytics | `analytics-dashlet` |
-| Insights | `insights-panel-button`, `insights-list`, `insights-categories-tabs`, `insight-card` |
+| Insights | `insights-panel-button`, `insights-list`, `insight-card` |
 | Tests | `tests-panel-button`, `test-list`, `create-new-test-button` |
 | Issues | `issues-panel-button`, `create-new-issue-button` |
 | Collections | `collections-panel-button` |

@@ -170,6 +170,9 @@ when `batchSize` splits evenly across `gpuCount` (mirrors the engine's
 `LeapDistStrategy` gate for `MirroredStrategy`) — a non-divisible batch or a
 single GPU is a no-op, since the push-time estimate imports the model on CPU
 and never accounts for the extra replicas' CUDA/staging-buffer overhead.
+This path is gated by `isEvaluateJob` in the same file, which now covers both
+`Evaluate` **and** `Update Evaluate` subTypes — so Update Evaluate jobs get the
+same bucket-settings/multi-GPU treatment, not just plain Evaluate.
 
 **GPU absence:** node-server strips the `nvidia.com/gpu` limit and injects
 `NVIDIA_VISIBLE_DEVICES=void` + `CUDA_VISIBLE_DEVICES=''` when the machine type has
