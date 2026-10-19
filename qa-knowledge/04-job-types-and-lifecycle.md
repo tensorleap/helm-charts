@@ -118,6 +118,7 @@ are also archived to the bucket on `FINISHED`/`FAILED`.
 | all engine pods | `-l app=engine` |
 | jobs of a project | `-l projectId=<projectId>` |
 | slim jobs | `-l jobType=SLIM_LS` |
+| main-only jobs (never spawn generic-process) | `-l hasWorker=false` |
 | engine runtime jobs | `-l engineJob=true` |
 | node jobs | `-l app=tensorleap-node-job` |
 | warmup jobs | `-l warmup-job=true,created-by=node-server` |
@@ -127,6 +128,15 @@ are also archived to the bucket on `FINISHED`/`FAILED`.
 | mongodb / rabbitmq / minio | `-l app=mongodb` / `-l app=rabbitmq` / `-l app=minio,release=tensorleap` |
 | elasticsearch pod | `-l elasticsearch.k8s.elastic.co/cluster-name=tl-elasticsearch` |
 | zot registry | `-l app=tensorleap-registry` |
+
+**Engine main-pod labels come from node-server** (`node-server/src/utils/engine.ts`):
+- `hasWorker="true"|"false"` on the Job (:380) and its pod (:453), from
+  `jobHasGenericWorker()` (:1478): `true` for TRAINING, ANALYZE, EXPORT_MODEL, DRY_RUN_GRAPH,
+  PUSH, STREAMING_SAMPLES_VIS, SYNTHETIC; `false` otherwise. Read by the orchestrator's
+  starvation check (see [02](02-components.md) § orchestrator).
+- `jobType` is set **only on SLIM pods** (`SLIM_LS`, :395). Other engine main pods carry no
+  `jobType` label, so `-l jobType=...` can't select them; use `jobId` or `hasWorker`.
+  (`jobType=generic-process|redis|streaming-handler` are set by the engine on the pods it creates.)
 
 Deployments per job: `kubectl get deploy -n tensorleap -l jobId=<jobId>` →
 `generic-process-<jobId>` and `streaming-handler-<jobId>`.

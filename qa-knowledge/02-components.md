@@ -243,6 +243,23 @@ A Python distributed compute system. All in namespace `tensorleap`.
 - Scales the generic-process Deployment to `ceil(desired_workers/children_per_pod)`.
 - Reads `memory_update:generic:<job_id>` from Redis and patches the Deployment
   memory (engine-generics lacks k8s RBAC, so it signals via Redis).
+- **Starvation warnings** (user-visible job messages, `_monitor_unstarted_*`). Three checks,
+  each 300s (`starvation_timeout`), up to 3 messages per job, 300s apart:
+  - **Worker** — "This process is taking longer than expected to initiate…": a job whose
+    main pod is Running but has **no Running `generic-process-<jobId>` pod** 300s after the
+    orchestrator first saw the main pod. Not "pod Pending". Only jobs with a worker are
+    tracked: main pods labeled `hasWorker=false` (e.g. SLIM_LS, ANALYZE_GRAPH) are skipped
+    (`job_has_generic_worker`, engine #2642 / EN-2574, engine master `2e10ea61` onward). In
+    engine images older than that, any SLIM_LS job running past 5 min got this message
+    falsely; check the deployed engine tag (`images.txt` / `kubectl get deploy -o yaml`).
+  - **Redis** — "The Redis instance for this job is taking longer than expected to start…":
+    `jobType=redis` pod not ready for 300s.
+  - **Streaming handler** — "The streaming handler for this job is taking longer…":
+    `jobType=streaming-handler` pod not ready for 300s.
+
+  (`engine/src_tensorleap/workers/workerenginescheduler/workerenginescheduler.py`:
+  `job_has_generic_worker` :49, messages :91, timings :133, `_find_starved_generic_process_pods`
+  :765, `_find_starved_pods_by_label` :808, `_monitor_unstarted_children_pods` :824)
 - **Does NOT manage per-job Redis queue rate** (that is the trainer's
   backpressure + the main-pod streaming scaler).
 

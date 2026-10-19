@@ -35,7 +35,8 @@ glance what *should* be there:
 *single* `SLIM_LS` pod. If you expect `redis-<jobId>`/`generic-process`/`streaming-handler`
 for a Population Exploration or Insights job, you'll think it's broken — there
 won't be any. The defining observable for SLIM_LS is "exactly one engine pod
-labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
+labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`, set by node-server — see
+[04](04-job-types-and-lifecycle.md) § k8s labels).
 
 ---
 
@@ -389,8 +390,9 @@ The static `engine-orchestrator` Deployment (`python -m src_tensorleap.engine.en
 SA `deployment-manager`, container `orchestrator`, `app=engine`). Loop: monitor
 failed jobs/pods, report `active_jobs_report` + `failure_jobs_report` to node-server,
 scale generic-process Deployments, clean orphan `jobId`-labeled resources, emit
-starvation (pod Pending >300s) and memory-leak (20 consecutive RAM increases)
-warnings. **If it's down:** TRAINING/ANALYZE throughput stalls (no autoscale),
+starvation warnings (a job's worker or per-job companion pod not running 300s in; see
+[02-components.md](02-components.md) § orchestrator) and memory-leak (20 consecutive
+RAM increases) warnings. **If it's down:** TRAINING/ANALYZE throughput stalls (no autoscale),
 orphan pods accumulate, OOM/ImagePull failures are never surfaced (jobs look hung).
 Logs: "Starting engine scheduler service…", "Monitoring failed jobs", "scaled
 generic-process deployment", "deleting orphan per-job resource".

@@ -37,6 +37,7 @@ failure surfaces. Use this to **classify** a failure, not just report "it broke"
 | `redis-<jobId>` Pending forever; main pod log `Redis pod is Unschedulable -- waiting for cluster resources` | no room for the per-job redis | `kubectl get pod redis-<jobId>`; free resources or lower sizing |
 | Pod `ImagePullBackOff`/`ErrImagePull` (engine/generic/redis) | bad tag / registry unreachable / pippin build failed | `kubectl describe pod`; for redis the main pod fast-fails `Redis pod ... unrecoverable state` |
 | Hangs in pippin **init** container | dependency build/registry problem | init-container logs; Zot `/v2/_catalog` (see [05](05-testing-utils.md)) |
+| Job shows "This process is taking longer than expected to initiate…" | a job **with** a worker whose `generic-process-<jobId>` pod isn't Running 300s after the main pod (unschedulable, image pull, pippin). On engine images older than master `2e10ea61` (engine #2642, EN-2574) also a **false positive** on any SLIM_LS job running >5 min | `kubectl get pods -l jobId=<jobId>`: main pod Running + generic pod missing/Pending → real; `kubectl get pod -l jobId=<jobId> -L hasWorker` shows `false` → false positive (old engine). See [02](02-components.md) § orchestrator |
 | Concurrency rejection | another Evaluate already running for the version, or per-user limit | POST `/evaluate/evaluate` returns `An evaluate job is already running` or **429** `CONCURRENT_EVALUATE_LIMIT` |
 
 ---
