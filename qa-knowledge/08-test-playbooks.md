@@ -163,6 +163,14 @@ orchestrator still reports a `TERMINATED`/`STOPPED` job, until it actually
 disappears. A job stuck `STARTED` after stop → suspect RabbitMQ control path or a
 non-responsive pod (orchestrator should still reconcile).
 
+**Already-ended job:** terminating a job already in an end status (`FINISHED`,
+`FAILED`, `TERMINATED`, `STOPPED`) is a no-op, not an error path to chase — the
+CLI pre-checks status and prints `run <id> is already <status>; nothing to stop`
+(`leap-cli/cmd/run/stop.go`); the server independently rejects it with
+`UserError("Job already <status>")` (`node-server/src/jobs/logic.ts`
+`terminateJob`). Expect this on a repeated `leap run stop` / double-click of
+Terminate — it is idempotent-safe, not a bug.
+
 ---
 
 ## Reporting a result (template)
