@@ -348,7 +348,7 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
   (`copy`, `export`, `import`, and `publish` were all removed, along with the
   `leap hub` command group — there is now no way to move a project across envs
   via the CLI.)
-- `leap run {list,logs <runId>,info <runId>}` — CLI view of engine jobs (filter by JobSubType / status).
+- `leap run {list,logs <runId>,info <runId>,stop <runId…>}` — CLI view of engine jobs (filter by JobSubType / status); `stop` calls `terminateJob` and skips runs that already ended (`leap job stop` is an alias).
 - `leap server …` — cluster lifecycle + embedded `kubectl`/`k3d`.
 
 > There is **no** `leap dataset` command and **no** `leap_mapping.yaml`. The
