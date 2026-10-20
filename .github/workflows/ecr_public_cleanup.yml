@@ -8,7 +8,8 @@ name: ECR Public Cleanup
 # Two ways in:
 #   * schedule: every Sunday night (Israel time) it REALLY DELETES with the
 #     defaults below: all four repos, feature + untagged images at least 90
-#     days old, chart pins protected. The schedule itself is the approval.
+#     days old, chart and SaaS pins (shared defaults and per-tenant overrides)
+#     protected. The schedule itself is the approval.
 #   * workflow_dispatch: dry run by default; a real deletion needs dry_run
 #     unchecked AND the exact confirm phrase.
 # Nothing younger than 90 days can be deleted either way; the script enforces
@@ -41,7 +42,7 @@ on:
         required: false
         default: ""
       protect_chart_pins:
-        description: "checked = never delete the tags pinned by *-latest-image on master or by the aws-git-ops-dev/-prod default values (plus their engine-generic variants) | unchecked = no protection beyond version tags"
+        description: "checked = never delete the tags pinned by *-latest-image on master, by the aws-git-ops-dev/-prod default values, or by a tenant override (tenants/<tenant>/{engine,node-server}-values.yaml), plus their engine-generic variants | unchecked = no protection beyond version tags"
         required: false
         type: boolean
         default: true
@@ -104,11 +105,14 @@ jobs:
           aws-region: us-east-1
 
       # The chart on master pins one master-<sha> tag per component, and the SaaS
-      # clusters (aws-git-ops-dev/-prod tensorleap-default-values) pin their own.
-      # Deleting those would break `leap server install` or a running tenant, so
-      # turn them into keep globs that also cover the -amd64/-arm64/-stable and
-      # engine-generic -py3x variants. (pippin is pinned too, but this workflow
-      # never touches the pippin repo.)
+      # clusters pin their own: the shared defaults in aws-git-ops-dev/-prod
+      # tensorleap-default-values, plus per-tenant overrides in tenants/<tenant>/
+      # for a tenant frozen on its own build (e.g. lumana on a feature-branch tag,
+      # which the version rule does not protect). Deleting those would break
+      # `leap server install` or a running tenant, so turn them into keep globs
+      # that also cover the -amd64/-arm64/-stable and engine-generic -py3x
+      # variants. (pippin is pinned too, but this workflow never touches the
+      # pippin repo.)
       - name: Build keep-file from chart and SaaS pins
         if: ${{ github.event_name == 'schedule' || inputs.protect_chart_pins }}
         shell: bash
@@ -123,18 +127,45 @@ jobs:
               echo "engine-generic:$2*" >> keep.txt
             fi
           }
+          # image_tag: <tag> from a values file on stdin; empty when the key is absent
+          image_tag() {
+            sed -n 's/^image_tag: *"\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p'
+          }
+          gh_err="$(mktemp)"
           for repo in engine node-server web-ui; do
             ref="$(cat "${repo}-latest-image")"
             keep "$repo" "${ref##*:}"
           done
           for gitops in aws-git-ops-dev aws-git-ops-prod; do
             for repo in engine node-server; do
-              tag="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/tensorleap/${gitops}/contents/tensorleap-default-values/${repo}-values.yaml" | sed -n 's/^image_tag: *"\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p')"
+              tag="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/tensorleap/${gitops}/contents/tensorleap-default-values/${repo}-values.yaml" | image_tag)"
               if [ -z "$tag" ]; then
                 echo "❌ no image_tag in ${gitops} ${repo}-values.yaml; refusing to run without the SaaS pins" >&2
                 exit 1
               fi
               keep "$repo" "$tag"
+            done
+            # A tenant override is optional (404 = that tenant follows the defaults);
+            # any other failure to list or read means we cannot know what is pinned,
+            # so refuse to run rather than delete blind.
+            tenants="$(gh api "repos/tensorleap/${gitops}/contents/tenants" --jq '.[] | select(.type == "dir") | .name')" || {
+              echo "❌ could not list tenants/ in ${gitops}; refusing to run without the tenant pins" >&2
+              exit 1
+            }
+            for tenant in $tenants; do
+              for repo in engine node-server; do
+                if raw="$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/tensorleap/${gitops}/contents/tenants/${tenant}/${repo}-values.yaml" 2>"$gh_err")"; then
+                  tag="$(printf '%s\n' "$raw" | image_tag)"
+                  if [ -n "$tag" ]; then
+                    keep "$repo" "$tag"
+                  fi
+                elif grep -q 'HTTP 404' "$gh_err"; then
+                  :  # no override for this component; the tenant runs the defaults
+                else
+                  echo "❌ could not read ${gitops} tenants/${tenant}/${repo}-values.yaml: $(cat "$gh_err")" >&2
+                  exit 1
+                fi
+              done
             done
           done
           echo "🔒 protecting chart and SaaS pins:"
