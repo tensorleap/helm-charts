@@ -91,7 +91,14 @@ func AddImages(tarWriter *tar.Writer, mnf *manifest.InstallationManifest) error 
 		return err
 	}
 
-	err = docker.DownloadDockerImages(dockerClient, images, tempImagesFile)
+	// A manifest that uses our image mirror pulls everything from it, including
+	// k3s's own docker.io/rancher/* images, which keep their names in the pack.
+	// Older manifests pull from the vendors, as before.
+	var pullFrom func(string) string
+	if mnf.UsesMirror() {
+		pullFrom = manifest.MirrorOf
+	}
+	err = docker.DownloadDockerImages(dockerClient, images, tempImagesFile, pullFrom)
 
 	if err != nil {
 		return err

@@ -3,6 +3,8 @@ package docker
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/cli/cli/command"
+	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/flags"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -61,7 +64,9 @@ func LoadingImages(dockerClient Client, reader io.Reader) error {
 }
 
 const maxRetries = 3
-const retryDelay = 10 * time.Second
+
+// retryDelay is a variable so tests don't have to wait it out.
+var retryDelay = 10 * time.Second
 
 // isRateLimitError checks if the error is related to rate limiting
 func isRateLimitError(err error) bool {
@@ -70,16 +75,43 @@ func isRateLimitError(err error) bool {
 	}
 	errStr := err.Error()
 	return strings.Contains(errStr, "too many requests") ||
+		strings.Contains(strings.ToLower(errStr), "toomanyrequests") ||
 		strings.Contains(errStr, "rate limit") ||
 		strings.Contains(errStr, "429") ||
 		strings.Contains(errStr, "quota exceeded")
 }
 
-func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.Writer) error {
-	// First pull all images using the existing PullDockerImages function
-	err := PullDockerImages(dockerCli, imageNames)
+// DownloadDockerImages pulls imageNames and saves them, gzipped, to outputFile.
+// pullFrom, when set, names the reference to pull each image from instead (e.g.
+// our mirror of a vendor image); the pulled image is tagged with its original
+// name before saving, so the file keeps the names the cluster asks for.
+func DownloadDockerImages(dockerCli Client, imageNames []string, outputFile io.Writer, pullFrom func(image string) string) error {
+	pullNames := imageNames
+	retagged := map[string]string{} // pulled reference -> original name
+	if pullFrom != nil {
+		pullNames = make([]string, 0, len(imageNames))
+		for _, imageName := range imageNames {
+			source := pullFrom(imageName)
+			if source != imageName {
+				retagged[source] = imageName
+			}
+			pullNames = append(pullNames, source)
+		}
+	}
+
+	err := PullDockerImages(dockerCli, pullNames)
 	if err != nil {
 		return err
+	}
+	for source, imageName := range retagged {
+		if err := dockerCli.ImageTag(context.Background(), source, imageName); err != nil {
+			return fmt.Errorf("tagging %s as %s: %w", source, imageName, err)
+		}
+	}
+	if len(retagged) > 0 {
+		if err := EnsureImagesExists(dockerCli, imageNames); err != nil {
+			return err
+		}
 	}
 
 	log.Info("Saving images...")
@@ -109,9 +141,16 @@ func PullDockerImages(dockerCli Client, imageNames []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	errChan := make(chan error)
+	// Buffered: errors are only read after wg.Wait(), so an unbuffered send
+	// would block the failing goroutine forever and hang the whole pull.
+	errChan := make(chan error, len(imageNames))
 	breakLoop := false
 	wg := sync.WaitGroup{}
+
+	// Send whatever `docker login` stored for each registry, as the docker CLI
+	// does: anonymous pulls from public ECR share a monthly data quota per source
+	// IP, which shared CI runners run out of.
+	dockerConfig := config.LoadDefaultConfigFile(io.Discard)
 
 	for _, imageName := range imageNames {
 		if breakLoop {
@@ -142,11 +181,17 @@ func PullDockerImages(dockerCli Client, imageNames []string) error {
 				limiter.WaitIfOverLimit()
 
 				log.Printf("Pulling image: %s (attempt %d/%d)\n", imageName, attempt, maxRetries)
-				out, err := dockerCli.ImagePull(ctx, imageName, image.PullOptions{})
+				registryAuth, authErr := command.RetrieveAuthTokenFromImage(dockerConfig, imageName)
+				if authErr != nil {
+					registryAuth = "" // pull anonymously
+				}
+				out, err := dockerCli.ImagePull(ctx, imageName, image.PullOptions{RegistryAuth: registryAuth})
 				if err == nil {
 					defer out.Close() // Ensure the output stream is closed
 
-					_, err = io.Copy(io.Discard, out)
+					// A failed pull still answers 200; the error (e.g. public ECR's
+					// "TOOMANYREQUESTS: Data limit exceeded") is only in the stream.
+					err = pullStreamError(out)
 					if err == nil {
 						log.Println("Pulled", imageName)
 						break
@@ -184,6 +229,33 @@ func PullDockerImages(dockerCli Client, imageNames []string) error {
 	}
 
 	return nil
+}
+
+// pullStreamError reads a pull's JSON message stream to the end and returns the
+// first error Docker reported in it, if any.
+func pullStreamError(stream io.Reader) error {
+	decoder := json.NewDecoder(stream)
+	for {
+		var message struct {
+			Error       string `json:"error"`
+			ErrorDetail *struct {
+				Message string `json:"message"`
+			} `json:"errorDetail"`
+		}
+		err := decoder.Decode(&message)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("reading the pull output: %w", err)
+		}
+		if message.ErrorDetail != nil && message.ErrorDetail.Message != "" {
+			return errors.New(message.ErrorDetail.Message)
+		}
+		if message.Error != "" {
+			return errors.New(message.Error)
+		}
+	}
 }
 
 func trimDefaultRegistry(imageName string) string {

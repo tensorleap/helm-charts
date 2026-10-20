@@ -60,6 +60,7 @@ AWS_PROFILE=utils make ecr-public-cleanup ARGS="--help"   # delete images from p
 - **Subcharts:** edit `engine`, `node-server`, `web-ui` locally. Configure external subcharts (`ingress-nginx`, `keycloakx`, `datadog`, `eck-operator`) through the parent `values.yaml` keyed by dependency name/alias — never edit tgz contents.
 - **Chart.yaml:** dependencies pinned to exact versions; update both the version and the bundled tarball (`helm dependency build`).
 - **Image tags:** `image_tag` values for `engine`, `node-server`, `web-ui`, pippin are updated by the `Update images` workflow from stable tags in the source repos. When editing by hand, also update the `*-latest-image` files at repo root AND run `make update-images`.
+- **Third-party images:** never reference a vendor registry directly. Every third-party image comes from `public.ecr.aws/tensorleap/mirror/<upstream-host>/<upstream-path>:<tag>` (`manifest.MirrorRegistry`); copy a new or bumped image there by hand first (`DEVELOPER-GUIDE.md`, "Third-party images"). Keep `public.ecr.aws/tensorleap/minio`: releases 1.6.84–1.6.100 pull it.
 
 ### Elasticsearch / ECK
 

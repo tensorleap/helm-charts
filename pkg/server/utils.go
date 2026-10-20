@@ -165,6 +165,23 @@ func LoadManifestOnly(flags *InstallationSourceFlags, previousMnf *manifest.Inst
 
 // EnsureReinstallConsent checks whether reinstall is needed and, if so, prompts once and marks params
 // to skip subsequent prompts in the flow. Returns true if reinstall is required (and confirmed).
+// UseInstalledK3dToolsImage points k3d at the installed release's k3d-tools
+// image. Commands like `run` start the cluster before any manifest is loaded,
+// and k3d otherwise pulls ghcr.io/k3d-io/k3d-tools:latest.
+func UseInstalledK3dToolsImage() {
+	mnf, err := manifest.Load(local.GetInstallationManifestPath())
+	if err != nil {
+		return // nothing installed yet; k3d keeps its default
+	}
+	useK3dToolsImage(mnf)
+}
+
+func useK3dToolsImage(mnf *manifest.InstallationManifest) {
+	if mnf != nil && mnf.Images.K3dTools != "" {
+		airgap.SetupEnvForK3dToolsImage(mnf.Images.K3dTools)
+	}
+}
+
 func EnsureReinstallConsent(ctx context.Context, mnfPreview, previousMnf *manifest.InstallationManifest, installationParams, previousParams *InstallationParams) (bool, error) {
 	shouldReinstall, err := IsNeedsToReinstall(ctx, mnfPreview, previousMnf, installationParams, previousParams)
 	if err != nil {

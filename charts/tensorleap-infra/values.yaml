@@ -1,4 +1,6 @@
 eck-operator:
+  image:
+    repository: public.ecr.aws/tensorleap/mirror/docker.elastic.co/eck/eck-operator
   managedNamespaces:
     - tensorleap
 
@@ -8,7 +10,7 @@ nvidiaGpu:
 
 registry:
   enabled: true
-  image: "ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
+  image: "public.ecr.aws/tensorleap/mirror/ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
   sync:
     enabled: true
     registries: []

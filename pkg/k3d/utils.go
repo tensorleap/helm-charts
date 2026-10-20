@@ -18,7 +18,9 @@ import (
 //
 // In online mode, only the in-cluster service name (tensorleap-registry:5000)
 // is mirrored so that DnD-pushed images can be pulled by pods. Upstream images
-// are fetched directly by containerd, avoiding storage duplication in Zot.
+// are fetched directly by containerd, avoiding storage duplication in Zot. A
+// manifest that uses our image mirror also has k3s's own docker.io/rancher/*
+// images rewritten to it.
 func CreateMirrorFromManifest(mfs *manifest.InstallationManifest, internalPort uint, isAirgap bool) (string, error) {
 	zotEndpoint := fmt.Sprintf("http://127.0.0.1:%d", internalPort)
 	mirrors := make(map[string]interface{})
@@ -48,6 +50,22 @@ func CreateMirrorFromManifest(mfs *manifest.InstallationManifest, internalPort u
 	// Containerd falls back to the real ECR for images not in Zot.
 	mirrors["public.ecr.aws"] = map[string]interface{}{
 		"endpoint": []string{zotEndpoint},
+	}
+
+	// Online, a manifest that takes its images from our mirror gets k3s's own
+	// images (pause, coredns, local-path-provisioner, ...) from it too. k3s
+	// hardcodes them as docker.io/rancher/*, so only a rewrite can redirect them.
+	// Only rancher/* is rewritten: k3s 1.26 applies rewrites to the Docker Hub
+	// fallback as well, so a wider rule would break every docker.io image that
+	// isn't mirrored. Older manifests keep pulling from Docker Hub, as before.
+	if !isAirgap && mfs.UsesMirror() {
+		mirrorHost, mirrorPath, _ := strings.Cut(manifest.MirrorRegistry, "/")
+		mirrors["docker.io"] = map[string]interface{}{
+			"endpoint": []string{"https://" + mirrorHost},
+			"rewrite": map[string]string{
+				"^rancher/(.*)$": mirrorPath + "/docker.io/rancher/$1",
+			},
+		}
 	}
 
 	registryConfig := map[string]interface{}{

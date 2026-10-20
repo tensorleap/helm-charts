@@ -22,14 +22,16 @@ const (
 	helmRepoUrl              = "https://helm.tensorleap.ai"
 	localHelmRepoUrl         = "charts"
 
-	k3dUtilsImage          = "ghcr.io/k3d-io/k3d-tools:5.5.2"
-	registerImage          = "docker.io/library/registry:2"
-	zotImage               = "ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
-	checkDockerRequirement = "alpine:3.18.3"
+	// Third-party images come from our mirror (mirror.go); copy a new or bumped
+	// one there before changing it here.
+	k3dUtilsImage          = MirrorRegistry + "/ghcr.io/k3d-io/k3d-tools:5.5.2"
+	registerImage          = MirrorRegistry + "/docker.io/library/registry:2"
+	zotImage               = MirrorRegistry + "/ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
+	checkDockerRequirement = MirrorRegistry + "/docker.io/library/alpine:3.18.3"
 )
 
 var (
-	k3sImage    = fmt.Sprintf("docker.io/rancher/k3s:%s", k3sVersion)
+	k3sImage    = fmt.Sprintf("%s/docker.io/rancher/k3s:%s", MirrorRegistry, k3sVersion)
 	k3sGpuImage = fmt.Sprintf("public.ecr.aws/tensorleap/k3s:%s-cuda-11.8.0-ubuntu-22.04-v1", k3sVersion)
 )
 
