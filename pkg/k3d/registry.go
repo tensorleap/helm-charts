@@ -302,6 +302,13 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 		noResources = true
 	}
 
+	if hostPhysical, ok := hostPhysicalMemoryBytes(); ok && dockerMemoryStarvesHost(hostPhysical, dockerInfo.MemTotal) {
+		log.Printf("Docker is allocated %s of this machine's %dGb. Docker Desktop keeps its whole allocation resident, "+
+			"so leave at least %dGb for the host: lower the memory limit in Docker Desktop > Settings > Resources.\n",
+			dockerMemoryPretty, hostPhysical/(1024*1024*1024), MIN_HOST_MEMORY_HEADROOM_BYTES/(1024*1024*1024))
+		noResources = true
+	}
+
 	if int64(dockerFreeStorageKB) < REQUIRED_STORAGE_KB {
 		log.Printf("Please increase docker storage limit, tensorleap requires at least %s free storage\n", REQUIRED_STORAGE_PRETTY)
 		noResources = true
