@@ -7,7 +7,7 @@ data:
   theme.properties: |
     parent=keycloak.v2
     import=common/keycloak
-    scripts=js/reset-password-link-v1.js
+    scripts=js/reset-password-link-v1.js js/register-prefill-v1.js
   reset-password-link-v1.js: |
     // Keep identical in helm-charts/charts/tensorleap/templates/keycloak-theme-cm.yaml; rename file on change (browser cache).
     // ponytail: cloud maps api.<env>.tensorleap.ai -> <env>.tensorleap.ai (mirrors web-ui getApiHost); on-prem basePath = prefix before /auth/.
@@ -21,5 +21,20 @@ data:
       a.textContent = 'Forgot password?';
       var d = document.createElement('div'); d.style.cssText = 'margin-top:1rem;text-align:center'; d.appendChild(a);
       form.insertAdjacentElement('afterend', d);
+    });
+  register-prefill-v1.js: |
+    // Prefills Keycloak's registration form from localStorage.tl_register_prefill, which web-ui sets for a colored license token (EN-2597).
+    // ponytail: the email lock is cosmetic; node-server rejects any email other than the token's.
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.getElementById('kc-register-form');
+      if (!form) return;
+      var p;
+      try { p = JSON.parse(localStorage.getItem('tl_register_prefill')); } catch (e) {}
+      if (!p) return;
+      var set = function (name, v) { var el = form.querySelector('input[name="' + name + '"]'); if (el && v) el.value = v; return el; };
+      set('firstName', p.firstName); set('lastName', p.lastName); set('username', p.email);
+      var email = set('email', p.email);
+      if (email) { email.readOnly = true; email.style.opacity = '0.6'; }
+      form.addEventListener('submit', function () { try { localStorage.removeItem('tl_register_prefill'); } catch (e) {} });
     });
 {{- end }}
