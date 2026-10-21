@@ -14,8 +14,8 @@ func TestDockerMemoryStarvesHost(t *testing.T) {
 		// EN-2556: 36 GiB MacBook Pro, Docker VM reporting 35.66 GB MemTotal.
 		{"tom's laptop leaves under 3 GiB", 36 * gib, 35659309056, true},
 		{"64 GiB host with 48 GiB docker", 64 * gib, 48 * gib, false},
-		{"exactly the minimum headroom is fine", 36 * gib, 28 * gib, false},
-		{"one byte under the minimum fires", 36 * gib, 28*gib + 1, true},
+		{"exactly the minimum headroom is fine", 36 * gib, 32 * gib, false},
+		{"one byte under the minimum fires", 36 * gib, 32*gib + 1, true},
 		{"unknown physical memory never fires", 0, 34 * gib, false},
 	}
 	for _, c := range cases {
