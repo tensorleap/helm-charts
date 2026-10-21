@@ -306,7 +306,9 @@ func CheckDockerRequirements(checkDockerRequirementImage string, isAirgap bool) 
 		log.Warnf("Docker is allocated %s of this machine's %dGb. It is recommended to leave at least %dGb for the host: "+
 			"lower the memory limit in Docker Desktop > Settings > Resources.",
 			dockerMemoryPretty, hostPhysical/(1024*1024*1024), MIN_HOST_MEMORY_HEADROOM_BYTES/(1024*1024*1024))
-		noResources = true
+		if err := askToContinueWithStorageIssue("Docker may not leave enough memory for the host. Do you want to continue anyway?"); err != nil {
+			return err
+		}
 	}
 
 	if int64(dockerFreeStorageKB) < REQUIRED_STORAGE_KB {
