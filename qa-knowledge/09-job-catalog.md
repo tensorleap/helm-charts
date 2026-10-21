@@ -320,6 +320,7 @@ aggressor-fixing pipeline as an automatic insight (no sub-insights, never publis
 - **Outputs:** mongo `codesnapshots` (`testStatus` = `testSuccess`/`testFail`, parseResult/setup/modelSetup), `versions` (`modelHash`, `modelId` — **not** `data`), `models`; the model graph itself is written by the engine straight to blob storage at `<versionDir>/model_graph.json` (`engine/src_tensorleap/workers/workerpush/importmodel.py`, node-server `readModelGraph`/`modelGraphBlobPath` in `src/model-graphs/store.ts`) and node-server verifies the blob exists before stamping `modelHash`; bucket uploaded model + weights `.h5` + `graph_assets-<uuid>.json` + engine file contract.
 - **Success:** job FINISHED; `codesnapshot.testStatus='testSuccess'`; version has `modelHash` set + a `model_graph.json` blob in storage; `graph_validator` published with no error; Version Control state → **PUSHED** ("Pushed", with a Run-evaluate action).
 - **Failure (CLI surfaces a ValidateAsset report):** Code Parse `is_valid=false` → "Dataset parse failed" (import skipped); unsupported layer → "Import model error, unsupported layer"/"ONNX is not supported on your machine"; graph validation errors → push fails (`PUSH_FAILED`); pod OOM/crash → `codesnapshot.testStatus='testFail'`, job FAILED.
+- **Draft, in-progress ("False-Positive Instances"):** a user's code-loader integration may define `tensorleap_false_positive_instances_encoder` (and a custom-latent-space counterpart); `WorkerPush._check_fp_encoder_allowed` (`engine/src_tensorleap/workers/workerpush/workerpush.py`) fails the push if that decorator is present but the installation's `INSTANCE_LS_FROM_PARENT` feature flag is off. No new job subtype, API route, mongo collection, or UI exists for this yet — it only adds extra model-predicted instance samples to the same Evaluate run, dispatched through the existing generic-worker RPCs (`has_false_positive_instances`/`get_false_positive_instances`/etc., `workergenericprocessor/scriptcommandrunner.py`). Still below this doc's tracking granularity; watch for a node-server/web-ui surface landing.
 
 ### Code Parse (`DATASET_PARSE`) and Import Model (`IMPORT_MODEL`)
 These remain `JobTypeEnum` values + notification configs, but in the unified flow
@@ -357,6 +358,39 @@ model graph renders in the version's network/graph view.
 - **UI consumer:** backs the **collection sample-viewer grid** — the grid requests per-viewport visualizations via `generateStreamingSamplesVis` (debounced on scroll-stop, deduped against an in-memory FIFO cache) and receives them as `source='streaming-samples'` socket pushes. End-to-end: [Flow C in 03](03-data-flows.md#flow-c--collection-sample-viewer-grid).
 - **⚠️ vs Visualizers Calculation:** Streaming Samples Vis runs ONE visualizer on demand for an explicit `sample_identities` list, in-memory, single generic-process, no persistence. Visualizers Calculation is a *batch* job that scales generic-process replicas + streaming-handler + autoscaler and **persists** results.
 - **Failure (per-sample, has_error):** "Unknown visualizer"; "Sample X does not exist in this session run" (stale `visArtifactId` from a different run); "Visualization error: …".
+
+---
+
+## Samples CSV Export  *(new — not a k8s job)*
+A request/response HTTP export, not a job: no `jobId`, no k8s object, nothing
+in the `jobs` mongo collection. Covered here because it shares the collection
+sample-viewer grid surface with Streaming Samples Vis above.
+- **Trigger:** `CollectionMetadataTable`'s download button → `POST
+  /sample-collection/exportSamplesCsv` (node-server `src/sampleCollections/
+  controller.ts` → `csvExport.ts: exportSamplesCsv`) with the table's current
+  `columns`/`sort`/`filters` and either `versionId` or
+  `collectionId`+`inferenceArtifactId`. A view that already fits in one grid
+  page (≤ `TABLE_PAGE_SIZE`/500 rows, `useCollectionSamplePage.ts`) is instead
+  exported client-side via DataGrid's own `exportDataAsCsv` — the server is
+  only asked for views bigger than the loaded page.
+- **What it does:** opens an Elasticsearch point-in-time, scans with
+  `search_after` (no `from`/`size` window limit), and streams the CSV back
+  page by page (`scanSampleRows`/`exportSamplesCsv`,
+  `node-server/src/sampleCollections/csvExport.ts`). No persistence — the
+  response **is** the file.
+- **Limits (config key `samplesCsvExport`, `node-server/src/config.ts`):** row
+  cap `maxRows` (env `SAMPLES_CSV_EXPORT_MAX_ROWS`, default 250,000) — a
+  bigger view is refused with **HTTP 413** (`CSV_EXPORT_TOO_MANY_ROWS`) unless
+  the client passes `maxRows` to export just the view's first rows in sort
+  order; concurrency cap `maxConcurrent` (env
+  `SAMPLES_CSV_EXPORT_MAX_CONCURRENT`, default 2) per server — a further
+  concurrent export gets **HTTP 429** (`CSV_EXPORT_BUSY`).
+- **Success:** HTTP 200, `text/csv` stream, `Content-Disposition` attachment;
+  web-ui's download manager shows progress (`samplesCsvExportApi.ts`).
+- **Failure/gotchas:** client disconnect mid-stream destroys the scan and
+  closes the point-in-time (no orphaned PIT); a page error ends the response
+  as a stream error, not a silently-truncated file; 413/429 surface in the
+  download panel, not as a file.
 
 ---
 

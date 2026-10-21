@@ -117,6 +117,15 @@ downed dependency marks the pod unready without restart-looping it.
   reads from `/dashboards`, `/sessionmetrics` (via `modelmetrics`), and
   `/sample-collection`; now exposed in web-ui via the MAIN MENU → "AI ACCESS"
   item (admin-only) opening `AiAccessDialog.tsx`)
+- `/sample-collection/exportSamplesCsv` — streams the metadata table (a
+  sample collection or a version's samples, with its current sort/filters) as
+  `text/csv`, page by page from Elasticsearch (`SAMPLES_CSV_EXPORT_PAGE_SIZE`,
+  default 5000). A view over `SAMPLES_CSV_EXPORT_MAX_ROWS` (default 250000)
+  is refused with its row count unless the client caps `maxRows`; more than
+  `SAMPLES_CSV_EXPORT_MAX_CONCURRENT` (default 2) exports in flight gets a
+  429. Driven from web-ui's `CollectionMetadataTable.tsx` via
+  `samplesCsvExportApi.ts` → the shared `DownloadManagerContext` (download
+  progress panel), not a direct bucket presigned URL.
 - `/analysis-export` — listTargets, exportAnalysis, getSampleAssets — a
   versioned public contract (`ANALYSIS_EXPORT_CONTRACT_VERSION`) consumed by
   the external `tensorleap-analysis` skill, not the web-ui
