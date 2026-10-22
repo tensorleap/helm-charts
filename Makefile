@@ -69,7 +69,7 @@ install-existing-cluster:
 # On-demand cleanup of public.ecr.aws/tensorleap. ECR Public has no lifecycle
 # policies, so this is the only way images ever get deleted. Dry run unless
 # --no-dry-run and --confirm are given; every argument is forwarded, e.g.
-#   AWS_PROFILE=utils make ecr-public-cleanup ARGS="--classes feature,untagged --older-than-days 90"   # all four repos
+#   AWS_PROFILE=utils make ecr-public-cleanup ARGS="--classes feature,untagged --older-than-days 30"   # all four repos
 #   AWS_PROFILE=utils make ecr-public-cleanup ARGS="--repos web-ui --classes feature,untagged,master --older-than-days 180"
 # Run with ARGS="--help" for the full flag list. CI wrapper: .github/workflows/ecr_public_cleanup.yml
 ecr-public-cleanup:

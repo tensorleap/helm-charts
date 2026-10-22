@@ -7,7 +7,7 @@ branch build that CI pushes to public.ecr.aws/tensorleap stays until something
 deletes it. This script is that something: it lists a repository, classifies
 every image by its tags, and expires the classes you ask for once they are at
 least N days old. Only engine, engine-generic, node-server and web-ui can be
-cleaned; `--repos all` (the default) means those four. N can never be below 90:
+cleaned; `--repos all` (the default) means those four. N can never be below 30:
 anything younger is assumed to still matter to somebody.
 
 Classes (the strictest one wins per image, because deleting a digest removes
@@ -30,8 +30,8 @@ Auth is whatever the AWS CLI resolves: AWS_PROFILE=utils locally, static keys or
 an assumed role in CI. The ECR Public API only exists in us-east-1.
 
 Usage:
-  # plan only (default): feature-branch and untagged images at least 90 days old, all four repos
-  AWS_PROFILE=utils scripts/ecr-public-cleanup.py --classes feature,untagged --older-than-days 90
+  # plan only (default): feature-branch and untagged images at least 30 days old, all four repos
+  AWS_PROFILE=utils scripts/ecr-public-cleanup.py --classes feature,untagged --older-than-days 30
 
   # one repo, master images too
   AWS_PROFILE=utils scripts/ecr-public-cleanup.py \\
@@ -39,7 +39,7 @@ Usage:
 
   # really delete, keeping the tags listed in keep.txt (one repo:glob per line)
   AWS_PROFILE=utils scripts/ecr-public-cleanup.py \\
-      --repos node-server,web-ui --classes feature,untagged --older-than-days 90 \\
+      --repos node-server,web-ui --classes feature,untagged --older-than-days 30 \\
       --keep-file keep.txt --no-dry-run --confirm "DELETE FROM PUBLIC ECR"
 
   scripts/ecr-public-cleanup.py --self-test     # classification asserts, no AWS calls
@@ -72,7 +72,7 @@ DELETABLE_CLASSES = ("feature", "master", "untagged")
 # The only repositories this tool may touch; `--repos all` means these four.
 CLEANABLE_REPOS = ("engine", "engine-generic", "node-server", "web-ui")
 # Hard floor: nothing younger than this can be deleted, whatever the caller asks.
-MIN_OLDER_THAN_DAYS = 90
+MIN_OLDER_THAN_DAYS = 30
 DEFAULT_OLDER_THAN_DAYS = MIN_OLDER_THAN_DAYS
 DEFAULT_OUT = "ecr-public-cleanup-out"
 RETRYABLE_ERRORS = ("Throttling", "TooManyRequests", "RequestLimitExceeded")
