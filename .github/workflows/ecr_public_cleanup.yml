@@ -7,11 +7,11 @@ name: ECR Public Cleanup
 #
 # Two ways in:
 #   * schedule: every Sunday night (Israel time) it REALLY DELETES with the
-#     defaults below: all four repos, feature + untagged images at least 90
-#     days old, chart pins protected. The schedule itself is the approval.
+#     defaults below: all four repos, feature + untagged + master images at
+#     least 30 days old, chart pins protected. The schedule itself is the approval.
 #   * workflow_dispatch: dry run by default; a real deletion needs dry_run
 #     unchecked AND the exact confirm phrase.
-# Nothing younger than 90 days can be deleted either way; the script enforces
+# Nothing younger than 30 days can be deleted either way; the script enforces
 # the same floor.
 
 on:
@@ -24,13 +24,13 @@ on:
         required: false
         default: "all"
       classes:
-        description: "Comma-separated classes to delete: feature, untagged, master. Version images (tags like 1.6.72-...) are never deletable. master must be added explicitly."
+        description: "Comma-separated classes to delete: feature, untagged, master. Version images (tags like 1.6.72-...) are never deletable; pinned master tags are kept by protect_chart_pins."
         required: false
-        default: "feature,untagged"
+        default: "feature,untagged,master"
       older_than_days:
-        description: "Only images pushed at least this many days ago. Hard minimum 90; lower values are refused."
+        description: "Only images pushed at least this many days ago. Hard minimum 30; lower values are refused."
         required: false
-        default: "90"
+        default: "30"
       dry_run:
         description: "checked = plan only: list what would be deleted, delete nothing | unchecked = really delete (requires confirm)"
         required: false
@@ -62,11 +62,11 @@ jobs:
       # and the run is a real deletion (dry_run=false, confirm phrase supplied).
       SCHEDULED: ${{ github.event_name == 'schedule' }}
       REPOS: ${{ inputs.repos || 'all' }}
-      CLASSES: ${{ inputs.classes || 'feature,untagged' }}
-      OLDER_THAN_DAYS: ${{ inputs.older_than_days || '90' }}
+      CLASSES: ${{ inputs.classes || 'feature,untagged,master' }}
+      OLDER_THAN_DAYS: ${{ inputs.older_than_days || '30' }}
       DRY_RUN_INPUT: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
       CONFIRM: ${{ github.event_name == 'schedule' && 'DELETE FROM PUBLIC ECR' || inputs.confirm }}
-      MIN_OLDER_THAN_DAYS: "90"
+      MIN_OLDER_THAN_DAYS: "30"
       OUT_DIR: ecr-public-cleanup-out
     steps:
       - name: Checkout repository
