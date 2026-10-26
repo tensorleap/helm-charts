@@ -64,6 +64,13 @@ If any fail, stop and classify via [07-failure-modes.md](07-failure-modes.md).
 | Failure | CLI prints a **ValidateAsset report** + graph-validation errors mapped to nodes | (CLI) |
 
 **Pass:** job FINISHED, version created, no ValidateAsset errors.
+
+**Free Tier git-origin lock:** on a Free Tier install, the first push into a
+project with no versions links the project to that repo's `git remote get-url
+origin`; pushing the same project from a **different** git repository is
+rejected pre-job with `403 LICENSE_LIMIT` (no job/pod created) — see
+[07-failure-modes.md](07-failure-modes.md). Pushing from a non-git directory is
+never gated.
 **Cheapest pre-check:** run the integration's `tensorleap_integration_test()`
 locally first — it runs the binder and raises `… validation failed: …` before any
 push.
