@@ -67,6 +67,7 @@ nested-path exception). Verify navigation by reading params:
 | `.../panel/<tab>` | the open drawer — a **path segment**, not a query param (`tab` ∈ `insights`/`issues`/`tests`/`collections`, `URLS_ENUM.PANEL` in `src/url/url-builder.ts`) |
 | `?selected-version=<id>` | the selected model version |
 | `?state=…` / `?dashstate=…` | serialized UI state digests |
+| `?unlock=<feature>` | one-shot deep link (e.g. from the integration skill) that opens the Free Tier "Contact us" dialog for `<feature>`; `LicenseBlockedDialog` consumes and strips the param on mount (`web-ui/src/trial/licenseBlocked.ts` `UNLOCK_PARAM`) |
 
 ---
 
@@ -87,7 +88,11 @@ nested-path exception). Verify navigation by reading params:
 - **REST base path** is `<origin>/api/v2`, derived from `window.location` + the
   injected `<base href>` — not an env var.
 - **401** → session-expired dialog. **409** → redirect to `/conflict-users` +
-  reload (concurrent-user conflict). **403** → demo-user / license scope failure.
+  reload (concurrent-user conflict). **403** → demo-user / license scope failure,
+  or (body `code: "LICENSE_LIMIT"`) a Free Tier cap — on Free Tier this renders
+  the **`FreeTierBlockedDialog`** ("Contact us": send-a-message / schedule-a-meeting
+  tabs) instead of the generic contact-trial dialog (see
+  [07-failure-modes.md](07-failure-modes.md)).
 - **Auth mode** can be **Keycloak** or **Local** (`demo@demo.ai`, no IdP) — check
   `getAuthProvider()` before debugging an "auth loop". First-ever user is sent to
   **register**, not login.
