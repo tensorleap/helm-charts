@@ -1,4 +1,4 @@
-image_tag: master-4b04b858
+image_tag: license-blocked-source-action-ba65a8f0
 image: public.ecr.aws/tensorleap/node-server
 disableDatadogMetrics: false
 enableKeycloak: true
