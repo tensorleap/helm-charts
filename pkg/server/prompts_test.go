@@ -120,24 +120,15 @@ func TestInitDatasetVolumesWithoutTerminal(t *testing.T) {
 	})
 }
 
-func TestConfirmWithoutTerminal(t *testing.T) {
-	t.Run("--yes answers the default", func(t *testing.T) {
-		stubPromptEnv(t, nil, nil, true, false)
-		answer, err := confirm("Move the storage?", true)
-		require.NoError(t, err)
-		assert.True(t, answer)
-
-		answer, err = confirm("Overwrite the storage?", false)
-		require.NoError(t, err)
-		assert.False(t, answer)
-	})
-
-	t.Run("no --yes fails with how to answer", func(t *testing.T) {
-		stubPromptEnv(t, nil, nil, false, false)
-		_, err := confirm("Move the storage?", true)
+func TestConfirmStorageMoveWithoutTerminal(t *testing.T) {
+	// --yes does not answer the storage-move questions, with or without a terminal.
+	for _, useDefault := range []bool{false, true} {
+		stubPromptEnv(t, nil, nil, useDefault, false)
+		_, err := confirm("Move the storage?", true, "/old/data", "/new/data")
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), `pass --yes to answer "yes" to: Move the storage?`)
-	})
+		assert.Contains(t, err.Error(),
+			"no terminal to ask whether to move Tensorleap data from /old/data to /new/data: run this in a terminal, or keep the current --data-dir")
+	}
 }
 
 func TestAskForReinstallWithoutTerminal(t *testing.T) {

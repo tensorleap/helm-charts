@@ -25,7 +25,7 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 
 	if err != nil {
 		msg := fmt.Sprintf("Unable to access the potential previous storage directory (%s). This can be ignored if this is the first installation. Do you want to continue?", previousDataPath)
-		isContinue, confirmErr := confirm(msg, true)
+		isContinue, confirmErr := confirm(msg, true, previousDataPath, currentDataPath)
 		if confirmErr != nil {
 			return false, confirmErr
 		}
@@ -42,7 +42,7 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 
 	if currentStatus.Exists {
 		msg := fmt.Sprintf("The storage directory has changed from '%s' to '%s'. but the current storage directory already exists, do you want to overwrite it with previous storage directory?", previousDataPath, currentDataPath)
-		isOverride, confirmErr := confirm(msg, false)
+		isOverride, confirmErr := confirm(msg, false, previousDataPath, currentDataPath)
 		if confirmErr != nil {
 			return false, confirmErr
 		}
@@ -57,7 +57,7 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 		}
 	} else {
 		msg := fmt.Sprintf("The storage directory has changed from '%s' to '%s'. The storage will be transferred and server reinstall. Do you want to continue?", previousDataPath, currentDataPath)
-		isContinue, confirmErr := confirm(msg, true)
+		isContinue, confirmErr := confirm(msg, true, previousDataPath, currentDataPath)
 		if confirmErr != nil {
 			return false, confirmErr
 		}
@@ -88,13 +88,11 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 	return true, nil
 }
 
-func confirm(msg string, def bool) (bool, error) {
-	if IsUseDefaultPropOption() {
-		log.Infof("%s (non-interactive mode: answering %s)", msg, yesNo(def))
-		return def, nil
-	}
-	if err := local.RequireTerminal("about the storage directory change",
-		fmt.Sprintf("pass --yes to answer %q to: %s", yesNo(def), msg)); err != nil {
+// confirm asks before moving data between storage directories. --yes does not
+// answer it: both answers can lose data, so the user has to choose.
+func confirm(msg string, def bool, previousDataPath, currentDataPath string) (bool, error) {
+	if err := local.RequireTerminal(fmt.Sprintf("whether to move Tensorleap data from %s to %s", previousDataPath, currentDataPath),
+		"run this in a terminal, or keep the current --data-dir"); err != nil {
 		return false, err
 	}
 	err := survey.AskOne(&survey.Confirm{
@@ -102,11 +100,4 @@ func confirm(msg string, def bool) (bool, error) {
 		Default: def,
 	}, &def)
 	return def, err
-}
-
-func yesNo(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
 }
