@@ -89,9 +89,24 @@ func TransferData(ctx context.Context) (isTransfer bool, err error) {
 }
 
 func confirm(msg string, def bool) (bool, error) {
+	if IsUseDefaultPropOption() {
+		log.Infof("%s (non-interactive mode: answering %s)", msg, yesNo(def))
+		return def, nil
+	}
+	if err := local.RequireTerminal("about the storage directory change",
+		fmt.Sprintf("pass --yes to answer %q to: %s", yesNo(def), msg)); err != nil {
+		return false, err
+	}
 	err := survey.AskOne(&survey.Confirm{
 		Message: msg,
 		Default: def,
 	}, &def)
 	return def, err
+}
+
+func yesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
 }
