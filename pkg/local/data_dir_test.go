@@ -26,6 +26,9 @@ func TestSetDataDir(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			t.Setenv(DATA_DIR_ENV_NAME, c.env)
+			prevRemembered := previousDataDir
+			previousDataDir = "/remembered"
+			t.Cleanup(func() { previousDataDir = prevRemembered })
 			err := SetDataDir(c.previous, c.flag)
 			if c.wantErr != nil {
 				if !errors.Is(err, c.wantErr) {
@@ -34,7 +37,13 @@ func TestSetDataDir(t *testing.T) {
 				if got := os.Getenv(DATA_DIR_ENV_NAME); got != "" {
 					t.Fatalf("%s was set to %q on error", DATA_DIR_ENV_NAME, got)
 				}
+				if got := GetPreviousServerDataDir(); got != "/remembered" {
+					t.Fatalf("the remembered previous dir changed to %q on error", got)
+				}
 				return
+			}
+			if got := GetPreviousServerDataDir(); got != c.previous {
+				t.Fatalf("previous dir = %q, want %q", got, c.previous)
 			}
 			if err != nil {
 				t.Fatalf("SetDataDir: %v", err)
