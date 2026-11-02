@@ -50,6 +50,8 @@ func RunReinstallCmd(cmd *cobra.Command, flags *ReinstallFlags, isAlreadyReinsta
 	flags.BeforeRun(cmd)
 	log.SetCommandName("reinstall")
 
+	// advisory only: says when Docker looks unusable, then goes on
+	warnIfDockerNotReady(cmd.Context())
 	close, err := local.SetupInfra("reinstall")
 	if err != nil {
 		return nil, err

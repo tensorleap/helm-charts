@@ -54,6 +54,8 @@ func (flags *UpgradeFlags) SetFlags(cmd *cobra.Command) {
 // Wrapper CLIs can use this to get server info for post-install actions like login.
 func RunUpgradeCmd(cmd *cobra.Command, flags *UpgradeFlags) (*server.InstallationResult, error) {
 	log.SetCommandName("upgrade")
+	// advisory only: says when Docker looks unusable, then goes on
+	warnIfDockerNotReady(cmd.Context())
 	close, err := local.SetupInfra("upgrade")
 	if err != nil {
 		return nil, err
