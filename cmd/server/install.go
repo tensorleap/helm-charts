@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
 	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
@@ -54,6 +56,9 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.Installatio
 	flags.BeforeRun(cmd)
 	ctx := cmd.Context()
 	log.SetCommandName("install")
+	// before any question (data volumes, GPUs, reinstall consent), so a user without a working Docker
+	// learns it first; advisory only, the install goes on
+	warnIfDockerNotReady(ctx)
 	close, err := local.SetupInfra("install")
 	if err != nil {
 		return nil, err
@@ -135,6 +140,9 @@ func RunInstallCmd(cmd *cobra.Command, flags *InstallFlags) (*server.Installatio
 
 	return result, nil
 }
+
+// warnIfDockerNotReady is docker.WarnIfNotReady; tests replace it to see when it runs
+var warnIfDockerNotReady = func(ctx context.Context) { docker.WarnIfNotReady(ctx) }
 
 func (flags *InstallFlags) SetFlags(cmd *cobra.Command) {
 	flags.InstallFlags.SetFlags(cmd)
