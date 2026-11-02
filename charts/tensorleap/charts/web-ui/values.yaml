@@ -1,4 +1,4 @@
-image_tag: master-fe6600d8
+image_tag: free-tier-run4-bb66bd5a
 image: public.ecr.aws/tensorleap/web-ui
 
 ingress:
