@@ -17,6 +17,6 @@ public.ecr.aws/tensorleap/mirror/quay.io/keycloak/keycloak:26.3.2
 public.ecr.aws/tensorleap/mirror/quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 public.ecr.aws/tensorleap/mirror/registry.k8s.io/ingress-nginx/controller:v1.10.0
 public.ecr.aws/tensorleap/mirror/registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
-public.ecr.aws/tensorleap/node-server:master-d6a63f34
+public.ecr.aws/tensorleap/node-server:master-c6d76ada
 public.ecr.aws/tensorleap/pippin:master-8c337458
-public.ecr.aws/tensorleap/web-ui:master-fe6600d8
+public.ecr.aws/tensorleap/web-ui:master-d861d077
