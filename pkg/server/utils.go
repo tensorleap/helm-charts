@@ -286,6 +286,10 @@ func AskUserForIsUseLatestVersion(previousTag string) (bool, error) {
 	if latestTag == previousTag {
 		return false, nil
 	}
+	if err := local.RequireTerminal(fmt.Sprintf("whether to use the latest version (latest: %s, current: %s)", latestTag, previousTag),
+		"pass --tag <version>, or --yes (keeps the current version)"); err != nil {
+		return false, err
+	}
 
 	prompt := survey.Confirm{
 		Message: fmt.Sprintf("Do you want to use latest version (latest: %s, current: %s)?", latestTag, previousTag),
@@ -310,6 +314,10 @@ func AskForReinstall() (bool, error) {
 	if IsUseDefaultPropOption() {
 		// In non-interactive mode, proceed with reinstall
 		return true, nil
+	}
+	if err := local.RequireTerminal("whether to reinstall (required to complete the upgrade; stops all running jobs)",
+		"pass --yes to reinstall"); err != nil {
+		return false, err
 	}
 	prompt := survey.Confirm{
 		Message: "Reinstall is required to complete the upgrade, It will stop all running jobs, are you sure you want to continue?",

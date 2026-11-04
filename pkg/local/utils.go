@@ -1,6 +1,7 @@
 package local
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -42,12 +43,14 @@ func GetServerDataDir() string {
 
 var previousDataDir string
 
+// ErrEmptyDataDir: no data dir was given by the flag, $TL_DATA_DIR or the caller's fallback
+var ErrEmptyDataDir = errors.New("no data dir given: pass --data-dir or set " + DATA_DIR_ENV_NAME)
+
 func GetPreviousServerDataDir() string {
 	return previousDataDir
 }
 
 func SetDataDir(previous, flag string) error {
-	previousDataDir = previous
 	currentDataDir := flag
 	if currentDataDir == "" {
 		currentDataDir = os.Getenv(DATA_DIR_ENV_NAME)
@@ -55,12 +58,20 @@ func SetDataDir(previous, flag string) error {
 	if currentDataDir == "" {
 		currentDataDir = previous
 	}
+	// filepath.Abs("") is the current folder: the data dir would silently become wherever the command ran
+	// (and an uninstall --purge would re-permission it and delete folders inside it)
+	if currentDataDir == "" {
+		return ErrEmptyDataDir
+	}
 	currentDataDir, err := filepath.Abs(currentDataDir)
 	if err != nil {
 		return err
 	}
 
-	os.Setenv(DATA_DIR_ENV_NAME, currentDataDir)
+	if err := os.Setenv(DATA_DIR_ENV_NAME, currentDataDir); err != nil {
+		return fmt.Errorf("set %s=%s: %w", DATA_DIR_ENV_NAME, currentDataDir, err)
+	}
+	previousDataDir = previous
 	return nil
 }
 

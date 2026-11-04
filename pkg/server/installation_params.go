@@ -196,6 +196,10 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 			}
 			usePreviousTlsConfig := true
 			if !IsUseDefaultPropOption() {
+				if err := local.RequireTerminal("whether to use the previous TLS configuration",
+					"pass --cert and --key, or --yes (keeps the previous TLS configuration)"); err != nil {
+					return nil, err
+				}
 				err := survey.AskOne(&prompt, &usePreviousTlsConfig)
 				if err != nil {
 					return nil, err
@@ -215,6 +219,10 @@ func InitInstallationParamsFromFlags(flags *InstallFlags, isAirgap bool) (*Insta
 				Default: usePreviousProxyUrl,
 			}
 			if !IsUseDefaultPropOption() {
+				if err := local.RequireTerminal(fmt.Sprintf("whether to use the previous proxy url (%s)", previousParams.ProxyUrl),
+					"pass --proxy-url <url>, or --yes (keeps the previous proxy url)"); err != nil {
+					return nil, err
+				}
 				err := survey.AskOne(&prompt, &usePreviousProxyUrl)
 				if err != nil {
 					return nil, err
@@ -361,20 +369,33 @@ func AskInstallationParams(isAirgap bool) (*InstallationParams, error) {
 }
 
 func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *InstallationParams) error {
+	isCurrentGpuSettingsUnset := *gpus == 0 && *gpuDevices == ""
+
 	if useCpu {
+		if !isCurrentGpuSettingsUnset {
+			return fmt.Errorf("--cpu cannot be combined with --gpus or --gpu-devices")
+		}
 		return nil
 	}
 
-	hasPreviousGpuSettings := previousParams != nil && (previousParams.Gpus > 0 || previousParams.GpuDevices != "")
-	isCurrentGpuSettingsUnset := *gpus == 0 && *gpuDevices == ""
-	shouldAskForPreviousGpuSettings := hasPreviousGpuSettings && isCurrentGpuSettingsUnset
+	// Explicit --gpus / --gpu-devices are the answer: they are validated, never
+	// replaced by the GPU picker, by --yes ("all") or by the previous settings.
+	if !isCurrentGpuSettingsUnset {
+		return initExplicitGpuSettings(gpus, gpuDevices)
+	}
 
-	if shouldAskForPreviousGpuSettings {
+	hasPreviousGpuSettings := previousParams != nil && (previousParams.Gpus > 0 || previousParams.GpuDevices != "")
+
+	if hasPreviousGpuSettings {
 		gpusUsed := calcGpusUsed(previousParams.Gpus, previousParams.GpuDevices)
 		*gpus = previousParams.Gpus
 		*gpuDevices = previousParams.GpuDevices
 		usePreviousGpuSettings := true
 		if !IsUseDefaultPropOption() {
+			question := fmt.Sprintf("whether to use the previous GPU settings (%s)", gpusUsed)
+			if err := local.RequireTerminal(question, "pass --gpus <n>, --gpu-devices <ids>, --cpu, or --yes (keeps the previous settings)"); err != nil {
+				return err
+			}
 			prompt := survey.Confirm{
 				Message: fmt.Sprintf("Do you want to use the previous GPU settings? (%s)", gpusUsed),
 				Default: true,
@@ -389,25 +410,14 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 
 	}
 
-	availableDevices, err := local.CheckNvidiaGPU()
+	availableDevices, err := checkNvidiaGPU()
 	if err != nil {
-		if !isCurrentGpuSettingsUnset {
-			log.Warnf("Failed to validate previous NVIDIA GPU: %s", err)
-			continueWithoutValidation, err := askToContinueWithoutGPUValidation(gpus, gpuDevices)
-			if err != nil {
-				return err
-			}
-			if continueWithoutValidation {
-				return nil
-			}
-		} else {
-			log.Warnf("Failed to check NVIDIA GPU: %s", err)
-		}
+		log.Warnf("Failed to check NVIDIA GPU: %s", err)
 		return askToContinueWithoutGPU(gpus, gpuDevices)
 	}
 
 	if availableDevices != nil {
-		if _, err := local.CheckDockerNvidia2Driver(); err != nil {
+		if _, err := checkDockerNvidia2Driver(); err != nil {
 			log.Warnf("Failed to check docker-nvidia2 driver: %s", err)
 		}
 	}
@@ -420,6 +430,75 @@ func InitUseGPU(gpus *uint, gpuDevices *string, useCpu bool, previousParams *Ins
 	}
 
 	return askForGpuSelection(availableDevices, gpus, gpuDevices)
+}
+
+// initExplicitGpuSettings checks the --gpus / --gpu-devices the user passed
+// against the GPUs on this machine.
+func initExplicitGpuSettings(gpus *uint, gpuDevices *string) error {
+	if *gpus > 0 && *gpuDevices != "" {
+		return fmt.Errorf("use either --gpus or --gpu-devices, not both")
+	}
+
+	availableDevices, err := checkNvidiaGPU()
+	if err != nil {
+		log.Warnf("Failed to validate NVIDIA GPU: %s", err)
+		continueWithoutValidation, err := askToContinueWithoutGPUValidation(gpus, gpuDevices)
+		if err != nil {
+			return err
+		}
+		if continueWithoutValidation {
+			return nil
+		}
+		return askToContinueWithoutGPU(gpus, gpuDevices)
+	}
+
+	if len(availableDevices) == 0 {
+		return fmt.Errorf("%s requested, but no NVIDIA GPU was detected on this machine; use --cpu to install without a GPU",
+			calcGpusUsed(*gpus, *gpuDevices))
+	}
+
+	if _, err := checkDockerNvidia2Driver(); err != nil {
+		log.Warnf("Failed to check docker-nvidia2 driver: %s", err)
+	}
+
+	return validateGpuSettings(*gpus, *gpuDevices, availableDevices)
+}
+
+// validateGpuSettings returns an error when --gpus asks for more GPUs than
+// detected, or --gpu-devices names a GPU (index or UUID) that isn't detected.
+func validateGpuSettings(gpus uint, gpuDevices string, availableDevices []local.GPU) error {
+	if gpus > uint(len(availableDevices)) {
+		return fmt.Errorf("--gpus %d is more than the %d GPU(s) detected: %s",
+			gpus, len(availableDevices), describeGpus(availableDevices))
+	}
+	if gpuDevices == "" || gpuDevices == allGpuDevices {
+		return nil
+	}
+	for _, device := range strings.Split(gpuDevices, ",") {
+		device = strings.TrimSpace(device)
+		if !isDetectedGpu(device, availableDevices) {
+			return fmt.Errorf("--gpu-devices: GPU %q was not detected; use a GPU index or UUID from: %s",
+				device, describeGpus(availableDevices))
+		}
+	}
+	return nil
+}
+
+func isDetectedGpu(device string, availableDevices []local.GPU) bool {
+	for _, available := range availableDevices {
+		if device == available.ID || device == strconv.Itoa(available.Index) {
+			return true
+		}
+	}
+	return false
+}
+
+func describeGpus(availableDevices []local.GPU) string {
+	names := make([]string, len(availableDevices))
+	for i, device := range availableDevices {
+		names[i] = device.String()
+	}
+	return strings.Join(names, "; ")
 }
 
 func calcGpusUsed(gpus uint, gpuDevices string) string {
@@ -435,6 +514,7 @@ func calcGpusUsed(gpus uint, gpuDevices string) string {
 }
 
 var checkNvidiaGPU = local.CheckNvidiaGPU
+var checkDockerNvidia2Driver = local.CheckDockerNvidia2Driver
 
 // The count follows the device list the NVIDIA plugin is given, so it always
 // matches what the cluster can actually schedule.
@@ -458,6 +538,10 @@ func askToContinueWithoutGPUValidation(gpus *uint, gpuDevices *string) (bool, er
 	if IsUseDefaultPropOption() {
 		return true, nil // In non-interactive mode, continue without validation
 	}
+	if err := local.RequireTerminal("whether to continue without GPU validation",
+		"pass --yes to continue without validation, or --cpu"); err != nil {
+		return false, err
+	}
 	prompt := survey.Confirm{
 		Message: "Do you want to continue without GPU validation?",
 		Default: false,
@@ -475,6 +559,9 @@ func askToContinueWithoutGPU(gpus *uint, gpuDevices *string) error {
 		*gpus = 0
 		*gpuDevices = ""
 		return nil
+	}
+	if err := local.RequireTerminal("whether to continue without GPU", "pass --cpu, or --yes (continues without GPU)"); err != nil {
+		return err
 	}
 	prompt := survey.Confirm{
 		Message: "Do you want to continue without GPU?",
@@ -498,6 +585,10 @@ func askForGpuSelection(availableDevices []local.GPU, gpus *uint, gpuDevices *st
 		*gpuDevices = allGpuDevices
 		*gpus = 0
 		return nil
+	}
+	if err := local.RequireTerminal("which GPUs to use",
+		"pass --gpus <n>, --gpu-devices <ids>, --cpu, or --yes (uses all GPUs)"); err != nil {
+		return err
 	}
 	options := []string{"Use all", "Not use GPU", "Select how many", "Select specific"}
 	prompt := survey.Select{
@@ -646,6 +737,10 @@ func InitDatasetVolumes(datasetVolumes *[]string, previousParams *InstallationPa
 		}
 		usePrevious := true
 		if !IsUseDefaultPropOption() {
+			if err := local.RequireTerminal(fmt.Sprintf("whether to use the previous dataset volumes (%v)", previousParams.DatasetVolumes),
+				"pass -v <host-dir>[:<container-dir>], or --yes (keeps the previous dataset volumes)"); err != nil {
+				return err
+			}
 			if err := survey.AskOne(&prompt, &usePrevious); err != nil {
 				return err
 			}
@@ -724,6 +819,10 @@ Provided Path: %s
 		return validateAndNormalizeDatasetVolumePath(suggestedPath)
 	}
 
+	if err := local.RequireTerminal(fmt.Sprintf("which capitalization to use for dataset volume %s", hostPath),
+		fmt.Sprintf("pass -v %s, or --yes (uses it)", suggestedPath)); err != nil {
+		return "", err
+	}
 	prompt := survey.Input{
 		Message: "Please Supply a new path or accept the default suggested path with the correct capitalization",
 		Default: suggestedPath,
@@ -741,6 +840,10 @@ func addDatasetVolumes(datasetVolumes *[]string) error {
 		defaultVolume := GetDefaultDataVolume()
 		*datasetVolumes = append(*datasetVolumes, fmt.Sprintf("%s:%s", defaultVolume, defaultVolume))
 		return nil
+	}
+	if err := local.RequireTerminal("which dataset volume to mount",
+		fmt.Sprintf("pass -v <host-dir>[:<container-dir>], or --yes (mounts %s)", GetDefaultDataVolume())); err != nil {
+		return err
 	}
 	for {
 		path, err := selectLocalDir("Enter dataset volume", GetDefaultDataVolume())

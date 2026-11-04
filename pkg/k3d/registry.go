@@ -16,6 +16,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	dockerimage "github.com/docker/docker/api/types/image"
 	"github.com/tensorleap/helm-charts/pkg/docker"
+	"github.com/tensorleap/helm-charts/pkg/local"
 	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/utils"
 )
@@ -320,6 +321,10 @@ func askToContinueWithStorageIssue(message string) error {
 	if os.Getenv("TL_USE_DEFAULT_OPTION") == "true" {
 		log.Warnf("%s (auto-continuing in non-interactive mode)", message)
 		return nil
+	}
+	if err := local.RequireTerminal("whether to continue with low Docker resources",
+		"increase Docker's resources, or pass --yes to continue anyway"); err != nil {
+		return err
 	}
 	prompt := survey.Confirm{
 		Message: message,
