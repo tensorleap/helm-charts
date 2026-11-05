@@ -58,6 +58,32 @@ crane index filter docker.io/library/mongo:6.0.6 --platform linux/amd64 --platfo
 - crane: `go install github.com/google/go-containerregistry/cmd/crane@v0.19.1` (the version
   `go.mod` pins).
 
+### App data storage
+The app data (mongodb, elasticsearch, minio, keycloak, job-shared) is reached by the
+charts through static hostPath PersistentVolumes under
+`/var/lib/tensorleap/standalone/storage` inside the k3s node. On every host that path
+is the Docker named volume `tensorleap-storage-volume`, mounted over the host data dir
+bind. A bind-mounted host dir would cross Docker Desktop's VM file-sharing bridge on
+macOS and Windows, which is several times slower for database I/O and whose change
+notifier stalls under load and takes Docker Desktop down (`service fs failed: injecting
+event blocked for 60s`). On Linux a volume is a plain dir under Docker's data root
+(`docker info -f '{{.DockerRootDir}}'`), so `--data-dir` no longer decides where the app
+data lives, only where manifests, logs and the registry cache do.
+
+On the first cluster creation after this change the installer moves `<data-dir>/storage`
+into the volume. When this machine can reach the volume's directory (a native Linux
+engine) that is a rename: instant, no extra space, and the host dir is gone afterwards.
+Otherwise (Docker Desktop, whose daemon runs in a VM) the data is streamed through the
+Docker API the way `docker cp` works, which keeps the file-sharing bridge out of the
+path; that needs the data's size free on Docker's disk and on the host disk (an upgrade
+checks it before removing the old cluster), and the old copy is kept as
+`<data-dir>/storage.migrated`, which `uninstall --purge` removes. The data no longer
+appears as files on the host; to back it up:
+
+```
+docker run --rm -v tensorleap-storage-volume:/data -v "$PWD":/backup alpine tar czf /backup/tensorleap-storage.tgz -C /data .
+```
+
 ## Installation Process
 The installation process we utilize k3d to create a local cluster and a Docker registry. Every installation begins with an installation manifest
 
@@ -157,6 +183,7 @@ The installer checks for:
 2. ths `tensorleap-infra` chart version change
 3. the `appVersion` on manifest is changed
 4. the `schemaVersion` on manifest is changed
+5. the cluster's server node does not mount the `tensorleap-storage-volume` Docker volume (an install from before app data moved into it)
 
 ## Upgrade CLI
 CLI upgrades are necessary when there are changes in the installer (Go code) that require a reinstallation. The installer compares the installed CLI version against the installer version specified in the manifest.
