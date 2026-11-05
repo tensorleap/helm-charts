@@ -73,13 +73,33 @@ func RemoveStorageVolumeSubDirs(ctx context.Context, image string, subDirs []str
 
 // storageSpaceGuard exits 1 when the host data bound at /src would not fit
 // in the free space of the volume's disk (du, df, tail, tr and cut are
-// busybox applets the k3s image ships).
-const storageSpaceGuard = "need=$(du -sk /src | cut -f1)\n" +
-	"free=$(df -Pk " + storageVolumeScratchPath + " | tail -1 | tr -s ' ' | cut -d' ' -f4)\n" +
-	"if [ \"$free\" -lt \"$need\" ]; then\n" +
-	"  echo \"the app data (${need}K) does not fit in the free space of Docker's disk (${free}K): raise Docker Desktop's disk limit or free space under Docker's data root\"\n" +
-	"  exit 1\n" +
-	"fi\n"
+// busybox applets the k3s image ships). hostFreeKB is the free space of the
+// host disk holding the data dir, 0 to skip: on Docker Desktop df inside the
+// VM reports the sparse virtual disk's limit, while its image file grows on
+// the host disk, which has to hold the copy as well.
+func storageSpaceGuard(hostFreeKB int64) string {
+	guard := "need=$(du -sk /src | cut -f1)\n" +
+		"free=$(df -Pk " + storageVolumeScratchPath + " | tail -1 | tr -s ' ' | cut -d' ' -f4)\n"
+	if hostFreeKB > 0 {
+		guard += fmt.Sprintf("if [ %[1]d -lt \"$free\" ]; then free=%[1]d; fi\n", hostFreeKB)
+	}
+	return guard +
+		"if [ \"$free\" -lt \"$need\" ]; then\n" +
+		"  echo \"the app data (${need}K) needs that much free space on Docker's disk and on the host disk holding the data dir, only ${free}K is free: raise Docker Desktop's disk limit or free disk space\"\n" +
+		"  exit 1\n" +
+		"fi\n"
+}
+
+// hostFreeKB is the free space of the host disk holding the data dir, 0 when
+// it cannot be read (the guard then trusts df inside the container).
+func hostFreeKB(hostStorage string) int64 {
+	free, err := local.FreeDiskKB(hostStorage)
+	if err != nil {
+		log.Warnf("Could not read free space of the disk holding %s: %v", hostStorage, err)
+		return 0
+	}
+	return free
+}
 
 func volumeMongoPath() string {
 	return path.Join(storageVolumeScratchPath, path.Base(local.MONGODB_STORAGE_DIR_NAME))
@@ -87,8 +107,8 @@ func volumeMongoPath() string {
 
 // storageSpaceCheckScript is the guard alone, a no-op once the volume holds
 // the data (a rerun after a finished migration).
-func storageSpaceCheckScript() string {
-	return fmt.Sprintf("if [ -e %s ]; then exit 0; fi\n", volumeMongoPath()) + storageSpaceGuard
+func storageSpaceCheckScript(hostFreeKB int64) string {
+	return fmt.Sprintf("if [ -e %s ]; then exit 0; fi\n", volumeMongoPath()) + storageSpaceGuard(hostFreeKB)
 }
 
 // storageSetupScript prepares the volume the way initStandaloneSubDirs
@@ -97,7 +117,7 @@ func storageSpaceCheckScript() string {
 // data bound at /src, after checking it fits, staged so a failed copy leaves
 // no half store behind, and only when the volume holds no mongodb yet: a
 // rerun must never overwrite live data.
-func storageSetupScript(migrate bool) string {
+func storageSetupScript(migrate bool, hostFreeKB int64) string {
 	s := storageVolumeScratchPath
 	es := path.Join(s, path.Base(local.ELASTIC_STORAGE_DIR_NAME))
 	kc := path.Join(s, path.Base(local.KEYCLOAK_DB_STORAGE_DIR_NAME))
@@ -106,7 +126,7 @@ func storageSetupScript(migrate bool) string {
 	if migrate {
 		script = fmt.Sprintf("if [ ! -e %s ]; then\n", volumeMongoPath()) +
 			fmt.Sprintf("rm -rf %s\n", staging) + // a previous failed copy, dropped before measuring
-			storageSpaceGuard +
+			storageSpaceGuard(hostFreeKB) +
 			fmt.Sprintf("mkdir %[1]s\n"+
 				"cp -a /src/. %[1]s/\n"+
 				"chmod -R a+rwX %[1]s\n"+
@@ -141,7 +161,7 @@ func CheckStorageMigrationSpace(ctx context.Context) error {
 	}
 	hostStorage := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME)
 	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath, hostStorage + ":/src:ro"}
-	if err := docker.RunOnce(ctx, image, binds, storageSpaceCheckScript()); err != nil {
+	if err := docker.RunOnce(ctx, image, binds, storageSpaceCheckScript(hostFreeKB(hostStorage))); err != nil {
 		return fmt.Errorf("app data in %s cannot move into Docker volume %s: %w", hostStorage, STORAGE_VOLUME_NAME, err)
 	}
 	return nil
@@ -162,7 +182,7 @@ func setupStorageVolume(ctx context.Context, image string) error {
 		log.Infof("Moving app data from %s into Docker volume %s (one time, may take a while; needs that much free space on Docker's disk)", hostStorage, STORAGE_VOLUME_NAME)
 		binds = append(binds, hostStorage+":/src:ro")
 	}
-	if err := docker.RunOnce(ctx, image, binds, storageSetupScript(migrate)); err != nil {
+	if err := docker.RunOnce(ctx, image, binds, storageSetupScript(migrate, hostFreeKB(hostStorage))); err != nil {
 		return fmt.Errorf("prepare storage volume %s: %w", STORAGE_VOLUME_NAME, err)
 	}
 	if !migrate {
