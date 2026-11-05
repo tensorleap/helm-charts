@@ -34,6 +34,7 @@ func TestStorageSetupScript(t *testing.T) {
 	t.Run("fresh volume only prepares dirs", func(t *testing.T) {
 		script := storageSetupScript(false)
 		assert.NotContains(t, script, "cp -a")
+		assert.NotContains(t, script, "du -sk")
 		assert.Contains(t, script, "mkdir -p /storage/elasticsearch /storage/keycloak")
 		assert.Contains(t, script, "chmod a+rwx /storage /storage/elasticsearch /storage/keycloak")
 	})
@@ -43,5 +44,15 @@ func TestStorageSetupScript(t *testing.T) {
 		assert.Contains(t, script, "cp -a /src/. /storage/.migrating/")
 		assert.Contains(t, script, "mv /storage/.migrating/* /storage/")
 		assert.Less(t, strings.Index(script, "mv /storage/.migrating"), strings.Index(script, "mkdir -p"))
+		// leftovers of a failed copy are dropped before measuring, and the copy
+		// only starts when the data fits
+		assert.Less(t, strings.Index(script, "rm -rf /storage/.migrating"), strings.Index(script, "du -sk /src"))
+		assert.Less(t, strings.Index(script, "du -sk /src"), strings.Index(script, "cp -a"))
+	})
+	t.Run("space check alone skips a finished migration", func(t *testing.T) {
+		script := storageSpaceCheckScript()
+		assert.True(t, strings.HasPrefix(script, "if [ -e /storage/mongodb ]; then exit 0; fi"), script)
+		assert.Contains(t, script, "du -sk /src")
+		assert.NotContains(t, script, "cp -a")
 	})
 }

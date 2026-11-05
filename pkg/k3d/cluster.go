@@ -78,11 +78,9 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 			return nil, err
 		}
 	}
-	if UseStorageVolume() {
-		_, err = docker.CreateVolumeIfNotExists(ctx, STORAGE_VOLUME_NAME, nil)
-		if err != nil {
-			return nil, err
-		}
+	_, err = docker.CreateVolumeIfNotExists(ctx, STORAGE_VOLUME_NAME, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	cluster, err = GetCluster(ctx)
@@ -113,16 +111,14 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	log.Printf("Cluster '%s' created successfully!\n", clusterConfig.Cluster.Name)
 	log.SendCloudReport("info", "Created cluster successfully", "Running", nil)
 
-	if UseStorageVolume() {
-		if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
-			log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
-			// Roll the cluster back so the next run creates it again and retries;
-			// a cluster left on an empty volume would come up with no data.
-			if delErr := DeleteCluster(ctx, &clusterConfig.Cluster); delErr != nil {
-				log.Warnf("Failed rolling back cluster: %v", delErr)
-			}
-			return nil, err
+	if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
+		log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
+		// Roll the cluster back so the next run creates it again and retries;
+		// a cluster left on an empty volume would come up with no data.
+		if delErr := DeleteCluster(ctx, &clusterConfig.Cluster); delErr != nil {
+			log.Warnf("Failed rolling back cluster: %v", delErr)
 		}
+		return nil, err
 	}
 
 	// Update the installing user's ~/.kube/config (original behavior).
@@ -511,9 +507,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	if containerdDir != "" {
 		volumes = append(volumes, fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"))
 	}
-	if UseStorageVolume() {
-		volumes = append(volumes, StorageVolumeSpec())
-	}
+	volumes = append(volumes, StorageVolumeSpec())
 
 	simpleK3dConfig := conf.SimpleConfig{
 		TypeMeta: k3dConfTypes.TypeMeta{

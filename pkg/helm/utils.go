@@ -45,7 +45,6 @@ type ServerHelmValuesParams struct {
 	KeycloakEnabled        bool              `json:"keycloakEnabled"`
 	DisableAuth            bool              `json:"disableAuth"`
 	InstalledServerVersion string            `json:"installedServerVersion"`
-	LocalBucketPath        string            `json:"localBucketPath"`
 	TotalMemoryBytes       int64             `json:"totalMemoryBytes"`
 	TotalMemorySource      string            `json:"totalMemorySource"`
 }
@@ -281,7 +280,6 @@ func CreateTensorleapChartValues(params *ServerHelmValuesParams) (Record, error)
 			"disableAuth":            params.DisableAuth,
 			"disableDatadogMetrics":  params.DisableDatadogMetrics,
 			"installedServerVersion": params.InstalledServerVersion,
-			"localBucketPath":        params.LocalBucketPath,
 			"pipIndexUrl":            params.PipIndexUrl,
 			"pipExtraIndexUrl":       params.PipExtraIndexUrl,
 		},

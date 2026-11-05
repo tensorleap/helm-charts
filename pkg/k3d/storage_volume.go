@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 	"time"
 
@@ -16,7 +15,13 @@ import (
 )
 
 // STORAGE_VOLUME_NAME is the Docker named volume holding the app data
-// (mongodb, elasticsearch, minio, keycloak, job-shared) on Docker Desktop.
+// (mongodb, elasticsearch, minio, keycloak, job-shared) instead of
+// <data-dir>/storage on the host, on every OS so installs behave the same.
+// A bind-mounted host dir crosses Docker Desktop's VM file-sharing bridge on
+// macOS and Windows: slow for database I/O, and the bridge's change notifier
+// stalls under load and takes Docker Desktop down ("service fs failed:
+// injecting event blocked for 60s"). On Linux a volume is a plain dir under
+// Docker's data root, same disk and speed as a bind.
 const STORAGE_VOLUME_NAME = "tensorleap-storage-volume"
 
 // storageVolumeMountPath is where the volume is mounted inside the k3s node:
@@ -26,16 +31,6 @@ const storageVolumeMountPath = local.DEFAULT_DATA_DIR + "/" + local.STORAGE_DIR_
 
 // storageVolumeScratchPath is where one-off containers see the volume.
 const storageVolumeScratchPath = "/storage"
-
-// UseStorageVolume reports whether app data lives in STORAGE_VOLUME_NAME
-// instead of <data-dir>/storage on the host. On Docker Desktop (macOS,
-// Windows) a bind-mounted host dir crosses the VM file-sharing bridge: slow
-// for database I/O, and the bridge's change notifier stalls under load and
-// takes Docker Desktop down ("service fs failed: injecting event blocked for
-// 60s"). Linux has no bridge, so the host dir stays.
-func UseStorageVolume() bool {
-	return runtime.GOOS != "linux"
-}
 
 // StorageVolumeSpec is the k3d volume mapping for the server node.
 func StorageVolumeSpec() string {
@@ -76,28 +71,80 @@ func RemoveStorageVolumeSubDirs(ctx context.Context, image string, subDirs []str
 	return nil
 }
 
+// storageSpaceGuard exits 1 when the host data bound at /src would not fit
+// in the free space of the volume's disk (du, df, tail, tr and cut are
+// busybox applets the k3s image ships).
+const storageSpaceGuard = "need=$(du -sk /src | cut -f1)\n" +
+	"free=$(df -Pk " + storageVolumeScratchPath + " | tail -1 | tr -s ' ' | cut -d' ' -f4)\n" +
+	"if [ \"$free\" -lt \"$need\" ]; then\n" +
+	"  echo \"the app data (${need}K) does not fit in the free space of Docker's disk (${free}K): raise Docker Desktop's disk limit or free space under Docker's data root\"\n" +
+	"  exit 1\n" +
+	"fi\n"
+
+func volumeMongoPath() string {
+	return path.Join(storageVolumeScratchPath, path.Base(local.MONGODB_STORAGE_DIR_NAME))
+}
+
+// storageSpaceCheckScript is the guard alone, a no-op once the volume holds
+// the data (a rerun after a finished migration).
+func storageSpaceCheckScript() string {
+	return fmt.Sprintf("if [ -e %s ]; then exit 0; fi\n", volumeMongoPath()) + storageSpaceGuard
+}
+
 // storageSetupScript prepares the volume the way initStandaloneSubDirs
 // prepares the host dir: world-writable dirs for the pods that run as
 // non-root (elasticsearch, keycloak). With migrate it first copies the host
-// data bound at /src, staged so a failed copy leaves no half store behind, and
-// only when the volume holds no mongodb yet: a rerun must never overwrite
-// live data.
+// data bound at /src, after checking it fits, staged so a failed copy leaves
+// no half store behind, and only when the volume holds no mongodb yet: a
+// rerun must never overwrite live data.
 func storageSetupScript(migrate bool) string {
 	s := storageVolumeScratchPath
 	es := path.Join(s, path.Base(local.ELASTIC_STORAGE_DIR_NAME))
 	kc := path.Join(s, path.Base(local.KEYCLOAK_DB_STORAGE_DIR_NAME))
-	mongo := path.Join(s, path.Base(local.MONGODB_STORAGE_DIR_NAME))
 	staging := path.Join(s, ".migrating")
 	script := ""
 	if migrate {
-		script = fmt.Sprintf("if [ ! -e %[1]s ]; then\n"+
-			"  rm -rf %[2]s && mkdir %[2]s\n"+
-			"  cp -a /src/. %[2]s/\n"+
-			"  chmod -R a+rwX %[2]s\n"+
-			"  mv %[2]s/* %[3]s/ && rmdir %[2]s\n"+
-			"fi\n", mongo, staging, s)
+		script = fmt.Sprintf("if [ ! -e %s ]; then\n", volumeMongoPath()) +
+			fmt.Sprintf("rm -rf %s\n", staging) + // a previous failed copy, dropped before measuring
+			storageSpaceGuard +
+			fmt.Sprintf("mkdir %[1]s\n"+
+				"cp -a /src/. %[1]s/\n"+
+				"chmod -R a+rwX %[1]s\n"+
+				"mv %[1]s/* %[2]s/ && rmdir %[1]s\n"+
+				"fi\n", staging, s)
 	}
 	return script + fmt.Sprintf("mkdir -p %s %s && chmod a+rwx %s %s %s", es, kc, s, es, kc)
+}
+
+// CheckStorageMigrationSpace fails, before an upgrade removes the cluster,
+// when the host app data would not fit in Docker's disk: the copy in
+// setupStorageVolume would otherwise fail with the old cluster already gone.
+// It runs in the current cluster's image, so it is a no-op without a cluster
+// or without host data to move.
+func CheckStorageMigrationSpace(ctx context.Context) error {
+	migrate, err := local.StorageHasData()
+	if err != nil || !migrate {
+		return err
+	}
+	cluster, err := GetCluster(ctx)
+	if err != nil || cluster == nil {
+		return err
+	}
+	image := ""
+	for _, node := range cluster.Nodes {
+		if node.Role == k3d.ServerRole {
+			image = node.Image
+		}
+	}
+	if image == "" {
+		return nil
+	}
+	hostStorage := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME)
+	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath, hostStorage + ":/src:ro"}
+	if err := docker.RunOnce(ctx, image, binds, storageSpaceCheckScript()); err != nil {
+		return fmt.Errorf("app data in %s cannot move into Docker volume %s: %w", hostStorage, STORAGE_VOLUME_NAME, err)
+	}
+	return nil
 }
 
 // setupStorageVolume runs once per cluster creation, before any pod exists:
@@ -112,7 +159,7 @@ func setupStorageVolume(ctx context.Context, image string) error {
 	}
 	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath}
 	if migrate {
-		log.Infof("Moving app data from %s into Docker volume %s (one time, may take a while)", hostStorage, STORAGE_VOLUME_NAME)
+		log.Infof("Moving app data from %s into Docker volume %s (one time, may take a while; needs that much free space on Docker's disk)", hostStorage, STORAGE_VOLUME_NAME)
 		binds = append(binds, hostStorage+":/src:ro")
 	}
 	if err := docker.RunOnce(ctx, image, binds, storageSetupScript(migrate)); err != nil {

@@ -69,16 +69,14 @@ func UninstallCustom(ctx context.Context, targets []CustomTarget) error {
 	}
 
 	// Application data. The "all" rollup supersedes the per-store selections.
-	// On Docker Desktop the stores live in the storage volume; the host dir is
-	// still cleared for installs from before the volume existed.
+	// The stores live in the storage volume; the host dir is still cleared for
+	// installs from before the volume existed.
 	if selected[TargetAllAppData] {
 		remove(local.STORAGE_DIR_NAME)
-		if k3d.UseStorageVolume() {
-			if err := k3d.RemoveStorageVolume(ctx); err != nil {
-				log.Warnf("Failed to remove storage volume: %v", err)
-				if firstErr == nil {
-					firstErr = err
-				}
+		if err := k3d.RemoveStorageVolume(ctx); err != nil {
+			log.Warnf("Failed to remove storage volume: %v", err)
+			if firstErr == nil {
+				firstErr = err
 			}
 		}
 	} else {
@@ -97,7 +95,7 @@ func UninstallCustom(ctx context.Context, targets []CustomTarget) error {
 				stores = append(stores, path.Base(store.subDir))
 			}
 		}
-		if len(stores) > 0 && k3d.UseStorageVolume() {
+		if len(stores) > 0 {
 			if err := removeStoresFromVolume(ctx, stores); err != nil {
 				log.Warnf("Failed to remove %v from storage volume: %v", stores, err)
 				if firstErr == nil {
@@ -161,7 +159,7 @@ func Uninstall(ctx context.Context, purge bool, cleanup bool, clearData bool) (e
 			return err
 		}
 	}
-	if (purge || clearData) && k3d.UseStorageVolume() {
+	if purge || clearData {
 		if err = k3d.RemoveStorageVolume(ctx); err != nil {
 			return err
 		}

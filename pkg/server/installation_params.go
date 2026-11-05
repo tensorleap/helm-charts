@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 
@@ -985,11 +984,6 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 
 	proxyEnvs := params.GetEngineProxyEnv()
 
-	localBucketPath := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME, "minio", "session")
-	if k3d.UseStorageVolume() {
-		localBucketPath = "" // the bucket lives in a Docker volume: no host path to show users
-	}
-
 	return &helm.ServerHelmValuesParams{
 		Gpu:                    params.IsUseGpu(),
 		GpuCount:               detectGpuCount(params),
@@ -1007,7 +1001,6 @@ func (params *InstallationParams) GetServerHelmValuesParams(versionTag string) *
 		KeycloakEnabled:        !params.DisabledAuth,
 		DisableAuth:            params.DisabledAuth,
 		InstalledServerVersion: versionTag,
-		LocalBucketPath:        localBucketPath,
 		TotalMemoryBytes:       totalMemoryBytes,
 		TotalMemorySource:      totalMemorySource,
 	}
