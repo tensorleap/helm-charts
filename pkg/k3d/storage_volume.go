@@ -189,6 +189,7 @@ func checkStorageMigrationSpace(ctx context.Context, image string, m *storageMig
 		return fmt.Errorf("measure %s: %w", m.hostStorage, err)
 	}
 	needKB := size/1024 + 1
+	log.Infof("App data to move into Docker volume %s: %d GB", STORAGE_VOLUME_NAME, needKB>>20)
 	free, err := volumeFreeKB(ctx, image)
 	if err != nil {
 		return err
@@ -201,8 +202,13 @@ func checkStorageMigrationSpace(ctx context.Context, image string, m *storageMig
 	if free < needKB {
 		return fmt.Errorf("the app data in %s (%d GB) needs that much free space on Docker's disk and on the host disk holding it, only %d GB is free: raise Docker Desktop's disk limit or free disk space", m.hostStorage, needKB>>20, free>>20)
 	}
+	migrationSpaceChecked = true
 	return nil
 }
+
+// migrationSpaceChecked skips the size walk in setupStorageVolume when
+// CheckStorageMigrationSpace already did it in this process (an upgrade).
+var migrationSpaceChecked bool
 
 // CheckStorageMigrationSpace fails, before an upgrade removes the cluster,
 // when app data in the host dir would not fit in Docker's disk: the transfer
@@ -238,8 +244,10 @@ func setupStorageVolume(ctx context.Context, image string) error {
 	if m == nil {
 		return docker.RunOnce(ctx, image, volumeBinds(), storageSetupScript(false))
 	}
-	if err := checkStorageMigrationSpace(ctx, image, m); err != nil {
-		return err
+	if !migrationSpaceChecked {
+		if err := checkStorageMigrationSpace(ctx, image, m); err != nil {
+			return err
+		}
 	}
 	// leftovers of an earlier failed transfer
 	if err := docker.RunOnce(ctx, image, volumeBinds(), "rm -rf "+path.Join(storageVolumeScratchPath, storageStagingDir)); err != nil {
@@ -290,11 +298,14 @@ func moveStorageIntoVolume(m *storageMigration) error {
 // bridge is never in the path.
 func streamStorageIntoVolume(ctx context.Context, image string, m *storageMigration) error {
 	log.Infof("Copying app data from %s into Docker volume %s through the Docker API (one time, may take a while)", m.hostStorage, STORAGE_VOLUME_NAME)
+	start := time.Now()
 	pr, pw := io.Pipe()
 	readErr := make(chan error, 1)
+	var total int64
 	go func() {
 		var logged int64
 		err := local.TarDir(m.hostStorage, storageStagingDir, pw, func(written int64) {
+			total = written
 			if written-logged >= 10<<30 {
 				logged = written
 				log.Infof("Copied %d GB so far", written>>30)
@@ -311,6 +322,7 @@ func streamStorageIntoVolume(ctx context.Context, image string, m *storageMigrat
 	if err != nil {
 		return fmt.Errorf("copy app data into volume %s: %w", STORAGE_VOLUME_NAME, err)
 	}
+	log.Infof("Copied %d GB in %s", total>>30, time.Since(start).Round(time.Second))
 	return nil
 }
 
