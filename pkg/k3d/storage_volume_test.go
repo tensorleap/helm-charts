@@ -32,35 +32,15 @@ func TestClusterHasVolume(t *testing.T) {
 
 func TestStorageSetupScript(t *testing.T) {
 	t.Run("fresh volume only prepares dirs", func(t *testing.T) {
-		script := storageSetupScript(false, 0)
-		assert.NotContains(t, script, "cp -a")
-		assert.NotContains(t, script, "du -sk")
+		script := storageSetupScript(false)
+		assert.NotContains(t, script, ".migrating")
 		assert.Contains(t, script, "mkdir -p /storage/elasticsearch /storage/keycloak")
 		assert.Contains(t, script, "chmod a+rwx /storage /storage/elasticsearch /storage/keycloak")
 	})
-	t.Run("migration copies through a staging dir, never over live data", func(t *testing.T) {
-		script := storageSetupScript(true, 0)
-		assert.True(t, strings.HasPrefix(script, "if [ ! -e /storage/mongodb ]; then"), script)
-		assert.Contains(t, script, "cp -a /src/. /storage/.migrating/")
-		assert.Contains(t, script, "mv /storage/.migrating/* /storage/")
+	t.Run("migration moves the staged data into place first", func(t *testing.T) {
+		script := storageSetupScript(true)
+		assert.True(t, strings.HasPrefix(script, "chmod -R a+rwX /storage/.migrating"), script)
+		assert.Contains(t, script, "mv /storage/.migrating/* /storage/ && rmdir /storage/.migrating")
 		assert.Less(t, strings.Index(script, "mv /storage/.migrating"), strings.Index(script, "mkdir -p"))
-		// leftovers of a failed copy are dropped before measuring, and the copy
-		// only starts when the data fits
-		assert.Less(t, strings.Index(script, "rm -rf /storage/.migrating"), strings.Index(script, "du -sk /src"))
-		assert.Less(t, strings.Index(script, "du -sk /src"), strings.Index(script, "cp -a"))
-	})
-	t.Run("space check alone skips a finished migration", func(t *testing.T) {
-		script := storageSpaceCheckScript(0)
-		assert.True(t, strings.HasPrefix(script, "if [ -e /storage/mongodb ]; then exit 0; fi"), script)
-		assert.Contains(t, script, "du -sk /src")
-		assert.NotContains(t, script, "cp -a")
-		assert.NotContains(t, script, "then free=")
-	})
-	t.Run("host free space caps what df inside the VM reports", func(t *testing.T) {
-		script := storageSetupScript(true, 12345)
-		capLine := `if [ 12345 -lt "$free" ]; then free=12345; fi`
-		assert.Contains(t, script, capLine)
-		assert.Less(t, strings.Index(script, "free=$(df"), strings.Index(script, capLine))
-		assert.Less(t, strings.Index(script, capLine), strings.Index(script, `if [ "$free" -lt "$need" ]`))
 	})
 }

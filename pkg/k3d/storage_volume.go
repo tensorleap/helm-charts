@@ -3,8 +3,11 @@ package k3d
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,9 +35,17 @@ const storageVolumeMountPath = local.DEFAULT_DATA_DIR + "/" + local.STORAGE_DIR_
 // storageVolumeScratchPath is where one-off containers see the volume.
 const storageVolumeScratchPath = "/storage"
 
+// storageStagingDir, inside the volume, is where app data lands before it is
+// moved into place, so a failed transfer leaves no half store behind.
+const storageStagingDir = ".migrating"
+
 // StorageVolumeSpec is the k3d volume mapping for the server node.
 func StorageVolumeSpec() string {
 	return STORAGE_VOLUME_NAME + ":" + storageVolumeMountPath
+}
+
+func volumeBinds() []string {
+	return []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath}
 }
 
 // ClusterHasVolume reports whether a server node of cluster mounts the named
@@ -53,6 +64,15 @@ func ClusterHasVolume(cluster *Cluster, name string) bool {
 	return false
 }
 
+func serverNodeImage(cluster *Cluster) string {
+	for _, node := range cluster.Nodes {
+		if node.Role == k3d.ServerRole {
+			return node.Image
+		}
+	}
+	return ""
+}
+
 func RemoveStorageVolume(ctx context.Context) error {
 	return docker.RemoveVolume(ctx, STORAGE_VOLUME_NAME, true)
 }
@@ -64,139 +84,246 @@ func RemoveStorageVolumeSubDirs(ctx context.Context, image string, subDirs []str
 	for _, d := range subDirs {
 		paths = append(paths, path.Join(storageVolumeScratchPath, d))
 	}
-	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath}
-	if err := docker.RunOnce(ctx, image, binds, "rm -rf "+strings.Join(paths, " ")); err != nil {
+	if err := docker.RunOnce(ctx, image, volumeBinds(), "rm -rf "+strings.Join(paths, " ")); err != nil {
 		return fmt.Errorf("remove %v from volume %s: %w", subDirs, STORAGE_VOLUME_NAME, err)
 	}
 	return nil
 }
 
-// storageSpaceGuard exits 1 when the host data bound at /src would not fit
-// in the free space of the volume's disk (du, df, tail, tr and cut are
-// busybox applets the k3s image ships). hostFreeKB is the free space of the
-// host disk holding the data dir, 0 to skip: on Docker Desktop df inside the
-// VM reports the sparse virtual disk's limit, while its image file grows on
-// the host disk, which has to hold the copy as well.
-func storageSpaceGuard(hostFreeKB int64) string {
-	guard := "need=$(du -sk /src | cut -f1)\n" +
-		"free=$(df -Pk " + storageVolumeScratchPath + " | tail -1 | tr -s ' ' | cut -d' ' -f4)\n"
-	if hostFreeKB > 0 {
-		guard += fmt.Sprintf("if [ %[1]d -lt \"$free\" ]; then free=%[1]d; fi\n", hostFreeKB)
-	}
-	return guard +
-		"if [ \"$free\" -lt \"$need\" ]; then\n" +
-		"  echo \"the app data (${need}K) needs that much free space on Docker's disk and on the host disk holding the data dir, only ${free}K is free: raise Docker Desktop's disk limit or free disk space\"\n" +
-		"  exit 1\n" +
-		"fi\n"
-}
-
-// hostFreeKB is the free space of the host disk holding the data dir, 0 when
-// it cannot be read (the guard then trusts df inside the container).
-func hostFreeKB(hostStorage string) int64 {
-	free, err := local.FreeDiskKB(hostStorage)
-	if err != nil {
-		log.Warnf("Could not read free space of the disk holding %s: %v", hostStorage, err)
-		return 0
-	}
-	return free
-}
-
-func volumeMongoPath() string {
-	return path.Join(storageVolumeScratchPath, path.Base(local.MONGODB_STORAGE_DIR_NAME))
-}
-
-// storageSpaceCheckScript is the guard alone, a no-op once the volume holds
-// the data (a rerun after a finished migration).
-func storageSpaceCheckScript(hostFreeKB int64) string {
-	return fmt.Sprintf("if [ -e %s ]; then exit 0; fi\n", volumeMongoPath()) + storageSpaceGuard(hostFreeKB)
-}
-
 // storageSetupScript prepares the volume the way initStandaloneSubDirs
 // prepares the host dir: world-writable dirs for the pods that run as
-// non-root (elasticsearch, keycloak). With migrate it first copies the host
-// data bound at /src, after checking it fits, staged so a failed copy leaves
-// no half store behind, and only when the volume holds no mongodb yet: a
-// rerun must never overwrite live data.
-func storageSetupScript(migrate bool, hostFreeKB int64) string {
+// non-root (elasticsearch, keycloak). With migrate it first moves the staged
+// app data into place.
+func storageSetupScript(migrate bool) string {
 	s := storageVolumeScratchPath
 	es := path.Join(s, path.Base(local.ELASTIC_STORAGE_DIR_NAME))
 	kc := path.Join(s, path.Base(local.KEYCLOAK_DB_STORAGE_DIR_NAME))
-	staging := path.Join(s, ".migrating")
+	staging := path.Join(s, storageStagingDir)
 	script := ""
 	if migrate {
-		script = fmt.Sprintf("if [ ! -e %s ]; then\n", volumeMongoPath()) +
-			fmt.Sprintf("rm -rf %s\n", staging) + // a previous failed copy, dropped before measuring
-			storageSpaceGuard(hostFreeKB) +
-			fmt.Sprintf("mkdir %[1]s\n"+
-				"cp -a /src/. %[1]s/\n"+
-				"chmod -R a+rwX %[1]s\n"+
-				"mv %[1]s/* %[2]s/ && rmdir %[1]s\n"+
-				"fi\n", staging, s)
+		script = fmt.Sprintf("chmod -R a+rwX %[1]s\nmv %[1]s/* %[2]s/ && rmdir %[1]s\n", staging, s)
 	}
 	return script + fmt.Sprintf("mkdir -p %s %s && chmod a+rwx %s %s %s", es, kc, s, es, kc)
 }
 
-// CheckStorageMigrationSpace fails, before an upgrade removes the cluster,
-// when the host app data would not fit in Docker's disk: the copy in
-// setupStorageVolume would otherwise fail with the old cluster already gone.
-// It runs in the current cluster's image, so it is a no-op without a cluster
-// or without host data to move.
-func CheckStorageMigrationSpace(ctx context.Context) error {
-	migrate, err := local.StorageHasData()
-	if err != nil || !migrate {
-		return err
+// volumeHasData reports whether the volume already holds a mongodb store:
+// app data a rerun must never overwrite.
+func volumeHasData(ctx context.Context, image string) (bool, error) {
+	mongo := path.Join(storageVolumeScratchPath, path.Base(local.MONGODB_STORAGE_DIR_NAME))
+	out, err := docker.RunOnceOutput(ctx, image, volumeBinds(), fmt.Sprintf("[ -e %s ] && echo yes || echo no", mongo))
+	return strings.TrimSpace(out) == "yes", err
+}
+
+// volumeFreeKB is the free space of the disk holding the volume, measured
+// where the daemon runs: Docker Desktop's VM disk, a Linux engine's data root.
+func volumeFreeKB(ctx context.Context, image string) (int64, error) {
+	out, err := docker.RunOnceOutput(ctx, image, volumeBinds(), "df -Pk "+storageVolumeScratchPath+" | tail -1 | tr -s ' ' | cut -d' ' -f4")
+	if err != nil {
+		return 0, err
 	}
-	cluster, err := GetCluster(ctx)
-	if err != nil || cluster == nil {
-		return err
+	free, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("parse free space of volume %s %q: %w", STORAGE_VOLUME_NAME, out, err)
 	}
-	image := ""
-	for _, node := range cluster.Nodes {
-		if node.Role == k3d.ServerRole {
-			image = node.Image
-		}
+	return free, nil
+}
+
+// storageMigration is app data still in the host data dir, from an install
+// that predates the volume.
+type storageMigration struct {
+	hostStorage string
+	// hostMountpoint is the volume's directory when this machine can reach it
+	// (a native Linux engine), "" when only the daemon can (Docker Desktop's
+	// VM, a remote engine).
+	hostMountpoint string
+}
+
+// planStorageMigration returns nil when the host dir holds no app data or the
+// volume already holds some.
+func planStorageMigration(ctx context.Context, image string) (*storageMigration, error) {
+	hasHost, err := local.StorageHasData()
+	if err != nil || !hasHost {
+		return nil, err
 	}
-	if image == "" {
+	hasVolume, err := volumeHasData(ctx, image)
+	if err != nil || hasVolume {
+		return nil, err
+	}
+	m := &storageMigration{hostStorage: path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME)}
+	m.hostMountpoint, err = hostVolumeMountpoint(ctx, image)
+	return m, err
+}
+
+// hostVolumeMountpoint returns the volume's directory on this machine, or ""
+// when the path the daemon reports is not the volume here: a probe dir made
+// through the daemon has to show up at that path. It does not on Docker
+// Desktop, whose daemon runs in a VM, even when the path exists on the host.
+func hostVolumeMountpoint(ctx context.Context, image string) (string, error) {
+	mountpoint, err := docker.VolumeMountpoint(ctx, STORAGE_VOLUME_NAME)
+	if err != nil {
+		return "", err
+	}
+	probe := path.Join(storageVolumeScratchPath, ".probe")
+	if err := docker.RunOnce(ctx, image, volumeBinds(), "mkdir -p "+probe); err != nil {
+		return "", err
+	}
+	defer func() { _ = docker.RunOnce(ctx, image, volumeBinds(), "rmdir "+probe) }()
+	status, err := local.CheckDirectoryStatus(filepath.Join(mountpoint, ".probe"))
+	if err != nil || !status.Exists {
+		return "", nil
+	}
+	return mountpoint, nil
+}
+
+// checkStorageMigrationSpace fails when the streamed copy would not fit: it
+// needs the data's size free on the daemon's disk and, since Docker Desktop's
+// VM disk is a sparse file growing on the host disk, on the host disk holding
+// the data dir. A move through the host mountpoint needs no room (a rename),
+// and its cross-filesystem fallback copy fails with the source intact.
+func checkStorageMigrationSpace(ctx context.Context, image string, m *storageMigration) error {
+	if m.hostMountpoint != "" {
 		return nil
 	}
-	hostStorage := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME)
-	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath, hostStorage + ":/src:ro"}
-	if err := docker.RunOnce(ctx, image, binds, storageSpaceCheckScript(hostFreeKB(hostStorage))); err != nil {
-		return fmt.Errorf("app data in %s cannot move into Docker volume %s: %w", hostStorage, STORAGE_VOLUME_NAME, err)
+	size, err := local.DirSize(m.hostStorage)
+	if err != nil {
+		return fmt.Errorf("measure %s: %w", m.hostStorage, err)
+	}
+	needKB := size/1024 + 1
+	free, err := volumeFreeKB(ctx, image)
+	if err != nil {
+		return err
+	}
+	if hostFree, err := local.FreeDiskKB(m.hostStorage); err != nil {
+		log.Warnf("Could not read free space of the disk holding %s: %v", m.hostStorage, err)
+	} else if hostFree < free {
+		free = hostFree
+	}
+	if free < needKB {
+		return fmt.Errorf("the app data in %s (%d GB) needs that much free space on Docker's disk and on the host disk holding it, only %d GB is free: raise Docker Desktop's disk limit or free disk space", m.hostStorage, needKB>>20, free>>20)
 	}
 	return nil
 }
 
+// CheckStorageMigrationSpace fails, before an upgrade removes the cluster,
+// when app data in the host dir would not fit in Docker's disk: the transfer
+// in setupStorageVolume would otherwise fail with the old cluster already
+// gone. It runs in the current cluster's image, so it is a no-op without one.
+func CheckStorageMigrationSpace(ctx context.Context) error {
+	cluster, err := GetCluster(ctx)
+	if err != nil || cluster == nil {
+		return err
+	}
+	image := serverNodeImage(cluster)
+	if image == "" {
+		return nil
+	}
+	if _, err := docker.CreateVolumeIfNotExists(ctx, STORAGE_VOLUME_NAME, nil); err != nil {
+		return err
+	}
+	m, err := planStorageMigration(ctx, image)
+	if err != nil || m == nil {
+		return err
+	}
+	return checkStorageMigrationSpace(ctx, image, m)
+}
+
 // setupStorageVolume runs once per cluster creation, before any pod exists:
 // it prepares the volume and, when the host data dir still holds app data
-// (an install from before the volume existed), moves it in and keeps the host
-// copy as storage.migrated.
+// (an install from before the volume existed), moves it in.
 func setupStorageVolume(ctx context.Context, image string) error {
-	hostStorage := path.Join(local.GetServerDataDir(), local.STORAGE_DIR_NAME)
-	migrate, err := local.StorageHasData()
+	m, err := planStorageMigration(ctx, image)
 	if err != nil {
 		return err
 	}
-	binds := []string{STORAGE_VOLUME_NAME + ":" + storageVolumeScratchPath}
-	if migrate {
-		log.Infof("Moving app data from %s into Docker volume %s (one time, may take a while; needs that much free space on Docker's disk)", hostStorage, STORAGE_VOLUME_NAME)
-		binds = append(binds, hostStorage+":/src:ro")
+	if m == nil {
+		return docker.RunOnce(ctx, image, volumeBinds(), storageSetupScript(false))
 	}
-	if err := docker.RunOnce(ctx, image, binds, storageSetupScript(migrate, hostFreeKB(hostStorage))); err != nil {
-		return fmt.Errorf("prepare storage volume %s: %w", STORAGE_VOLUME_NAME, err)
+	if err := checkStorageMigrationSpace(ctx, image, m); err != nil {
+		return err
 	}
-	if !migrate {
+	// leftovers of an earlier failed transfer
+	if err := docker.RunOnce(ctx, image, volumeBinds(), "rm -rf "+path.Join(storageVolumeScratchPath, storageStagingDir)); err != nil {
+		return err
+	}
+	if m.hostMountpoint != "" {
+		err = moveStorageIntoVolume(m)
+	} else {
+		err = streamStorageIntoVolume(ctx, image, m)
+	}
+	if err != nil {
+		return err
+	}
+	if err := docker.RunOnce(ctx, image, volumeBinds(), storageSetupScript(true)); err != nil {
+		return fmt.Errorf("finish moving app data into volume %s: %w", STORAGE_VOLUME_NAME, err)
+	}
+	if m.hostMountpoint != "" {
+		log.Infof("App data is in Docker volume %s now", STORAGE_VOLUME_NAME)
 		return nil
 	}
+	keepMigratedCopy(m.hostStorage)
+	return nil
+}
 
+// moveStorageIntoVolume renames the host dir into the volume's staging dir: no
+// copy and no extra space when both sit on one filesystem (sudo when Docker's
+// data root is root-only). The host dir is gone afterwards; the data stays in
+// the volume across uninstalls that keep data.
+func moveStorageIntoVolume(m *storageMigration) error {
+	log.Infof("Moving app data from %s into Docker volume %s at %s", m.hostStorage, STORAGE_VOLUME_NAME, m.hostMountpoint)
+	src, err := local.CheckDirectoryStatus(m.hostStorage)
+	if err != nil {
+		return err
+	}
+	dst, err := local.CheckDirectoryStatus(filepath.Join(m.hostMountpoint, storageStagingDir))
+	if err != nil {
+		return err
+	}
+	if err := local.MoveOrCopyDirectory(src, dst); err != nil {
+		return fmt.Errorf("move app data into volume %s: %w", STORAGE_VOLUME_NAME, err)
+	}
+	return nil
+}
+
+// streamStorageIntoVolume copies the host dir into the volume's staging dir as
+// a tar stream through the Docker API (what docker cp does): this side reads
+// its own disk, the daemon writes its own, and Docker Desktop's file-sharing
+// bridge is never in the path.
+func streamStorageIntoVolume(ctx context.Context, image string, m *storageMigration) error {
+	log.Infof("Copying app data from %s into Docker volume %s through the Docker API (one time, may take a while)", m.hostStorage, STORAGE_VOLUME_NAME)
+	pr, pw := io.Pipe()
+	readErr := make(chan error, 1)
+	go func() {
+		var logged int64
+		err := local.TarDir(m.hostStorage, storageStagingDir, pw, func(written int64) {
+			if written-logged >= 10<<30 {
+				logged = written
+				log.Infof("Copied %d GB so far", written>>30)
+			}
+		})
+		pw.CloseWithError(err)
+		readErr <- err
+	}()
+	err := docker.ExtractArchive(ctx, image, volumeBinds(), storageVolumeScratchPath, pr)
+	_ = pr.CloseWithError(err) // frees the reader goroutine if the daemon stopped early
+	if rerr := <-readErr; rerr != nil && err == nil {
+		err = fmt.Errorf("read %s: %w", m.hostStorage, rerr)
+	}
+	if err != nil {
+		return fmt.Errorf("copy app data into volume %s: %w", STORAGE_VOLUME_NAME, err)
+	}
+	return nil
+}
+
+// keepMigratedCopy moves the host dir aside as storage.migrated: nothing is
+// lost if the new cluster disappoints, and uninstall --purge removes it.
+func keepMigratedCopy(hostStorage string) {
 	backup := local.MigratedStoragePath()
 	if _, err := os.Stat(backup); err == nil {
 		backup += "-" + time.Now().Format("20060102-150405")
 	}
 	if err := os.Rename(hostStorage, backup); err != nil {
 		log.Warnf("App data is in Docker volume %s now, but the old copy could not be moved aside (%v); delete %s by hand", STORAGE_VOLUME_NAME, err, hostStorage)
-		return nil
+		return
 	}
 	log.Infof("App data is in Docker volume %s now; the old copy is kept at %s, delete it once the upgrade checks out", STORAGE_VOLUME_NAME, backup)
-	return nil
 }

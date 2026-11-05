@@ -70,11 +70,15 @@ event blocked for 60s`). On Linux a volume is a plain dir under Docker's data ro
 (`docker info -f '{{.DockerRootDir}}'`), so `--data-dir` no longer decides where the app
 data lives, only where manifests, logs and the registry cache do.
 
-On the first cluster creation after this change the installer copies `<data-dir>/storage`
-into the volume (it needs that much free space on Docker's disk; an upgrade checks that
-before removing the old cluster) and keeps the old copy as `<data-dir>/storage.migrated`;
-`uninstall --purge` removes both. The data no longer appears as files on the host; to
-back it up:
+On the first cluster creation after this change the installer moves `<data-dir>/storage`
+into the volume. When this machine can reach the volume's directory (a native Linux
+engine) that is a rename: instant, no extra space, and the host dir is gone afterwards.
+Otherwise (Docker Desktop, whose daemon runs in a VM) the data is streamed through the
+Docker API the way `docker cp` works, which keeps the file-sharing bridge out of the
+path; that needs the data's size free on Docker's disk and on the host disk (an upgrade
+checks it before removing the old cluster), and the old copy is kept as
+`<data-dir>/storage.migrated`, which `uninstall --purge` removes. The data no longer
+appears as files on the host; to back it up:
 
 ```
 docker run --rm -v tensorleap-storage-volume:/data -v "$PWD":/backup alpine tar czf /backup/tensorleap-storage.tgz -C /data .

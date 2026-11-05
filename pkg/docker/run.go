@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -15,39 +16,78 @@ import (
 // form; a named volume as source is attached as-is. A non-zero exit returns an
 // error carrying the container's last output lines.
 func RunOnce(ctx context.Context, image string, binds []string, script string) error {
-	cli, err := NewClient()
+	_, err := runOnce(ctx, image, binds, script, false)
+	return err
+}
+
+// RunOnceOutput is RunOnce returning what the script wrote to stdout.
+func RunOnceOutput(ctx context.Context, image string, binds []string, script string) (string, error) {
+	return runOnce(ctx, image, binds, script, true)
+}
+
+// ExtractArchive extracts the tar stream archive at dir inside a throwaway
+// container of image, without running it: the docker cp mechanism, which the
+// daemon writes straight to the container's disk, so a bind-mounted source
+// and its file-sharing bridge stay out of the path.
+func ExtractArchive(ctx context.Context, image string, binds []string, dir string, archive io.Reader) error {
+	cli, id, remove, err := createContainer(ctx, image, binds, "true")
 	if err != nil {
-		return fmt.Errorf("docker client: %w", err)
+		return err
+	}
+	defer remove()
+	if err := cli.CopyToContainer(ctx, id, dir, archive, container.CopyToContainerOptions{}); err != nil {
+		return fmt.Errorf("extract archive at %s in container from %s: %w", dir, image, err)
+	}
+	return nil
+}
+
+func runOnce(ctx context.Context, image string, binds []string, script string, wantOutput bool) (string, error) {
+	cli, id, remove, err := createContainer(ctx, image, binds, script)
+	if err != nil {
+		return "", err
+	}
+	defer remove()
+
+	if err := cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
+		return "", fmt.Errorf("start container %s: %w", id, err)
 	}
 
+	statusCh, errCh := cli.ContainerWait(ctx, id, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		return "", fmt.Errorf("wait for container %s: %w", id, err)
+	case status := <-statusCh:
+		if status.StatusCode != 0 {
+			return "", fmt.Errorf("container from %s exited with %d: %s", image, status.StatusCode, containerOutput(ctx, cli, id, "20", true))
+		}
+	}
+	if !wantOutput {
+		return "", nil
+	}
+	return containerOutput(ctx, cli, id, "all", false), nil
+}
+
+// createContainer creates (does not start) a container running script with
+// `sh -ec`, and returns the client, the container id and a remover.
+func createContainer(ctx context.Context, image string, binds []string, script string) (Client, string, func(), error) {
+	cli, err := NewClient()
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("docker client: %w", err)
+	}
 	created, err := cli.ContainerCreate(ctx,
 		&container.Config{Image: image, Entrypoint: []string{"/bin/sh", "-ec"}, Cmd: []string{script}},
 		&container.HostConfig{Binds: binds}, nil, nil, "")
 	if err != nil {
-		return fmt.Errorf("create container from %s: %w", image, err)
+		return nil, "", nil, fmt.Errorf("create container from %s: %w", image, err)
 	}
-	defer func() {
+	remove := func() {
 		_ = cli.ContainerRemove(context.WithoutCancel(ctx), created.ID, container.RemoveOptions{Force: true})
-	}()
-
-	if err := cli.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
-		return fmt.Errorf("start container %s: %w", created.ID, err)
 	}
-
-	statusCh, errCh := cli.ContainerWait(ctx, created.ID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		return fmt.Errorf("wait for container %s: %w", created.ID, err)
-	case status := <-statusCh:
-		if status.StatusCode == 0 {
-			return nil
-		}
-		return fmt.Errorf("container from %s exited with %d: %s", image, status.StatusCode, containerOutput(ctx, cli, created.ID))
-	}
+	return cli, created.ID, remove, nil
 }
 
-func containerOutput(ctx context.Context, cli Client, id string) string {
-	logs, err := cli.ContainerLogs(ctx, id, container.LogsOptions{ShowStdout: true, ShowStderr: true, Tail: "20"})
+func containerOutput(ctx context.Context, cli Client, id, tail string, withStderr bool) string {
+	logs, err := cli.ContainerLogs(ctx, id, container.LogsOptions{ShowStdout: true, ShowStderr: withStderr, Tail: tail})
 	if err != nil {
 		return err.Error()
 	}
