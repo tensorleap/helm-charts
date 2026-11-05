@@ -58,6 +58,26 @@ crane index filter docker.io/library/mongo:6.0.6 --platform linux/amd64 --platfo
 - crane: `go install github.com/google/go-containerregistry/cmd/crane@v0.19.1` (the version
   `go.mod` pins).
 
+### App data storage
+The app data (mongodb, elasticsearch, minio, keycloak, job-shared) is reached by the
+charts through static hostPath PersistentVolumes under
+`/var/lib/tensorleap/standalone/storage` inside the k3s node. What backs that path
+depends on the host (`k3d.UseStorageVolume`):
+
+- **Linux:** the host data dir, bind-mounted into the node (`<data-dir>/storage`).
+- **macOS / Windows (Docker Desktop):** the Docker named volume
+  `tensorleap-storage-volume`, mounted over that path. A bind-mounted host dir would
+  cross Docker Desktop's VM file-sharing bridge, which is several times slower for
+  database I/O and whose change notifier stalls under load and takes Docker Desktop
+  down (`service fs failed: injecting event blocked for 60s`). On the first cluster
+  creation after this change the installer copies `<data-dir>/storage` into the
+  volume and keeps the old copy as `<data-dir>/storage.migrated`; `uninstall --purge`
+  removes both. The data no longer appears in Finder/Explorer; to back it up:
+
+  ```
+  docker run --rm -v tensorleap-storage-volume:/data -v "$PWD":/backup alpine tar czf /backup/tensorleap-storage.tgz -C /data .
+  ```
+
 ## Installation Process
 The installation process we utilize k3d to create a local cluster and a Docker registry. Every installation begins with an installation manifest
 
@@ -157,6 +177,7 @@ The installer checks for:
 2. ths `tensorleap-infra` chart version change
 3. the `appVersion` on manifest is changed
 4. the `schemaVersion` on manifest is changed
+5. on Docker Desktop (macOS, Windows), the cluster's server node does not mount the `tensorleap-storage-volume` Docker volume (an install from before app data moved into it)
 
 ## Upgrade CLI
 CLI upgrades are necessary when there are changes in the installer (Go code) that require a reinstallation. The installer compares the installed CLI version against the installer version specified in the manifest.

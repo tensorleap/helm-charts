@@ -20,6 +20,7 @@ const (
 	REGISTRY_DIR_NAME               = "registry"
 	LOGS_DIR_NAME                   = "logs"
 	STORAGE_DIR_NAME                = "storage"
+	MIGRATED_STORAGE_DIR_NAME       = "storage.migrated" // host copy kept after app data moved into the Docker storage volume
 	KEYCLOAK_DB_STORAGE_DIR_NAME    = "storage/keycloak"
 	ELASTIC_STORAGE_DIR_NAME        = "storage/elasticsearch"
 	MONGODB_STORAGE_DIR_NAME        = "storage/mongodb"
@@ -177,7 +178,7 @@ func OpenLink(link string) error {
 
 func PurgeData() error {
 	log.Infof("Purging data (you may be asked to enter the root user password)")
-	for _, dir := range []string{STORAGE_DIR_NAME, REGISTRY_DIR_NAME, CONTAINERD_DIR_NAME, MANIFEST_DIR_NAME, HELM_CACHE_DIR_NAME} {
+	for _, dir := range []string{STORAGE_DIR_NAME, MIGRATED_STORAGE_DIR_NAME, REGISTRY_DIR_NAME, CONTAINERD_DIR_NAME, MANIFEST_DIR_NAME, HELM_CACHE_DIR_NAME} {
 		path := path.Join(GetServerDataDir(), dir)
 		log.Infof("Removing directory: %s", path)
 		if err := RemovePath(path); err != nil {
@@ -233,6 +234,29 @@ func RemoveDataSubDir(subDir string) error {
 		return err
 	}
 	return nil
+}
+
+func MigratedStoragePath() string {
+	return path.Join(GetServerDataDir(), MIGRATED_STORAGE_DIR_NAME)
+}
+
+// StorageHasData reports whether any store under <data-dir>/storage holds
+// files. The store dirs themselves don't count: InitStandaloneDir pre-creates
+// some of them empty on every command.
+func StorageHasData() (bool, error) {
+	for _, dir := range []string{MONGODB_STORAGE_DIR_NAME, MINIO_STORAGE_DIR_NAME, ELASTIC_STORAGE_DIR_NAME, KEYCLOAK_DB_STORAGE_DIR_NAME} {
+		entries, err := os.ReadDir(path.Join(GetServerDataDir(), dir))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return false, fmt.Errorf("read %s: %w", dir, err)
+		}
+		if len(entries) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func GetInstallationManifestPath() string {

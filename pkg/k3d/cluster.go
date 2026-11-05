@@ -78,6 +78,12 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 			return nil, err
 		}
 	}
+	if UseStorageVolume() {
+		_, err = docker.CreateVolumeIfNotExists(ctx, STORAGE_VOLUME_NAME, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	cluster, err = GetCluster(ctx)
 	if cluster != nil {
@@ -106,6 +112,18 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	}
 	log.Printf("Cluster '%s' created successfully!\n", clusterConfig.Cluster.Name)
 	log.SendCloudReport("info", "Created cluster successfully", "Running", nil)
+
+	if UseStorageVolume() {
+		if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
+			log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
+			// Roll the cluster back so the next run creates it again and retries;
+			// a cluster left on an empty volume would come up with no data.
+			if delErr := DeleteCluster(ctx, &clusterConfig.Cluster); delErr != nil {
+				log.Warnf("Failed rolling back cluster: %v", delErr)
+			}
+			return nil, err
+		}
+	}
 
 	// Update the installing user's ~/.kube/config (original behavior).
 	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, &clusterConfig.Cluster, "", &k3dCluster.WriteKubeConfigOptions{
@@ -470,10 +488,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		log.Fatalln(err)
 	}
 
-	image := manifest.Images.K3s
-	if params.WithGpu {
-		image = manifest.Images.K3sGpu
-	}
+	image := k3sImage(manifest, params)
 
 	registryPort := params.RegistryPort
 	if registryPort == 0 {
@@ -495,6 +510,9 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	volumes := params.Volumes
 	if containerdDir != "" {
 		volumes = append(volumes, fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"))
+	}
+	if UseStorageVolume() {
+		volumes = append(volumes, StorageVolumeSpec())
 	}
 
 	simpleK3dConfig := conf.SimpleConfig{
@@ -586,6 +604,13 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 
 	return k3dClusterConfig
+}
+
+func k3sImage(manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) string {
+	if params.WithGpu {
+		return manifest.Images.K3sGpu
+	}
+	return manifest.Images.K3s
 }
 
 func getCPUsLimit(paramsCpuLimit string) int {

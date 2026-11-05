@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"path"
 
 	"github.com/tensorleap/helm-charts/pkg/docker"
 	"github.com/tensorleap/helm-charts/pkg/k3d"
@@ -67,20 +69,41 @@ func UninstallCustom(ctx context.Context, targets []CustomTarget) error {
 	}
 
 	// Application data. The "all" rollup supersedes the per-store selections.
+	// On Docker Desktop the stores live in the storage volume; the host dir is
+	// still cleared for installs from before the volume existed.
 	if selected[TargetAllAppData] {
 		remove(local.STORAGE_DIR_NAME)
+		if k3d.UseStorageVolume() {
+			if err := k3d.RemoveStorageVolume(ctx); err != nil {
+				log.Warnf("Failed to remove storage volume: %v", err)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
 	} else {
-		if selected[TargetMongo] {
-			remove(local.MONGODB_STORAGE_DIR_NAME)
+		var stores []string
+		for _, store := range []struct {
+			target CustomTarget
+			subDir string
+		}{
+			{TargetMongo, local.MONGODB_STORAGE_DIR_NAME},
+			{TargetMinio, local.MINIO_STORAGE_DIR_NAME},
+			{TargetElastic, local.ELASTIC_STORAGE_DIR_NAME},
+			{TargetKeycloak, local.KEYCLOAK_DB_STORAGE_DIR_NAME},
+		} {
+			if selected[store.target] {
+				remove(store.subDir)
+				stores = append(stores, path.Base(store.subDir))
+			}
 		}
-		if selected[TargetMinio] {
-			remove(local.MINIO_STORAGE_DIR_NAME)
-		}
-		if selected[TargetElastic] {
-			remove(local.ELASTIC_STORAGE_DIR_NAME)
-		}
-		if selected[TargetKeycloak] {
-			remove(local.KEYCLOAK_DB_STORAGE_DIR_NAME)
+		if len(stores) > 0 && k3d.UseStorageVolume() {
+			if err := removeStoresFromVolume(ctx, stores); err != nil {
+				log.Warnf("Failed to remove %v from storage volume: %v", stores, err)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
 		}
 	}
 
@@ -137,7 +160,13 @@ func Uninstall(ctx context.Context, purge bool, cleanup bool, clearData bool) (e
 		if err != nil {
 			return err
 		}
-	} else if cleanup {
+	}
+	if (purge || clearData) && k3d.UseStorageVolume() {
+		if err = k3d.RemoveStorageVolume(ctx); err != nil {
+			return err
+		}
+	}
+	if cleanup && !purge && !clearData {
 		// Remove only cache, keep data
 		err = local.CleanupCacheData()
 		if err != nil {
@@ -145,4 +174,19 @@ func Uninstall(ctx context.Context, purge bool, cleanup bool, clearData bool) (e
 		}
 	}
 	return nil
+}
+
+// removeStoresFromVolume deletes single stores inside the storage volume. The
+// cluster is gone by now, so a throwaway container of the installed k3s image
+// does the work; the install manifest names that image.
+func removeStoresFromVolume(ctx context.Context, stores []string) error {
+	mnf, err := LoadPreviousManifest()
+	if err != nil {
+		return fmt.Errorf("load install manifest to pick an image for cleaning volume %s: %w", k3d.STORAGE_VOLUME_NAME, err)
+	}
+	image := mnf.Images.K3s
+	if prvParams, _ := LoadInstallationParamsFromPrevious(); prvParams != nil && prvParams.IsUseGpu() {
+		image = mnf.Images.K3sGpu
+	}
+	return k3d.RemoveStorageVolumeSubDirs(ctx, image, stores)
 }

@@ -40,6 +40,11 @@ func IsNeedsToReinstall(ctx context.Context, mnf, previousMnf *manifest.Installa
 		return false, nil
 	}
 
+	if k3d.UseStorageVolume() && !k3d.ClusterHasVolume(cluster, k3d.STORAGE_VOLUME_NAME) {
+		log.Infof("Cluster predates the Docker storage volume %s, reinstall required", k3d.STORAGE_VOLUME_NAME)
+		return true, nil
+	}
+
 	if previousInstallationParams == nil || previousMnf == nil {
 		return true, nil
 	}
