@@ -1,9 +1,9 @@
-public.ecr.aws/tensorleap/engine-generic:master-0c68bdb4-py310
-public.ecr.aws/tensorleap/engine-generic:master-0c68bdb4-py311
-public.ecr.aws/tensorleap/engine-generic:master-0c68bdb4-py312
-public.ecr.aws/tensorleap/engine-generic:master-0c68bdb4-py38
-public.ecr.aws/tensorleap/engine-generic:master-0c68bdb4-py39
-public.ecr.aws/tensorleap/engine:master-0c68bdb4
+public.ecr.aws/tensorleap/engine-generic:master-9e095fe6-py310
+public.ecr.aws/tensorleap/engine-generic:master-9e095fe6-py311
+public.ecr.aws/tensorleap/engine-generic:master-9e095fe6-py312
+public.ecr.aws/tensorleap/engine-generic:master-9e095fe6-py38
+public.ecr.aws/tensorleap/engine-generic:master-9e095fe6-py39
+public.ecr.aws/tensorleap/engine:master-9e095fe6
 public.ecr.aws/tensorleap/mirror/docker.elastic.co/eck/eck-operator:2.8.0
 public.ecr.aws/tensorleap/mirror/docker.io/library/elasticsearch:8.10.1
 public.ecr.aws/tensorleap/mirror/docker.io/library/mongo:6.0.5
@@ -17,6 +17,6 @@ public.ecr.aws/tensorleap/mirror/quay.io/keycloak/keycloak:26.3.2
 public.ecr.aws/tensorleap/mirror/quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 public.ecr.aws/tensorleap/mirror/registry.k8s.io/ingress-nginx/controller:v1.10.0
 public.ecr.aws/tensorleap/mirror/registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.0
-public.ecr.aws/tensorleap/node-server:master-cd4a6418
+public.ecr.aws/tensorleap/node-server:master-13e5b27c
 public.ecr.aws/tensorleap/pippin:master-8c337458
-public.ecr.aws/tensorleap/web-ui:master-e95b35cf
+public.ecr.aws/tensorleap/web-ui:master-2f1f1ab2
