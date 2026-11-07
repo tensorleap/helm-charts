@@ -46,6 +46,11 @@ data:
     CHKIakAHnM/Pe7WIBxixK7TG8qRgrOzzBOu2QVt04DVhVcxqZkpglgce+6LZhYmZ
     fUdjVwvr9Nq+s5Fc1QN4uQkCAwEAAQ==
     -----END PUBLIC KEY-----
+  TRIAL_EXTEND_EC_PUBLIC_KEY: |
+    -----BEGIN PUBLIC KEY-----
+    MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1jIKLlBsbEDC/OJf/vsuA+ic07NG
+    +yXZ2zjhaNA/V9aG2a172CCh2Njwzh9q9ZqJ3i3L+omC3BfpCOPtOeoa9w==
+    -----END PUBLIC KEY-----
 {{- if .Values.global.target_namespace }}
   TARGET_NAMESPACE: {{ .Values.global.target_namespace }}
 {{- else if .Values.global.namespacedInstall }}
