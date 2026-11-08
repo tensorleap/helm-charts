@@ -233,9 +233,9 @@ func CheckStorageMigrationSpace(ctx context.Context) error {
 	return checkStorageMigrationSpace(ctx, image, m)
 }
 
-// setupStorageVolume runs once per cluster creation, before any pod exists:
-// it prepares the volume and, when the host data dir still holds app data
-// (an install from before the volume existed), moves it in.
+// setupStorageVolume runs once per cluster creation, before the cluster
+// exists: it prepares the volume and, when the host data dir still holds app
+// data (an install from before the volume existed), moves it in.
 func setupStorageVolume(ctx context.Context, image string) error {
 	m, err := planStorageMigration(ctx, image)
 	if err != nil {

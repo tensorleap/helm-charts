@@ -93,6 +93,15 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 		return
 	}
 
+	// App data moves into the volume before any container binds the data dir:
+	// touching a bind-mounted host tree (renaming the old copy aside) goes
+	// through Docker Desktop's change notifier, whose stall is what kills the
+	// VM, and a cluster that came up on an empty volume would have no data.
+	if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
+		log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
+		return nil, err
+	}
+
 	log.Infof("Starting k3d cluster creation ...")
 	if err := k3dCluster.ClusterRun(ctx, runtimes.SelectedRuntime, clusterConfig); err != nil {
 		log.Println(err)
@@ -110,16 +119,6 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	}
 	log.Printf("Cluster '%s' created successfully!\n", clusterConfig.Cluster.Name)
 	log.SendCloudReport("info", "Created cluster successfully", "Running", nil)
-
-	if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
-		log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
-		// Roll the cluster back so the next run creates it again and retries;
-		// a cluster left on an empty volume would come up with no data.
-		if delErr := DeleteCluster(ctx, &clusterConfig.Cluster); delErr != nil {
-			log.Warnf("Failed rolling back cluster: %v", delErr)
-		}
-		return nil, err
-	}
 
 	// Update the installing user's ~/.kube/config (original behavior).
 	if _, err := k3dCluster.KubeconfigGetWrite(ctx, runtimes.SelectedRuntime, &clusterConfig.Cluster, "", &k3dCluster.WriteKubeConfigOptions{

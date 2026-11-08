@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
@@ -73,6 +74,11 @@ func createContainer(ctx context.Context, image string, binds []string, script s
 	cli, err := NewClient()
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("docker client: %w", err)
+	}
+	if _, _, err := cli.ImageInspectWithRaw(ctx, image); client.IsErrNotFound(err) {
+		if err := PullDockerImages(cli, []string{image}); err != nil {
+			return nil, "", nil, fmt.Errorf("pull %s: %w", image, err)
+		}
 	}
 	created, err := cli.ContainerCreate(ctx,
 		&container.Config{Image: image, Entrypoint: []string{"/bin/sh", "-ec"}, Cmd: []string{script}},
