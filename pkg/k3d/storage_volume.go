@@ -337,5 +337,5 @@ func keepMigratedCopy(hostStorage string) {
 		log.Warnf("App data is in Docker volume %s now, but the old copy could not be moved aside (%v); delete %s by hand", STORAGE_VOLUME_NAME, err, hostStorage)
 		return
 	}
-	log.Infof("App data is in Docker volume %s now; the old copy is kept at %s, delete it once the upgrade checks out", STORAGE_VOLUME_NAME, backup)
+	log.Infof("App data is in Docker volume %s now; the old copy is kept at %s, delete it once the upgrade checks out (with the server stopped: deleting it under a running cluster floods Docker Desktop's change notifier)", STORAGE_VOLUME_NAME, backup)
 }

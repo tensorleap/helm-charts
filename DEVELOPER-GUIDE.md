@@ -73,8 +73,8 @@ data lives, only where manifests, logs and the registry cache do.
 Before the first cluster creation after this change the installer moves `<data-dir>/storage`
 into the volume (before, so that no container binds the data dir while the host tree is
 touched: on Docker Desktop every change under a bind mount goes through the VM's change
-notifier, and that is also why a large `storage.migrated` is best deleted while the server
-is uninstalled). When this machine can reach the volume's directory (a native Linux
+notifier, and that is also why a large `storage.migrated` must be deleted with the server
+stopped, `leap server stop`, not under a running cluster). When this machine can reach the volume's directory (a native Linux
 engine) that is a rename: instant, no extra space, and the host dir is gone afterwards.
 Otherwise (Docker Desktop, whose daemon runs in a VM) the data is streamed through the
 Docker API the way `docker cp` works, which keeps the file-sharing bridge out of the
