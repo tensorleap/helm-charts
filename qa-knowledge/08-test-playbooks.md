@@ -58,19 +58,21 @@ If any fail, stop and classify via [07-failure-modes.md](07-failure-modes.md).
 |---|---|---|
 | Auth | `~/.config/tensorleap/config.yaml` has `current_env`; `auth whoami` ok | n/a |
 | Bundle | CLI bundles code to a temp tar.gz | n/a |
-| Job created | `db.jobs` new doc subType `Push`/`Code Parse`/`Import Model`; `kubectl get jobs -l projectId=<p>` shows `push-<jobId>` (engine `PUSH` → `WorkerPush`) | a new run appears in `run-and-processes-table-id` |
+| Job created | `db.jobs` new doc subType `Push`/`Code Parse`/`Import Model`; `kubectl get jobs -l projectId=<p>` shows `push-<jobId>` (engine `PUSH` → `WorkerPush`) | a new run appears in the Runs & Processes table (no stable `id` any more — Guiding Tour ids removed) |
 | Parse + validate | engine-generics runs `CodeParser.parse()` then `ImportModel.import_and_validate()`; pod logs | n/a |
-| Success | job `FINISHED`; new version/model in `db.versions`/`db.models` | version appears in `version-control-pane` history |
+| Success | job `FINISHED`; new version/model in `db.versions`/`db.models` | version appears in the version-control panel history (no stable `id` any more) |
 | Failure | CLI prints a **ValidateAsset report** + graph-validation errors mapped to nodes | (CLI) |
 
 **Pass:** job FINISHED, version created, no ValidateAsset errors.
 
-**Free Tier git-origin lock:** on a Free Tier install, the first push into a
-project with no versions links the project to that repo's `git remote get-url
-origin`; pushing the same project from a **different** git repository is
-rejected pre-job with `403 LICENSE_LIMIT` (no job/pod created) — see
-[07-failure-modes.md](07-failure-modes.md). Pushing from a non-git directory is
-never gated.
+**Free Tier git-origin lock:** this is **server-enforced**, not a CLI check — the
+CLI only sends the pushing repo's `git remote get-url origin` as `gitOrigin`
+metadata on the push request (`leap-cli/pkg/code/api.go` `GitOriginURL`); node-server's
+`assertPushOriginAllowed` (`src/license/policy.ts`) links a Free Tier project with
+no versions to the first origin it sees, and rejects a push from a **different**
+git repository pre-job with `403 LICENSE_LIMIT` (no job/pod created) — see
+[07-failure-modes.md](07-failure-modes.md). Pushing from a non-git directory sends
+an empty origin and is never gated.
 **Cheapest pre-check:** run the integration's `tensorleap_integration_test()`
 locally first — it runs the binder and raises `… validation failed: …` before any
 push.
@@ -122,9 +124,9 @@ Sample Analysis dashlets; apply a global filter; select a version.
 |---|---|---|
 | Fields resolve | `POST /dashboards/getDashletFields` 200 | none of the dashletFields error/empty texts |
 | Version selected | `?selected-version=<id>` in URL | not `Select a version to see data.` |
-| Chart query | `POST /sessionmetrics/getXYChart` 200 with `charts[].length>0` | inside `#analytics-dashlet`: chart geometry, no `No results found`, no spinner |
+| Chart query | `POST /sessionmetrics/getXYChart` 200 with `charts[].length>0` | inside the Analytics dashlet (no stable `id` any more, locate by label): chart geometry, no `No results found`, no spinner |
 | Filter applied | request body carries `filters` (`mapToEsFilters`); ES `_search` buckets change | result set changes consistently with the filter |
-| Population Exploration | population-exploration job + presigned bucket fetch ok | `population-exploration-processing` → `population-exploration-dashlet` (scatter) |
+| Population Exploration | population-exploration job + presigned bucket fetch ok | "processing…" placeholder → scatter map (no stable `id` on either state any more) |
 | Live refresh | after a fresh Evaluate, `serverMessage` WS frame arrives | a prior `No results found` dashlet repopulates without reload |
 
 **Pass:** data render (positive assertion) confirmed against a non-empty ES query.
@@ -135,7 +137,8 @@ decision tree in [07](07-failure-modes.md#f-dashlet-empty--which-empty-decision-
 
 ## Playbook 5 — Version control & history
 
-**Action:** in `version-control-pane`, expand experiment history, set a version
+**Action:** in the version control panel (no stable `id` any more — fallback:
+`Tooltip title="Open Version Control"`), expand experiment history, set a version
 active, re-evaluate.
 
 | Step | Back-end | Front-end |

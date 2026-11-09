@@ -21,9 +21,10 @@ Top-level routes: `/project/:cid/*`, `/team-management` (admin), `/welcome`,
 `/login`, `/signup`; `/` → `/project`. **In-project navigation is mostly
 query-param driven:** `dashboard=<cid>` selects the active dashboard,
 `selected-version=<id>`, plus serialized `state`/`dashstate` digests. The one
-path-segment exception: the drawer (Tests/Insights/Issues/Collections) is
-selected by a `/panel/<tab>` segment appended to the tab path
-(`useSelectedUrlTab`).
+path-segment exception: the drawer (Insights/Tests/Collections/Reports — the
+`Issues` tab still exists in code but is no longer wired into the visible tab
+list, see 06-ui-inspection.md) is selected by a `/panel/<tab>` segment appended
+to the tab path (`useSelectedUrlTab`).
 → Verify navigation by URL **query params** (plus the `/panel/<tab>` segment
 for the drawer).
 
@@ -49,10 +50,12 @@ returns `NoUsers`); otherwise `login()`.
 
 **QA hooks — see [06-ui-inspection.md](06-ui-inspection.md) for the full selector
 catalog.** Quick facts:
-- Stable selectors = element **`id`** attributes from `TOUR_SELECTORS_ENUM`
-  (`src/tour/ToursConfig.tsx`), e.g. `analytics-dashlet`,
-  `population-exploration-dashlet`, `version-control-pane`,
-  `add-new-dashboard-button`.
+- The Guiding Tour feature (and its `TOUR_SELECTORS_ENUM` stable `id`s —
+  `analytics-dashlet`, `population-exploration-dashlet`, `version-control-pane`,
+  `add-new-dashboard-button`, etc.) was **removed entirely**; those ids are gone
+  and were not replaced. Most dashboard/navigation areas now have **no stable
+  selector** — fall back to visible text/tooltip title/DOM position (see the
+  per-area table in 06-ui-inspection.md).
 - `data-testid` is **sparse** (applied: `editor-file-name-row`,
   `editor-rename-file-input`, `edit-button`/`save-changes-button`/
   `discard-changes-button`, `full-screen-button`, `expand-node-details`,

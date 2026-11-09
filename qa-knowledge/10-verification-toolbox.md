@@ -118,9 +118,12 @@ environment:
      [07-failure-modes.md](07-failure-modes.md), for the backend call
      (`requestPasswordReset`/`confirmPasswordReset`) and the email-relay 503 case.
 4. **Assert** using the selector rules in [06-ui-inspection.md](06-ui-inspection.md):
-   prefer `TOUR_SELECTORS_ENUM` element **`id`s** (`#analytics-dashlet`,
+   the old `TOUR_SELECTORS_ENUM` stable `id`s (`#analytics-dashlet`,
    `#population-exploration-circles`, `#sample-analysis-dashlet-loaded-content`,
-   `#insights-list`, …), then `aria-label`, then MUI DataGrid attributes.
+   `#insights-list`, …) are **gone** (Guiding Tour feature removed, ids not
+   replaced) — most dashlet/drawer areas now have no stable `id`/`data-testid`
+   at all; prefer `aria-label`, then MUI DataGrid attributes, then visible
+   text/tooltip title/DOM position.
 5. **Combine negative + positive assertions** for "rendered with data": none of the
    empty/error texts present, and chart geometry/rows present. Use the empty-state
    taxonomy in [03-data-flows.md](03-data-flows.md) / [09-job-catalog.md](09-job-catalog.md).
@@ -147,7 +150,7 @@ Choosing the right tool at each step:
 3. **Runtime resources came up?** → `kubectl get pod,deploy,svc -l jobId=<jobId>` (redis + generic-process + streaming-handler).
 4. **Data actually written?** → `db.versions` `resources.es_metrics_index`, then `GET <es_metrics_index>/_count` (Elasticsearch) rises to ~#samples.
 5. **Job reported FINISHED to node-server?** → `db.jobs` status + (if stuck) RabbitMQ `feedback` queue/consumer.
-6. **It rendered with data?** → Playwright at `:4589`: open the version's dashboard, assert `#analytics-dashlet` has chart geometry and no "No results found"; confirm the `getXYChart` 200 in the network panel.
+6. **It rendered with data?** → Playwright at `:4589`: open the version's dashboard, locate the Analytics dashlet by its topbar label (no stable `id` any more — see 06-ui-inspection.md), assert chart geometry present and no "No results found"; confirm the `getXYChart` 200 in the network panel.
 7. **If a pod died mid-run and is gone** → Datadog `service:engine-pod @job.uid:<uid>` for the failure, or `@trace_id` to follow node-server → engine → engine-pod.
 
 Each claim is verified with the tool that owns that fact — not inferred from a

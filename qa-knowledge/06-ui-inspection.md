@@ -9,29 +9,45 @@ the rules here matter.
 
 ## Selector strategy (in priority order)
 
-1. **Element `id` from `TOUR_SELECTORS_ENUM`** (`web-ui/src/tour/ToursConfig.tsx`).
-   These are the de-facto stable hooks (the product tour resolves them via
-   `document.getElementById`). Prefer these for everything dashboard/navigation.
-2. **`aria-label`** — best for version-control row actions and icon buttons.
-3. **MUI structural attributes** — for DataGridPro tables/grids.
-4. **Ad-hoc `data-testid`** — only the handful that are actually applied (below).
-   `src/test-ids.ts` is **mostly dead**; do not trust it wholesale.
+> **The former `TOUR_SELECTORS_ENUM` stable-id scheme is gone.** The Guiding Tour
+> feature was removed (`src/tour/` deleted entirely) and with it every DOM `id`
+> that enum used to assign — they "existed only as tour targets" and were deleted
+> with **no replacement** (confirmed: none of the old id strings — `analytics-dashlet`,
+> `population-exploration-dashlet`, `network-tab`, `version-control-pane`, etc. —
+> appear anywhere in web-ui any more). For most dashboard/navigation areas there is
+> now **no stable selector at all**; fall back to visible text, tooltip `title`, or
+> DOM structure/position. The table below reflects actual current state per area.
 
-### Stable `id` selectors (high-value subset)
+1. **The few real stable hooks that still exist** — `data-testid="expand-node-details"`
+   (`src/layer-details/CodeIntegration.tsx`) and `id="EDIT_PROJECT_FORM"`
+   (`FORM_ID` in `src/actions-dialog/ProjectDialogs.tsx`). Use these where applicable.
+2. **`aria-label`** — best for version-control row actions and icon buttons (still
+   intact; unaffected by the tour removal).
+3. **MUI structural attributes** — for DataGridPro tables/grids (`.MuiDataGrid-row`,
+   `[data-rowindex]`, etc. — also unaffected).
+4. **Visible text / tooltip `title` / DOM position** — the only option left for
+   most dashlet and drawer-tab areas (see table). `src/test-ids.ts` is tiny (7 keys)
+   and mostly unused; don't trust it wholesale.
 
-| Area | `id` |
+### Selector status by area (post Guiding-Tour removal)
+
+| Area | Current selector |
 |---|---|
-| Network / architecture | `network-tab`, `network-editor-pane`, `network-node`, `code-integration-panel` |
-| Version control | `version-control-pane`, `version-control-expand-button` |
-| Dashboards | `add-new-dashboard-button`, `add-new-dashboard-dialog`, `add-new-dashlet-button`, `add-new-dashlet-menu` |
-| Population Exploration | `add-population-exploration-dashlet-button`, `population-exploration-dashlet`, `population-exploration-processing`, `population-exploration-visualize-button`, `population-exploration-color-by`, `population-exploration-size-by` |
-| Sample Analysis | `sample-analysis-dashlet`, `sample-analysis-dashlet-loaded-content` |
-| Analytics | `analytics-dashlet` |
-| Insights | `insights-panel-button`, `insights-list`, `insight-card` |
-| Tests | `tests-panel-button`, `test-list`, `create-new-test-button` |
-| Issues | `issues-panel-button`, `create-new-issue-button` |
-| Collections | `collections-panel-button` |
-| Misc | `import-project-dialog`, `recent-projects-table-id`, `run-and-processes-table-id` |
+| Network / architecture tab, editor pane, node | **None.** No page-level "Architecture" tab exists any more; drawer content (`src/network-editor/NetworkDrawer.tsx`) is plain text ("node details"/"code"). |
+| Code integration panel | `data-testid="expand-node-details"` (`src/layer-details/CodeIntegration.tsx`) — a real, usable hook. |
+| Version control | **None.** Fallback: `Tooltip title="Open Version Control"`. |
+| Dashboards — add dashboard/dashlet | **None.** Fallback: visible uppercase text "CREATE NEW DASHBOARD" (behind a kebab menu) / "NEW DASHLET". |
+| Population Exploration dashlet | **None.** Fallback: dashlet topbar label text / grid position. |
+| Sample Analysis dashlet | **None.** No "loaded" state marker exists to wait on; use chart-geometry presence instead. |
+| Analytics dashlet | **None.** |
+| Insights panel | **None** (plain-text `DrawerSideTab`, `src/dashboard/DashboardDrawer/DashboardDrawer.tsx`). |
+| Tests panel | **None** (plain-text tab "tests"). |
+| Issues panel | **Not reachable in the live UI at all** — `DrawerTabsEnum.Issues` is defined and still has a content renderer, but is no longer included in the drawer's visible tab list (`drawerFeautures` in `DashboardDrawer.tsx` only lists Insights/Tests/Collections/Reports). Treat "Issues" as currently inaccessible via the UI; flag to a human rather than relying on this doc's old selector. |
+| Collections panel | **None** (plain-text tab "collections"). |
+| Reports panel *(new)* | Plain-text tab "reports" — a new drawer tab for the Analysis Reports feature, not previously documented (see open gap in GAPS.md). |
+| Import/new/edit project dialog | The "import project" dialog no longer exists (only New/Edit/Update project dialogs remain). `EditProjectDialog`'s `aria-labelledby="form-dialog-title"` is a dead reference. Real hook: `id="EDIT_PROJECT_FORM"` (`FORM_ID`, `ProjectDialogs.tsx`). |
+| Recent-projects table | **None.** MUI `DataGridPro` with `getRowId` on `cid`; fallback: "RECENT PROJECTS" title text, or MUI's row `data-id={cid}` once the cid is already known. |
+| Runs & processes table | **None.** Fallback: tooltip title "Runs & Processes", or MUI row `data-id={jobId}`. |
 
 > **Collection sample-viewer grid:** clicking a collection's **view**/grid icon opens
 > a sample grid with its own load path (per-collection ES index → cursor pages →
@@ -117,14 +133,17 @@ A dashlet passes through layered states. Decide pass/fail by combining a
 | `No data` | MultiCharts cell | that cell's aggregation empty |
 
 ### Positive assertions (a real render shows)
-- The dashlet's container `id` (`analytics-dashlet`,
-  `population-exploration-dashlet`, `sample-analysis-dashlet-loaded-content`, …) is present.
+- The dashlet container has no stable `id`/`data-testid` any more (the old
+  `analytics-dashlet`/`population-exploration-dashlet`/
+  `sample-analysis-dashlet-loaded-content` ids were tour-only and are gone —
+  see the selector-status table above). Locate the container by its dashlet
+  topbar label text or grid position instead.
 - No `CircularProgress` spinner inside it.
 - Chart geometry: SVG/canvas cells, axis labels, plotted series (not the
   `GraphIcon` placeholder).
-- For Population Exploration: it transitions
-  `population-exploration-processing` → `population-exploration-dashlet`
-  (the scatter map appears).
+- For Population Exploration: the processing placeholder (text "processing...")
+  is replaced by the scatter map appearing (no `id` to assert on any more —
+  use absence of the placeholder text + presence of chart geometry).
 - For Population Exploration **re-visualization** (filters/version changed after
   data already rendered): the dashlet keeps the previous scatter map visible
   (dimmed/desaturated canvas) and overlays a small status pill instead of
@@ -138,8 +157,9 @@ A dashlet passes through layered states. Decide pass/fail by combining a
 - `No results found` → check `GET /_cat/indices | grep <teamId>` and
   `GET <es_metrics_index>/_count`. Missing index or zero count ⇒ the Evaluate/Train
   job didn't write metrics (or filters exclude everything).
-- Stuck on `population-exploration-processing` → check the population-exploration
-  job and the presigned bucket fetch (see [07-failure-modes.md](07-failure-modes.md)).
+- Stuck on the Population Exploration "processing..." placeholder → check the
+  population-exploration job and the presigned bucket fetch (see
+  [07-failure-modes.md](07-failure-modes.md)).
 - Dashlet doesn't refresh after an Evaluate completes → suspect the
   RabbitMQ→socket.io path (no `serverMessage` frame), not the chart code.
 

@@ -40,11 +40,9 @@ Invoke it in Claude Code with `/update-qa-knowledge` (or just ask "update the QA
 knowledge base").
 
 ### Baselines (current)
-All four code repos are baselined at `master` and diff incrementally:
-node-server `9276bb7c`, engine `026729cf`, web-ui `f16249f1`, helm-charts `05643d36`
-(see [`kb-state.json`](kb-state.json) / [`GAPS.md`](GAPS.md)). `leap-cli` +
-`code-loader` still carry **null** baselines — their first `update-qa-knowledge`
-refresh full-verifies their docs and records real SHAs.
+All six repos are baselined at `master` and diff incrementally — see
+[`kb-state.json`](kb-state.json) for the current SHAs and [`GAPS.md`](GAPS.md)
+for the run history.
 
 ---
 
