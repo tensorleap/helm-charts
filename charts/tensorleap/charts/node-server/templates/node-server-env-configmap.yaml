@@ -18,6 +18,7 @@ data:
   STORAGE_ENDPOINT: "tensorleap-minio"
   SIGNED_URL_HOST_REPLACEMENT: "true"
   SINGLE_USER_MODE: "true"
+  ENGINE_WARMUP_DEFAULT: "false"
   GATEWAY_URL: {{ .Values.global.url | quote }}
   PROXY_URL: {{ .Values.global.proxyUrl | quote }}
   KEYCLOAK_CLUSTER_URL: "http://keycloak-http.{{ .Release.Namespace }}.svc.cluster.local/auth"
