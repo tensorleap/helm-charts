@@ -41,14 +41,21 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 
 ## Master matrix
 
+> **UI render (success selector) column:** the Guiding Tour feature and its
+> `TOUR_SELECTORS_ENUM` stable `id`s were removed (not replaced) since this
+> column was first written. Entries below marked "no stable id" have no
+> selector any more — locate by visible label/content instead (see
+> 06-ui-inspection.md). `.insight-card` is a **className**, not an id — use
+> a class selector, not `#insight-card`.
+
 | UI subType | Engine type | Worker | k8s Job name | Data destinations | UI render (success selector) |
 |---|---|---|---|---|---|
-| Sample Analysis | `ANALYZE` | `WorkerAnalyzer._sample_analysis` | `sample-analysis-<jobId>` | mongo `visualizations`; bucket `vis/<vis_artifact_id>/sample_analysis/payloads/<guid>` | `#sample-analysis-dashlet-loaded-content` |
-| Visualizers Calculation | `ANALYZE` | `WorkerAnalyzer._visualizers_calculation` | `visualizers-calculation-<jobId>` | bucket `vis/<vis_artifact_id>/sample_visualizers/*` + `visualizer_names.json` | `#population-exploration-right-panel-visualizations` tiles |
+| Sample Analysis | `ANALYZE` | `WorkerAnalyzer._sample_analysis` | `sample-analysis-<jobId>` | mongo `visualizations`; bucket `vis/<vis_artifact_id>/sample_analysis/payloads/<guid>` | no stable id — Sample Analysis dashlet content, locate by label |
+| Visualizers Calculation | `ANALYZE` | `WorkerAnalyzer._visualizers_calculation` | `visualizers-calculation-<jobId>` | bucket `vis/<vis_artifact_id>/sample_visualizers/*` + `visualizer_names.json` | no stable id — tiles in the Population Exploration right panel |
 | Domain Gap | `ANALYZE` | `WorkerAnalyzer._domain_gap` → `DomainGapJobRunner` | `domain-gap-<jobId>` | mongo `domaingap`; bucket `vis/<vis_artifact_id>/domain_gap/<digest>/{stats.json, cluster.json, heatmaps.json + heatmaps}` | row in DS Curation → DOMAIN GAP tab grid |
-| Population Exploration | `SLIM_LS` | `WorkerSlimLSOps.population_exploration` | `population-exploration-<jobId>` | bucket `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` | `#population-exploration-circles` (dots) |
-| Fetch Similar | `SLIM_LS` | `WorkerSlimLSOps.create_cluster_filter` | `fetch-similar-<jobId>` | bucket `vis/<vis_artifact_id>/fetch_similar/<digest>/cluster.json` | filter chip + highlight in `#population-exploration-circles` |
-| Generate Insights | `SLIM_LS` | `WorkerSlimLSOps.insights_calculation` | `generate-insights-<jobId>` | mongo `insights` + `versions.resources.csv_blob_path`; reads ES `es_metrics_index` | `#insight-card` under `#insights-list` |
+| Population Exploration | `SLIM_LS` | `WorkerSlimLSOps.population_exploration` | `population-exploration-<jobId>` | bucket `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` | no stable id — scatter dots in the PE dashlet |
+| Fetch Similar | `SLIM_LS` | `WorkerSlimLSOps.create_cluster_filter` | `fetch-similar-<jobId>` | bucket `vis/<vis_artifact_id>/fetch_similar/<digest>/cluster.json` | no stable id — filter chip + highlight in the PE scatter |
+| Generate Insights | `SLIM_LS` | `WorkerSlimLSOps.insights_calculation` | `generate-insights-<jobId>` | mongo `insights` + `versions.resources.csv_blob_path`; reads ES `es_metrics_index` | `.insight-card` (className) cards in the insights list |
 | Dataset Balancing | `SLIM_LS` | `WorkerSlimLSOps.dataset_balancing` | `dataset-balancing-<jobId>` | mongo `datasetbalancing`; bucket `digest_<d>/dataset_balancing/*` | row in DS Curation → PRUNING tab grid |
 | Synthetic Data Generation (manual) | `SLIM_LS` | `WorkerSlimLSOps.synthetic_calibration` | `synthetic-data-generation-<jobId>` | mongo `syntheticdata`; bucket `digest_<d>/synthetic-calibration/{next,best}_trials.csv` + `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
 | Synthetic Data Generation (auto) | `SYNTHETIC` | `WorkerSyntheticJob` | `synthetic-data-generation-<jobId>` (same subType label as manual) | mongo `syntheticdata` (shared collection with manual); bucket `synthetic_top_panel.json` | row in DS Curation → SYNTHETIC tab grid |
@@ -72,12 +79,12 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 - **Trigger:** add a Sample Analysis dashlet + select a sample → `POST /visualizations/sampleAnalysis` `{versionId, projectId, sampleIdentity, algo}`.
 - **Spawns:** redis + generic-process(1) + streaming-handler + scaler thread.
 - **Observables:** `kubectl get pods -l jobId=<jobId>` → MAIN + redis + 1 generic-process + streaming-handler; new mongo `visualizations` doc `type='sample_analysis'`; bucket payload under `vis/<vis_artifact_id>/sample_analysis/payloads/<guid>`; job FINISHED.
-- **Success:** job FINISHED + `visualizations` doc + viz blob; UI `#sample-analysis-dashlet-loaded-content` shows heatmaps.
+- **Success:** job FINISHED + `visualizations` doc + viz blob; UI Sample Analysis dashlet shows heatmaps (no stable `id` any more — Guiding Tour ids removed).
 - **Failure:** visualizer crash → a `TextData "Visualizer has crashed"` item but **job still FINISHED**; missing weights → degraded activation maps; pod scheduling failure → FAILED.
-- **UI empty:** no sample selected → `Select a sample to view its assets` (`#sample-analysis-no-sample-selected`).
+- **UI empty:** no sample selected → `Select a sample to view its assets` text (no stable `id` any more).
 
 ### Visualizers Calculation
-- **Trigger:** Population Exploration dashlet → **Visualize** button (`#population-exploration-visualize-button`) after selecting samples → `POST /visualizations/createSamplesVisualizations`; refresh bumps `sample_visualizers_revision`.
+- **Trigger:** Population Exploration dashlet → **Visualize** button (no stable `id` any more — the Guiding Tour feature and its `TOUR_SELECTORS_ENUM` ids were removed; locate by visible label, see 06-ui-inspection.md) after selecting samples → `POST /visualizations/createSamplesVisualizations`; refresh bumps `sample_visualizers_revision`.
 - **Spawns:** redis + generic-process **(N replicas** = internal "visualizers" process count → visible fan-out**)** + streaming-handler + scaler.
 - **Observables:** k8s `visualizers-calculation-<jobId>`; multiple generic-process pods for the jobId; redis work queue `vis_calc_<jobId>` drains to 0; per-sample blobs + `visualizer_names.json` in bucket; `wait_for_all_vis_processes` completes ≤300s.
 - **Dedup:** concurrent duplicate → HTTP **208 AlreadyReported**.
@@ -86,7 +93,7 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 
 ### Domain Gap  *(new ANALYZE subtype)*
 - **Trigger:** DS Curation → **DOMAIN GAP** tab → `POST /datasetcuration/generateDomainGap` `{projectId, versionId, groupAFilters, groupBFilters}`. UI validation blocks: "No model selected", and each domain needs ≥1 filter ("Domain #1/#2 needs at least one filter"). `subType='Domain Gap'`, engine `analyze_type=domain_gap`, `preferCpu=false`.
-- **What it does** (`DomainGapJobRunner`): stats → A∪B population exploration → adapter → heatmaps, all **persisted to the blob dir** `vis/<vis_artifact_id>/domain_gap/<digest>/` (`stats.json`, `cluster.json`, `heatmaps.json` + heatmaps) — **no push message**; node-server reads the blobs on the standard FINISHED job-status update. `population_exploration_n_samples` is pinned to 2000 to match the PE dashlet default, so the inline scatter lands under the digest the dashlet later mints.
+- **What it does** (`DomainGapJobRunner`): stats → A∪B population exploration → adapter → heatmaps, all **persisted to the blob dir** `vis/<vis_artifact_id>/domain_gap/<digest>/` (`stats.json`, `cluster.json`, `heatmaps.json` + heatmaps) — **no push message**; node-server reads the blobs on the standard FINISHED job-status update. `population_exploration_n_samples` is pinned to 2000 to match the PE dashlet default, so the inline scatter lands under the digest the dashlet later mints. During the stats stage it also best-effort stamps a `domainGap.<dg_id>` A/B affiliation field directly onto the version's ES metric index (`stamp_domain_gap_affiliation`, `domain_gap_job.py`) — an additional, non-fatal side write alongside the blob outputs.
 - **Outputs:** mongo `domaingap` entity (jobId ref); the tab row exposes stats/filter download URLs only when the files exist (`hasStatsFile`/`hasFilterFile`).
 - **Success:** job FINISHED + `stats.json` in the bucket + a new row in the DOMAIN GAP tab's DataGridPro.
 
@@ -102,8 +109,8 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 ### Population Exploration  *(this is a `SLIM_LS` job, NOT `ANALYZE`)*
 - **Trigger:** auto-runs when the dashlet mounts. `POST /visualizations/populationExploration` then polls `POST /visualizations/getPopulationExplorationStatus` every ~3s. **Blocked only while a prerequisite Evaluate/Update-Evaluate job's `prepare_displays` step is still pending** (UserError before the job is created — only then are the scatters published and the resource pin final); once that step's event reaches `FINISHED` or `SKIPPED`, PE may run even if the evaluate job is still in progress (later steps like `visualize_samples` continue).
 - **The digest** is minted server-side in one place (`calcPopulationExplorationDigest`) from the population params + `insightsRevision` + seed count + teamId; the client-passed digest is ignored (note: `sample_visualizers_revision` is **no longer** part of the digest). A new Evaluate bumps `insightsRevision` + the seed count → new digest → new scatter path → UI re-runs. (Status `NOT_FOUND` after a new eval is *expected*, not a bug.)
-- **Success:** `scatter.json` present at `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` → status FINISHED; UI renders dots in `#population-exploration-circles` (inside `#population-exploration-dashlet`).
-- **UI states:** processing → `#population-exploration-processing` ("processing…"); empty → "No samples"; error → "Population Exploration creation failed" + Retry, or "Evaluate failed" when the prerequisite eval failed.
+- **Success:** `scatter.json` present at `vis/<vis_artifact_id>/population_exploration/digest/<digest>/scatter.json` → status FINISHED; UI renders scatter dots inside the PE dashlet (no stable `id` any more — Guiding Tour ids removed, locate by topbar label).
+- **UI states:** processing → "processing…" placeholder; empty → "No samples"; error → "Population Exploration creation failed" + Retry, or "Evaluate failed" when the prerequisite eval failed. (None of these states have a stable `id`/`data-testid` any more.)
 - **Failure:** `NoSamplesInLS` (no LS samples match filters); stale LS indicators → "run evaluate with population exploration again".
 
 ### Fetch Similar
@@ -112,11 +119,11 @@ labeled `jobType=SLIM_LS`, no companions" (and `hasWorker=false`).
 - **Failure:** `FetchSimilarNoCandidatesError` ("Fetch similar isn't possible on the entire filtered population") → FAILED; a stale STARTED job blocks re-trigger.
 
 ### Generate Insights
-- **Trigger:** Insights panel (`#insights-panel-button`) → "Regenerate insights" confirm; also auto on dashboard load + Insights Settings dialog. `POST /insights/generateInsights` per version. **Precondition:** the version must have an ES metrics index, else UserError "Version has no ES metric index" and no job.
+- **Trigger:** Insights panel (text tab "insights", no stable `id` any more — Guiding Tour ids removed) → "Regenerate insights" confirm; also auto on dashboard load + Insights Settings dialog. `POST /insights/generateInsights` per version. **Precondition:** the version must have an ES metrics index, else UserError "Version has no ES metric index" and no job.
 - **No drill-down:** an earlier `parentInsightId` option (nest a filtered run under an existing insight) was added and then reverted — `GenerateInsightsParams`/`InsightsJobParams` (`src/insights/interfaces.ts`), the `generateInsights` validation/dispatch (`src/insights/logic.ts`), the engine request field (`SlimInsightsCalculationRequest.parent_insight_id`, `engine/src_tensorleap/contract/workerslimlsops/request/slimlsopsrequest.py`), and the `WorkerSlimLSOps.insights_calculation` arg (`workerslimlsops.py`) all no longer exist (node-server #1897 "drop parentInsightId from generateInsights", engine #2639 "stop nesting a filtered run under the analyzed insight", both EN-2549). `generateInsights` takes only `projectId`/`versionId`/`filters`/`refresh`.
 - **Outputs:** per-insight docs in mongo `insights` (status `InReview`, stamped with `insightsCounter`); `versions.resources.csv_blob_path` + `vis_resources.insights_revision`; bumps `populationExplorationDigestSeedCount` once (→ one pop-exp re-run). Engine uploads the insights CSV to the bucket; reads `es_metrics_index`.
 - **Status management (not a job):** `POST /insights/applyInsightsStatus` (`applyInsightsStatus` in `logic.ts`) now takes `insightIds: string[]` (was a single `insightId`) and batch-updates mongo `insights` via `insightDb.updateStatus({cids, ...})` (was `updateOne`/`cid`) — multi-select approve/archive in the Insights panel, not a job-spawning action.
-- **Success:** job FINISHED + `insights` docs at the current `insightsCounter` + `#insight-card` cards under `#insights-list` + `csv_blob_path` populated.
+- **Success:** job FINISHED + `insights` docs at the current `insightsCounter` + `.insight-card` (className, not an id) cards in the insights list + `csv_blob_path` populated.
 - **Failure / gotchas:** SLIM pod OOM (insights load latent spaces in one pod, no scaling) → FAILED; **empty insights list → FINISHED with no cards** (often mistaken for failure); revision mismatch → UI shows wrong-revision/empty list. A Phase 0b (non-low-perf insights on the default LS) exception no longer fails silently nor claims "no insights" — the job still FINISHES (Phase 1 low-perf insights are independent) but now logs the traceback and sends a UI warning "Some insights could not be computed for this run" (`InsightsCalculationManager._send_warning`, `engine/src_tensorleap/trainer/insights_calculation_manager.py`).
 - **Out-of-Distribution insights are hidden from this panel and its summary** (`InsightsListPanel.tsx`/`InsightSummary.tsx` filter out `ScatterInsightType.OutOfDistribution`) — the `insights` docs still exist, but OOD surfaces only via the Unlabeled Analysis top panel's drill-down (see below).
 
@@ -328,8 +335,10 @@ These remain `JobTypeEnum` values + notification configs, but in the unified flo
 they run as **phases inside the PUSH pod** (no standalone job/manager branch). Their
 observables are the engine messages `source='dataset_parse'` and `source='import_model'`
 consumed by node-server, and the mongo writes listed above. The Code Parse result
-renders in the **code-integration panel** (`#code-integration-panel`); the imported
-model graph renders in the version's network/graph view.
+renders in the **code-integration panel** (no stable container `id` any more —
+Guiding Tour ids removed; the panel's expand control has `data-testid="expand-node-details"`,
+`web-ui/src/layer-details/CodeIntegration.tsx`); the imported model graph renders
+in the version's network/graph view.
 
 ---
 
