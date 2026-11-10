@@ -44,6 +44,10 @@ node-job-backed `JobType` outside the engine's own enum plus `PUSH`.
 > Full per-subType detail (triggers, data destinations, UI render, failure modes)
 > is in [09-job-catalog.md](09-job-catalog.md). `Code Parse` / `Import Model` /
 > `Graph Validate` run as **phases inside the PUSH job**, not standalone jobs.
+> `-u foundation` alone (no new samples) also routes to `Update Evaluate`
+> (`UpdateEvaluateArtifact`); combined with `-u samples` it rides the
+> continue-evaluate path instead — see
+> [03-data-flows.md](03-data-flows.md#flow-a--end-to-end-evaluate).
 
 **k8s Job naming rule** (`node-server/src/utils/k8s.ts` `calcK8sJobName`):
 `formatString(subType || type)-<jobId>`, lower-cased, `_`/space → `-`.

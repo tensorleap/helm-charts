@@ -353,9 +353,12 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
   parses it + imports/validates the model; flags `-n/--name`,
   `--type [JSON_TF2/ONNX/PB_TF2/H5_TF2]`, `--branch`, `--secretId`,
   `-m/--model-path`, `-e/--eval`, `-b/--batch <n|latest>` (needs `--eval`),
-  **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples}`
-  (implies `--eval`; `samples` evaluates only newly added samples and skips the
-  run-eval prompt), `--no-wait`, `--novis`, `--yes`.
+  **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples|foundation}`
+  (implies `--eval`; `samples` evaluates only newly added samples with the user's
+  model but does **not** backfill foundation embeddings; `foundation` computes
+  foundation-model embeddings for every sample missing them, old and new, without
+  re-running the user's model — a GPU-only evaluation, see
+  [09-job-catalog.md](09-job-catalog.md)), `--no-wait`, `--novis`, `--yes`.
 - `leap projects {create,init,list,select,info,delete,push,set-secret}`.
   (`copy`, `export`, `import`, and `publish` were all removed, along with the
   `leap hub` command group — there is now no way to move a project across envs
@@ -372,13 +375,27 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
 
 **Code-integration contract** (`code-loader`, `@tensorleap_*` decorators in
 `leap_integration.py`): `tensorleap_load_model`, `tensorleap_preprocess`,
-`tensorleap_input_encoder(name, channel_dim)`, `tensorleap_gt_encoder(name)`,
+`tensorleap_input_encoder(name, channel_dim, foundation: Optional[FoundationInput]=None, frame_dim: Optional[int]=None)`,
+`tensorleap_gt_encoder(name)`,
 `tensorleap_custom_metric(name, direction, ...)`,
 `tensorleap_custom_visualizer(name, visualizer_type: LeapDataType)`,
 `tensorleap_custom_loss`, `tensorleap_metadata`, `tensorleap_integration_test`.
 Encoder contract: `(idx, preprocess: PreprocessResponse) -> np.ndarray` of dtype
-**float32**; `channel_dim` must be `-1` or positive. `tensorleap_integration_test()`
-runs the whole binder locally — the cheapest pre-push validation a QA engineer can run.
+**float32**, except an input flagged `foundation=FoundationInput(...)` that is
+**not** also wired into the model, which may return `uint8` when
+`rgb_range=ImageRange.BYTE`; `channel_dim` must be `-1` or positive.
+`tensorleap_integration_test()` runs the whole binder locally — the cheapest
+pre-push validation a QA engineer can run.
+
+**Foundation embeddings** (new): at most one input per project may be flagged
+`foundation=FoundationInput(rgb_range, rgb_channels, masks)` (code-loader
+`leapbinder_decorators.py`); `check_dataset`/push-time validation runs an extra
+`foundation_input` probe (`code-loader/code_loader/leaploader.py`) checking dtype,
+rank (2/3/4-D, `frame_dim` picks the middle frame of a 4-D sample), channel count,
+and pixel-range sanity. On the engine side this drives a separate GPU encoder pass
+(SigLIP2/OWLv2) producing extra latent-space columns — see
+[09-job-catalog.md](09-job-catalog.md) and `engine/docs/foundation-encoders.md`
+(source of truth for the encoder internals, not duplicated here).
 
 Enums: `LeapDataType {Image,Text,Graph,HorizontalBar,ImageMask,TextMask,
 ImageWithBBox,ImageWithHeatmap,Video,Audio,PointCloud}`; `MetricDirection {Upward,Downward}`;

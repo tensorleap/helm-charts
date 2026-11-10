@@ -78,15 +78,21 @@ locally first — it runs the binder and raises `… validation failed: …` bef
 push.
 
 **Overwrite / sub-version:** `-o/--overwrite <id|name>` targets an existing
-version; `-u/--update {metadata|metric|metric_config|viz|samples}` (implies
-`--eval`) chooses a full re-evaluate vs an update-evaluate-artifact run.
+version; `-u/--update {metadata|metric|metric_config|viz|samples|foundation}`
+(implies `--eval`) chooses a full re-evaluate vs an update-evaluate-artifact run.
 `samples` evaluates only the newly added sample ids via continue-evaluate
 (any dataset state; existing ids must stay stable — a shrink is rejected)
 and always runs the evaluation, skipping the "run update-evaluate after
-push?" prompt. (The flag is `--overwrite`, **not** `--override`.) `-n/--name
-<name>` given **without** `-o` always creates a new version and skips the
-interactive overwrite prompt — it no longer offers to overwrite an existing
-version by matching name.
+push?" prompt — but **does not** backfill foundation embeddings for those new
+samples. `foundation` computes foundation-model (SigLIP2/OWLv2) embeddings for
+every sample missing them, old and new, without re-running the user's model;
+this is a **GPU-only** evaluation (fails with no GPU available) and can be
+combined with `samples` in one continue-evaluate job (`-u samples -u
+foundation`); combined with `metric` it still triggers a full re-evaluate. See
+[09-job-catalog.md](09-job-catalog.md). (The flag is `--overwrite`, **not**
+`--override`.) `-n/--name <name>` given **without** `-o` always creates a new
+version and skips the interactive overwrite prompt — it no longer offers to
+overwrite an existing version by matching name.
 
 ---
 

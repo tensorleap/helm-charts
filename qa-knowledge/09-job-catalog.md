@@ -405,7 +405,7 @@ sample-viewer grid surface with Streaming Samples Vis above.
 ---
 
 ## Warmup (`WARMUP`)
-- **Trigger:** `useServerWarmup` calls `POST /jobs/warmup` on user activity, throttled once/10min; gated by the `WARMUP` engine setting (default true).
+- **Trigger:** `useServerWarmup` calls `POST /jobs/warmup` on user activity, throttled once/10min; gated by the `WARMUP` engine setting, whose **default** is now install-configurable: `node-server/src/config.ts`'s `engineWarmupDefault` reads env `ENGINE_WARMUP_DEFAULT` (convict default `true`) and seeds the setting's default in `src/settings/config-settings/engine-settings.ts`. The `tensorleap` chart sets `ENGINE_WARMUP_DEFAULT: "false"` for on-prem/local installs (`node-server-env-configmap.yaml`), so on-prem defaults Warmup **off**; cloud/SaaS installs (no env override) still default it **on**. A team can always override the setting explicitly regardless of this default.
 - **What it actually is:** a k8s **placeholder Job** `engine-warmup-<teamId>-<machineTypeId>` with `WARMUP_MAX_JOBS` parallel pods that each request `nvidia.com/gpu:1` at `warmup-priority` and just `sleep $WARMUP_TIMEOUT_SEC`. Its purpose is to **reserve/keep GPU node capacity warm** (prevent autoscaler scale-down, pre-pull the engine image). The engine `manager.run` `WARMUP` branch is a no-op that only logs "Engine is up and warm".
 - **Observe** the `warmup-job=true,created-by=node-server` Job, **not** an engine worker. No UI surface, no persisted status. Success = pods Running then `.status.succeeded`, and subsequent real jobs schedule without cold-start delay.
 

@@ -55,6 +55,23 @@ dashlets → web-ui.
 - Feedback lost → reconciled to FAILED by orchestrator active/failed-jobs polling.
 - Concurrency guard → `An evaluate job is already running` / HTTP 429.
 
+### Foundation embeddings (`-u foundation`, new)
+An optional extra pass alongside Evaluate/Continue-Evaluate: two extra ONNX
+Runtime GPU encoders (SigLIP2 for images, OWLv2 for element-instance crops)
+compute extra latent-space columns per sample without re-running the user's
+model (`engine/src_tensorleap/foundation/**`; full write-up in the engine
+repo's `docs/foundation-encoders.md`, not duplicated here). Triggered via
+`leap push -u foundation`, optionally combined with `-u samples` (one
+continue-evaluate job) — see [08-test-playbooks.md](08-test-playbooks.md) and
+[02-components.md](02-components.md) for the full `-u` semantics.
+`foundation` alone (no new samples) routes through `UpdateEvaluateArtifact`
+(`node-server/src/evaluate/logic.ts`), i.e. the same `Update Evaluate`
+subtype/`update-evaluate-<jobId>` job as other in-place update actions — it
+does **not** mint a new job type. New job event `Foundation embeddings`. GPU
+budget is checked at job start (new structural failure mode, not an OOMKill —
+see [07-failure-modes.md](07-failure-modes.md)); per-row encode failures are
+reported as skips on the Evaluate status row, not a job failure.
+
 ---
 
 ## Flow B — Auth + UI render (dashboard/dashlet)
