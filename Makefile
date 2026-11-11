@@ -134,7 +134,7 @@ run-local:
 
 # Point the local k3d release at the latest master of web-ui, node-server and engine.
 # Nothing is built: CI pushes <repo>:master-<sha8> to public ECR for every master commit, and the
-# sha is read from GitHub, so the sibling checkouts can sit on any branch. The chart stays the
+# sha is read from GitHub, so the sibling checkouts can sit on any branch. The chart is the latest
 # released one (--reuse-values). A missing image means CI for that commit is still running or
 # failed (engine takes ~35 min after a merge).
 # Line continuations instead of .ONESHELL so this also runs on macOS's make 3.81.
