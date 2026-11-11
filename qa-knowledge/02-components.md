@@ -150,7 +150,7 @@ downed dependency marks the pod unready without restart-looping it.
 `insightsSettings`, `insightContainerLabels`, `models`, `codesnapshots`,
 `exportedmodels`, `samplecollection`, `secretmanager`, `generatedLabels`,
 `syntheticdata`, `datasetbalancing`, `datasetsplitting`, `domaingap`,
-`unlabeledanalysis`, `issues`,
+`unlabeledanalysis`, `manualinsights`, `issues`,
 `tests`, `externalepochdata`, `projectstate`, `system_settings`,
 `system_metadata`, `db_metadata`.
 
