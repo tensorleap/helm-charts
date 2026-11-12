@@ -132,6 +132,30 @@ run-local:
 	$(MAKE) validate-images
 	go run . install --local $(ARGS)
 
+# Point the local k3d release at the latest master of web-ui, node-server and engine.
+# Nothing is built: CI pushes <repo>:master-<sha8> to public ECR for every master commit, and the
+# sha is read from GitHub, so the sibling checkouts can sit on any branch. The chart is the latest
+# released one (--reuse-values). A missing image means CI for that commit is still running or
+# failed (engine takes ~35 min after a merge).
+# Line continuations instead of .ONESHELL so this also runs on macOS's make 3.81.
+.PHONY: deploy-local-masters
+deploy-local-masters:
+	@set -euo pipefail; \
+	[[ "$$(kubectl config current-context)" == 'k3d-tensorleap' ]] || { echo "❌ kubectl context is not k3d-tensorleap" >&2; exit 1; }; \
+	ORIGIN="$$(git remote get-url origin)"; \
+	SETS=(); \
+	for REPO in web-ui node-server engine; do \
+	  SHA="$$(git ls-remote "$${ORIGIN/helm-charts/$$REPO}" refs/heads/master | cut -c1-8)"; \
+	  [ -n "$$SHA" ] || { echo "❌ could not read master of $$REPO" >&2; exit 1; }; \
+	  IMAGE="public.ecr.aws/tensorleap/$$REPO"; \
+	  TAG="master-$$SHA"; \
+	  docker manifest inspect "$$IMAGE:$$TAG" >/dev/null 2>&1 || { echo "❌ $$IMAGE:$$TAG not found" >&2; exit 1; }; \
+	  echo "$$REPO -> $$TAG"; \
+	  SETS+=(--set "tensorleap-$$REPO.image=$$IMAGE" --set "tensorleap-$$REPO.image_tag=$$TAG"); \
+	done; \
+	helm upgrade ${CLUSTER_NAME} tensorleap -n ${NAME_SPACE} --repo=https://helm.tensorleap.ai \
+	  --reuse-values "$${SETS[@]}" --wait --timeout 30m
+
 .PHONY: checkout-rc-branch
 .ONESHELL:
 checkout-rc-branch:
