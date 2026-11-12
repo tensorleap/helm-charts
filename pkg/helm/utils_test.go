@@ -41,7 +41,6 @@ func TestCreateTensorleapChartValues(t *testing.T) {
 				"disableAuth":            params.DisableAuth,
 				"disableDatadogMetrics":  params.DisableDatadogMetrics,
 				"installedServerVersion": params.InstalledServerVersion,
-				"localBucketPath":        params.LocalBucketPath,
 				"pipIndexUrl":            "http://pypi.local/simple",
 				"pipExtraIndexUrl":       "http://pypi2.local/simple",
 			},
