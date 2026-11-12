@@ -144,6 +144,11 @@ A dashlet passes through layered states. Decide pass/fail by combining a
 - For Population Exploration: the processing placeholder (text "processing...")
   is replaced by the scatter map appearing (no `id` to assert on any more —
   use absence of the placeholder text + presence of chart geometry).
+- For a Bar/Line Analytics chart with an **Error bars** option selected
+  (Average aggregation only — see
+  [03-data-flows.md](03-data-flows.md#error-bars-on-barline-analytics-dashlets-en-2591-new)):
+  a whisker per point (bar) or a shaded band around the line, sourced from
+  the same `getXYChart`/`getHeatmapChart` response — not a separate request.
 - For Population Exploration **re-visualization** (filters/version changed after
   data already rendered): the dashlet keeps the previous scatter map visible
   (dimmed/desaturated canvas) and overlays a small status pill instead of

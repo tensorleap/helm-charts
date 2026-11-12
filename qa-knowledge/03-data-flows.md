@@ -110,6 +110,19 @@ Mongo/ES/bucket → rendered dashlet.
 - **Socket disconnect / auth fail**: WS `authentication_error`; live updates stop.
 - **Empty dashlet** — distinguish the causes (next).
 
+### Error bars on Bar/Line Analytics dashlets (EN-2591, new)
+For a Bar or Line chart with an **Average** aggregation (not `_count`), the
+dashlet settings show an **Error bars** selector under the Y axis: Standard
+deviation / Standard error (SEM) / 95% confidence interval / Min-max
+(`supportsErrorBars`, `web-ui/src/dashboard/dashlet/Analytics/form/errorBars.ts`).
+No extra request — node-server already returns `std`/`count`/`min`/`max` for
+the point's y-field in the same `getXYChart`/`getHeatmapChart` row's
+`metadata` object (`extended_stats` aggregation; `parseSpreadStats`,
+`node-server/src/utils/elastic/QueryBuildingBlocks/genericDataCharts/resonseParser.ts`).
+Bar charts draw a whisker per point; line charts shade a band around the
+line instead (crowds less with many x buckets) that closes onto the line at
+a point with no spread (single sample, or an empty bucket).
+
 ---
 
 ## Dashlet empty-state taxonomy (do not conflate these)
