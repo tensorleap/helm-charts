@@ -21,8 +21,14 @@ the rules here matter.
 1. **The few real stable hooks that still exist** — `data-testid="expand-node-details"`
    (`src/layer-details/CodeIntegration.tsx`) and `id="EDIT_PROJECT_FORM"`
    (`FORM_ID` in `src/actions-dialog/ProjectDialogs.tsx`). Use these where applicable.
-2. **`aria-label`** — best for version-control row actions and icon buttons (still
-   intact; unaffected by the tour removal).
+2. **`aria-label`** — best for the version-control actions that still have a
+   dedicated icon button: `Make this the active version`, `Expand experiment`/
+   `Collapse experiment`, `Different evaluation generation`
+   (`src/version-control/VersionsTable.tsx`). Other per-row actions (Open/Delete
+   version, Export model, Evaluate/Re-evaluate/Stop Evaluate/Update Evaluate,
+   Delete experiment) were consolidated into a kebab menu — open it via
+   `aria-label="More actions"` (`src/version-control/VersionRowMenu.tsx`), then
+   match the visible `MenuItem` text (e.g. "Delete version", "Re-evaluate").
 3. **MUI structural attributes** — for DataGridPro tables/grids (`.MuiDataGrid-row`,
    `[data-rowindex]`, etc. — also unaffected).
 4. **Visible text / tooltip `title` / DOM position** — the only option left for
