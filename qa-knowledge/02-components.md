@@ -60,8 +60,12 @@ catalog.** Quick facts:
   `editor-rename-file-input`, `edit-button`/`save-changes-button`/
   `discard-changes-button`, `full-screen-button`, `expand-node-details`,
   `custom-visualization-filter-bar-expand`). Do not rely on `src/test-ids.ts`.
-- Version-control row actions are best targeted by **`aria-label`**
-  (`Make this the active version`, `Expand experiment`).
+- Version-control row actions: a few keep a dedicated **`aria-label`**
+  (`Make this the active version`, `Expand experiment`/`Collapse experiment`,
+  `Different evaluation generation`); the rest (Open/Delete version, Export model,
+  Evaluate variants, Delete experiment) live behind a kebab menu
+  (`aria-label="More actions"`, `src/version-control/VersionRowMenu.tsx`) — match
+  the visible `MenuItem` text instead.
 - Dashlet grids are **MUI X DataGridPro** → target `.MuiDataGrid-row`,
   `[role="row"]`, `[data-field]`, `role="gridcell"`.
 - Auth header is **`KBearer <jwt>`** (not `Bearer`); 401 → session-expired
