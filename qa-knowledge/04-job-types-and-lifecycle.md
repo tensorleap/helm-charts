@@ -16,7 +16,9 @@ same list — this is the #1 source of confusion.
 `ANALYZE_GRAPH`, `DRY_RUN_GRAPH`, `SLIM_LS`, `STREAMING_HANDLER`,
 `STREAMING_SAMPLES_VIS`, `PUSH`, `SYNTHETIC`, `TEST_STUB_FUNCTION`,
 `TEST_CUSTOM_LOSS`.
-**There is no `EVALUATE` engine job type.**
+**There is no `EVALUATE` engine job type.** `ANALYZE_GRAPH` is still in the
+contract enum but has no engine worker any more — see
+[09-job-catalog.md](09-job-catalog.md#graph-analyze--analyze_graph-engine-worker-removed).
 
 ### node-server JobSubType (UI / `leap run list`)
 `Evaluate`, `Update Evaluate`, `Population Exploration`, `Labeling Recommendation`,
@@ -61,7 +63,7 @@ node-job-backed `JobType` outside the engine's own enum plus `PUSH`.
 | `TRAINING` (incl. Evaluate), `ANALYZE`, `SYNTHETIC` (engine type) | ✅ pod+svc | ✅ Deployment (Sample Analysis=1, Visualizers Calc=N) | ✅ Deployment (replicas=1, autoscaled ≤10) |
 | `PUSH`, `EXPORT_MODEL`, `DRY_RUN_GRAPH`, `STREAMING_SAMPLES_VIS` | ✅ | ✅ single pod | ❌ |
 | `SLIM_LS` (Population Exploration, Fetch Similar, Generate Insights, Dataset Balancing, Synthetic Data Generation, Labeling Recommendation, Splitting, Unlabeled Analysis, Fix Aggressor) | ❌ | ❌ | ❌ — a **single** `SLIM` pod, no companions |
-| `ANALYZE_GRAPH` | ❌ | ❌ | ❌ — engine main pod only |
+| `ANALYZE_GRAPH` | ❌ | ❌ | ❌ — engine main pod only, and as of the ONNX cutover it errors out immediately (`ValueError('Unsupported job_type')`) before doing anything, see [09-job-catalog.md](09-job-catalog.md#graph-analyze--analyze_graph-engine-worker-removed) |
 | `WARMUP` | ❌ | ❌ | ❌ — placeholder GPU Job `engine-warmup-*` |
 
 So a QA engineer watching an **Evaluate** should expect, transiently:
