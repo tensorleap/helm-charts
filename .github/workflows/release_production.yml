@@ -435,6 +435,7 @@ jobs:
           CLI_NOTE: ${{ needs.release-cli.outputs.cli_note }}
           INSTALLER: ${{ needs.release-cli.outputs.installer_version }}
           API: ${{ needs.release-cli.outputs.api_version }}
+          SKILLS: ${{ needs.release-cli.outputs.skills_ref }}
           SKIP_REASON: ${{ needs.preflight.outputs.cli_skip_reason }}
           CONTRACTS: ${{ needs.preflight.outputs.contracts }}
           THREAD_TS: ${{ needs.release-production.outputs.slack_message_ts }}
@@ -444,6 +445,9 @@ jobs:
             success)
               text="$(printf '🧰 *leap-cli %s* for Tensorleap %s (%s)\n• *Installer:* %s\n• *node-server API:* %s\n• *Release:* <https://github.com/tensorleap/leap-cli/releases/tag/%s|%s>' \
                 "$CLI_TAG" "$VERSION" "$CLI_NOTE" "$INSTALLER" "$API" "$CLI_TAG" "$CLI_TAG")"
+              if [ -n "$SKILLS" ]; then
+                text="$(printf '%s\n• *Skills:* <https://github.com/tensorleap/skills/tree/%s|%s>' "$text" "$SKILLS" "$SKILLS")"
+              fi
               ;;
             skipped)
               text="ℹ️ *leap-cli not released:* ${SKIP_REASON:-skipped}"
