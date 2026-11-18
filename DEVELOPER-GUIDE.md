@@ -119,9 +119,23 @@ does the release:
    node-server image the release ships (`scripts/regen-leap-cli-api.sh`). It
    reads the spec out of the published image, so no NPM_TOKEN is needed.
 2. Pins `leap-cli`'s `go.mod` to the installer tag.
-3. Builds and tests, commits to `leap-cli`'s `X.Y.Z` branch, and pushes the next
-   `v0.0.N` tag. The tag runs `leap-cli`'s own "Create release".
-4. Release Production then installs that exact manifest and CLI pair.
+3. Builds and tests.
+4. Ships the current skills (`scripts/resolve-skills-ref.sh`): tags
+   `tensorleap/skills` `main` with the next `skills-vN` and writes that tag into
+   `leap-cli`'s `pkg/version/skills-ref`. When `main` hasn't moved since the
+   last release, its existing tag is reused.
+5. Commits to `leap-cli`'s `X.Y.Z` branch and pushes the next `v0.0.N` tag. The
+   tag runs `leap-cli`'s own "Create release".
+6. Release Production then installs that exact manifest and CLI pair.
+
+Users get new skills only through a CLI release: `leap mcp config` installs the
+tag in `skills-ref`, and the skills update themselves to it. So don't tag
+`tensorleap/skills` or edit `skills-ref` by hand; merge to skills `main` and the
+next release ships it. Before tagging, the skills are checked against the CLI
+being released (`leap-cli`'s `scripts/skillscheck`). The dry run does the same
+check, so skills that call a `leap` command this CLI doesn't have stop the
+release before anything is published. It also checks that the release token may
+push tags to `tensorleap/skills`.
 
 The CLI keeps its own `v0.0.N` numbering: Tensorleap `1.6.86` might ship
 `leap-cli` `v0.0.163`. The Tensorleap version only names the branches the CLI
