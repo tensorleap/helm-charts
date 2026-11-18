@@ -66,6 +66,16 @@ data:
               name: engine
               env:
                 - name: JOB_PAYLOAD
+                - name: HMAC_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-secret
+                      key: rootUser
+                - name: HMAC_ACCESS_KEY_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-secret
+                      key: rootPassword
               envFrom:
                 - configMapRef:
                     name: engine-cm
