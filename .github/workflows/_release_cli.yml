@@ -4,8 +4,11 @@ run-name: "Release CLI for Tensorleap ${{ inputs.tensorleap_version }}${{ inputs
 # Releases leap-cli for a Tensorleap (product) version:
 #   1. regenerates its Go API client from the node-server image the release ships
 #   2. pins the installer module (this repo) to the release's installer tag
-#   3. builds and tests, commits to leap-cli's version branch and pushes the next
-#      v0.0.N tag - which runs leap-cli's own "Create release"
+#   3. builds and tests
+#   4. tags tensorleap/skills main with the next skills-vN and pins leap-cli's
+#      pkg/version/skills-ref to it, so the CLI ships the current skills
+#   5. commits to leap-cli's version branch and pushes the next v0.0.N tag -
+#      which runs leap-cli's own "Create release"
 #
 # The CLI keeps its own v0.0.N numbering. The Tensorleap version only names the
 # version branches the CLI is built from, and goes into the tag's message.
@@ -40,6 +43,9 @@ on:
       api_version:
         description: "The node-server API version the client was generated from"
         value: ${{ jobs.release-cli.outputs.api_version }}
+      skills_ref:
+        description: "The tensorleap/skills tag the CLI ships with, e.g. skills-v4 (empty when the leap-cli branch predates pinned skills)"
+        value: ${{ jobs.release-cli.outputs.skills_ref }}
   workflow_dispatch:
     inputs:
       tensorleap_version:
@@ -73,11 +79,13 @@ jobs:
       cli_note: ${{ steps.tag.outputs.note }}
       installer_version: ${{ steps.installer.outputs.installer_version }}
       api_version: ${{ steps.regen.outputs.api_version }}
+      skills_ref: ${{ steps.skills.outputs.skills_ref }}
     env:
       VERSION: ${{ inputs.tensorleap_version }}
       DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
-      # Reads the private service repos, and pushes to leap-cli: unlike
-      # GITHUB_TOKEN, a tag pushed with it triggers leap-cli's release workflow.
+      # Reads the private service repos, and pushes to leap-cli and to the
+      # skills: unlike GITHUB_TOKEN, a tag pushed with it triggers leap-cli's
+      # release workflow.
       GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
     steps:
       # Scripts come from the ref this workflow runs from, release data from the
@@ -124,6 +132,16 @@ jobs:
           repository: tensorleap/leap-cli
           ref: ${{ steps.leap_cli.outputs.ref }}
           path: leap-cli
+          fetch-depth: 0
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      # main is what ships: users get new skills only through a CLI release.
+      - name: Check out the skills
+        uses: actions/checkout@v4
+        with:
+          repository: tensorleap/skills
+          ref: main
+          path: skills
           fetch-depth: 0
           token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
@@ -182,20 +200,31 @@ jobs:
           go build -o /dev/null .
           make test
 
+      # After the build, so a CLI that doesn't build tags nothing. Checks the
+      # skills against this CLI first; a dry run stops there, and also proves
+      # the token may tag the skills.
+      - name: Tag the skills and pin leap-cli to them
+        id: skills
+        run: tools/scripts/resolve-skills-ref.sh skills leap-cli
+
       - name: Commit to the leap-cli version branch
         if: ${{ !inputs.dry_run }}
         working-directory: leap-cli
         env:
           API: ${{ steps.regen.outputs.api_version }}
           INSTALLER: ${{ steps.installer.outputs.installer_version }}
+          SKILLS: ${{ steps.skills.outputs.skills_ref }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add go.mod go.sum pkg/tensorleapapi
+          if [ -n "$SKILLS" ]; then
+            git add pkg/version/skills-ref
+          fi
           if git diff --cached --quiet; then
             echo "Nothing to commit: the branch already matches Tensorleap ${VERSION}"
           else
-            git commit -q -m "Update for Tensorleap ${VERSION}: installer ${INSTALLER}, node-server API ${API}"
+            git commit -q -m "Update for Tensorleap ${VERSION}: installer ${INSTALLER}, node-server API ${API}${SKILLS:+, skills ${SKILLS}}"
           fi
           # Creates the branch when it started from master.
           git push origin "HEAD:refs/heads/${VERSION}"
@@ -210,10 +239,11 @@ jobs:
           API: ${{ steps.regen.outputs.api_version }}
           INSTALLER: ${{ steps.installer.outputs.installer_version }}
           PIN_CHANGED: ${{ steps.installer.outputs.pin_changed }}
+          SKILLS: ${{ steps.skills.outputs.skills_ref }}
         run: |
           # A real run has committed by now; a dry run predicts whether it would.
           would_commit=false
-          if [ -n "$DRY_RUN" ] && { [ -n "$(git status --porcelain -- pkg/tensorleapapi)" ] || [ "$PIN_CHANGED" = true ]; }; then
+          if [ -n "$DRY_RUN" ] && { [ -n "$(git status --porcelain -- pkg/tensorleapapi pkg/version/skills-ref)" ] || [ "$PIN_CHANGED" = true ]; }; then
             would_commit=true
           fi
           tag=""
@@ -234,7 +264,7 @@ jobs:
             tag="v0.0.$((last + 1))"
             note="new - the latest was v0.0.${last}"
             if [ -z "$DRY_RUN" ]; then
-              git tag -a "$tag" -m "leap-cli ${tag} for Tensorleap ${VERSION} (installer ${INSTALLER}, node-server API ${API})"
+              git tag -a "$tag" -m "leap-cli ${tag} for Tensorleap ${VERSION} (installer ${INSTALLER}, node-server API ${API}${SKILLS:+, skills ${SKILLS}})"
               git push origin "refs/tags/${tag}"
             fi
           fi
@@ -250,11 +280,19 @@ jobs:
           API: ${{ steps.regen.outputs.api_version }}
           INSTALLER: ${{ steps.installer.outputs.installer_version }}
           LEAP_CLI_REF: ${{ steps.leap_cli.outputs.ref }}
+          SKILLS: ${{ steps.skills.outputs.skills_ref }}
+          SKILLS_ACTION: ${{ steps.skills.outputs.skills_action }}
+          SKILLS_COMMIT: ${{ steps.skills.outputs.skills_commit }}
         run: |
           branch="\`${VERSION}\`"
           if [ "$LEAP_CLI_REF" != "$VERSION" ]; then
             branch="${branch}, started from \`${LEAP_CLI_REF}\`"
           fi
+          case "$SKILLS_ACTION" in
+            create) skills="\`${SKILLS}\` (new${DRY_RUN:+ at release} - tensorleap/skills main at \`${SKILLS_COMMIT}\`)" ;;
+            reuse)  skills="\`${SKILLS}\` (reused - tensorleap/skills main at \`${SKILLS_COMMIT}\` is already tagged)" ;;
+            *)      skills="not pinned - this leap-cli branch predates pinned skills" ;;
+          esac
           {
             if [ -n "$DRY_RUN" ]; then
               echo "### Dry run: would release leap-cli ${CLI_TAG} for Tensorleap ${VERSION}"
@@ -270,6 +308,7 @@ jobs:
             echo "| leap-cli branch | ${branch} |"
             echo "| Installer | \`${INSTALLER}\` |"
             echo "| node-server API | \`${PREVIOUS_API}\` → \`${API}\` |"
+            echo "| Skills | ${skills} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Wait for leap-cli's "Create release"
