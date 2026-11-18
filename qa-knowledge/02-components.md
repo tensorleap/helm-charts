@@ -217,8 +217,10 @@ A Python distributed compute system. All in namespace `tensorleap`.
   (Pod+Service), the **streaming-handler** Deployment, and the **generic-process**
   (engine-generics) Deployment. For PUSH/EXPORT_MODEL/DRY_RUN_GRAPH/STREAMING_SAMPLES_VIS:
   per-job Redis + a single generic-process pod.
-- Builds/loads the TF/ONNX model and runs **batched inference** on samples popped
-  from per-job Redis. Pushes result batches to the streaming queue.
+- Builds/loads the **ONNX** model (`OnnxLeapModel`, via `onnxruntime` — the
+  engine's TF/Keras stack was removed) and runs **batched inference** on
+  samples popped from per-job Redis. Pushes result batches to the streaming
+  queue.
 - Runs a **`StreamingHandlerScaler` daemon thread** (this lives in the main pod,
   not the orchestrator) that scales the streaming-handler Deployment from
   push/pull counters (`ceil(pushed/pulled_per_instance)+3`, capped at 20,
@@ -301,7 +303,10 @@ Scaling/timing keys: `generic_children:<job_id>` (TTL 1800s),
 
 **Key env vars to verify on pods:** engine — `JOB_PAYLOAD`, `ENGINE_IMAGE`,
 `GENERIC_CALCULATOR_IMAGE(_TAG/_TAG_BASE)`, `REDIS_IMAGE`, `FEEDBACK_TOPIC`,
-`SUBSCRIBER_TOPIC`, `ELASTIC_HOST`; generic — `JOB_PAYLOAD`, `REDIS_HOST`,
+`SUBSCRIBER_TOPIC`, `ELASTIC_HOST`, `HMAC_ACCESS_KEY_ID/SECRET` (from
+`minio-secret`, given directly to the engine job pod on local installs —
+`charts/tensorleap/charts/engine/templates/engine-job-template-cm.yaml`);
+generic — `JOB_PAYLOAD`, `REDIS_HOST`,
 `REDIS_PORT`, `GENERIC_CALCULATOR_IMAGE_TAG`; streaming-handler — `REDIS_HOST`,
 `REDIS_PORT`, `JOB_ID`, `HMAC_ACCESS_KEY_ID/SECRET`.
 
@@ -355,8 +360,12 @@ from `helm-charts`. Config at `~/.config/tensorleap/config.yaml`
 - `leap auth login [url] -k <apiKey>` (or `-u/-p`), `auth logout/select/whoami/license`.
 - `leap push` — the central command: reads `leap.yaml`, bundles code into a tar.gz,
   parses it + imports/validates the model; flags `-n/--name`,
-  `--type [JSON_TF2/ONNX/PB_TF2/H5_TF2]`, `--branch`, `--secretId`,
-  `-m/--model-path`, `-e/--eval`, `-b/--batch <n|latest>` (needs `--eval`),
+  `--type [JSON_TF2/ONNX/PB_TF2/H5_TF2]` (engine now hard-rejects every
+  non-`ONNX` type at push — see [09-job-catalog.md](09-job-catalog.md#push-and-its-phases)),
+  `--branch`, `--secretId`,
+  `-m/--model-path` (`.onnx`, or a `.tar`/`.tar.gz` holding the `.onnx` plus its
+  external weight-data files for models too large for one protobuf),
+  `-e/--eval`, `-b/--batch <n|latest>` (needs `--eval`),
   **`-o/--overwrite <id|name>`** (NOT `--override`), `-u/--update {metadata|metric|metric_config|viz|samples|foundation}`
   (implies `--eval`; `samples` evaluates only newly added samples with the user's
   model but does **not** backfill foundation embeddings; `foundation` computes

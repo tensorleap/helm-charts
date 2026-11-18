@@ -52,7 +52,10 @@ If any fail, stop and classify via [07-failure-modes.md](07-failure-modes.md).
 ## Playbook 2 — `leap push` (code parse + model import + validate)
 
 **Action:** `leap auth login <url> -k <apiKey>` → from a project dir with
-`leap.yaml` → `leap push -n <name> --type <JSON_TF2|ONNX|...> [-m <model-path>]`.
+`leap.yaml` → `leap push -n <name> --type ONNX [-m <model-path>]`. The CLI flag
+still accepts `JSON_TF2`/`PB_TF2`/`H5_TF2`, but the engine now hard-rejects every
+non-`ONNX` push (see [09-job-catalog.md](09-job-catalog.md#push-and-its-phases)) —
+use `ONNX` for this playbook.
 
 | Phase | Back-end observable | Front-end observable |
 |---|---|---|
