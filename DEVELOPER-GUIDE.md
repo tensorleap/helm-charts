@@ -156,14 +156,13 @@ branch no longer matches its tag.
 ### What a release candidate checks
 
 Release Candidate and Patch run the same checks as Release Production, so a
-problem that would stop the production release shows when the RC is cut. None
-of them holds the RC back:
+problem that would stop the production release shows when the RC is cut:
 
 1. **api-client.** `scripts/check-release-contracts.sh` compares the api-client
-   web-ui pins with the node-server the RC ships. A mismatch is a warning on
-   the run page and in the run summary; the RC is still cut. Release Production
-   stops on the same mismatch, so fix the pins on the version branches and run
-   Patch before releasing.
+   web-ui pins with the node-server the RC ships. A mismatch fails the run.
+   Release Candidate checks before it cuts any branch, so the fix goes to
+   `master`. Patch checks after it reads the branch images and before it tags
+   the RC.
 2. **leap-cli dry run.** `_release_cli.yml` runs as a dry run: it regenerates
    the API client from the RC's node-server image, builds `leap-cli`'s version
    branch against the installer code on the RC branch, runs the tests and checks
@@ -173,8 +172,9 @@ of them holds the RC back:
 3. **Install test.** `_install_server.yml` installs the RC with the binary the
    dry run built, so the installer code tested is the one on the RC branch.
 
-The dry run runs after the RC is published. When it fails, the run turns red
-and the install test uses the latest released `leap-cli` instead. Fix it on the `leap-cli` version branch (or `master`, for
+The dry run runs after the RC is published, so a failure doesn't hold the RC
+back: the run turns red and the install test uses the latest released
+`leap-cli` instead. Fix it on the `leap-cli` version branch (or `master`, for
 skills `main`) before Release Production, whose own dry run would stop there.
 
 A patch for an older line gets no dry run, because Release Production releases

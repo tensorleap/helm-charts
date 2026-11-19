@@ -38,6 +38,27 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
         shell: bash
 
+      # Release Production's preflight check, run before anything is cut: a
+      # web-ui that expects an API the node-server doesn't ship is then fixed on
+      # master, not with a Patch on the version branches.
+      - name: Check web-ui's api-client against the shipped node-server
+        env:
+          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # From master, an RC of a version whose branch exists is cut from that
+          # branch, so those are the image tags to check.
+          version="$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}' | sed 's/-rc\.[0-9]*$//')"
+          if [ "$GITHUB_REF_NAME" = "master" ] && git rev-parse -q --verify "refs/remotes/origin/${version}" >/dev/null; then
+            echo "Checking the image tags of the existing ${version} branch"
+            mkdir "$RUNNER_TEMP/rc-charts"
+            git archive "origin/${version}" charts/tensorleap/charts/node-server/values.yaml charts/tensorleap/charts/web-ui/values.yaml \
+              | tar -x -C "$RUNNER_TEMP/rc-charts"
+            cd "$RUNNER_TEMP/rc-charts"
+          fi
+          "$GITHUB_WORKSPACE/scripts/check-release-contracts.sh"
+        shell: bash
+
       - name: Checkout RC branch
         id: checkout_rc_branch
         run: |
@@ -60,17 +81,6 @@ jobs:
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "is_new_branch=$IS_NEW_BRANCH" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      # Release Production's preflight check, as a warning: the RC is cut either
-      # way, and a mismatch that would stop the production release is known now.
-      - name: Check web-ui's api-client against the shipped node-server
-        env:
-          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          WARN_ONLY: "1"
-        run: |
-          ./scripts/check-release-contracts.sh \
-            || echo "::warning title=api-client check did not run::could not compare web-ui's api-client with the shipped node-server - see this step's log. Release Production runs the same check and stops when it fails"
         shell: bash
 
       # Only the newest version gets a leap-cli (Release Production releases none
