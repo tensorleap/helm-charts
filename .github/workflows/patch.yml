@@ -124,7 +124,8 @@ jobs:
 
       # Release Production's preflight check, on the images this patch ships:
       # a web-ui that expects an API the node-server doesn't ship stops here,
-      # before the RC is tagged, instead of at the production release.
+      # before the RC is committed or published, instead of at the production
+      # release.
       - name: Check web-ui's api-client against the shipped node-server
         env:
           GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
@@ -165,23 +166,10 @@ jobs:
           message: "Bump patch version to ${{ steps.get_version.outputs.version }} and update images.txt"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
-      - name: Release Charts
-        uses: ./.github/actions/release-chart
-        with:
-          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
-
-      - name: Release Manifest
-        uses: ./.github/actions/release-manifest
-        with:
-          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
-          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
-
   # Builds and tests the leap-cli Release Production would ship for this RC and
   # pushes nothing: the API client regenerated from the RC's node-server, the
-  # RC branch's installer code, the current skills. What fails here would stop
-  # the production release, so it shows while the fix is still a cherry-pick.
+  # RC branch's installer code, the current skills. It waits for the
+  # node-server image of a branch that was only just cut.
   cli-dry-run:
     name: Dry-run leap-cli
     needs: patch
@@ -193,12 +181,47 @@ jobs:
       cli_artifact: leap-cli-rc
     secrets: inherit
 
-  # Installs the RC with the CLI built above, so the installer code this RC
-  # carries is the one tested. Without one (dry run skipped or failed)
-  # cli_artifact is empty and the latest released leap-cli is used, as before.
-  install-server:
+  # The branches are cut and the bump is committed by now; the RC itself is
+  # published only when the dry run passed. A CLI that doesn't build stops the
+  # RC here, as it would stop the production release. Fix it and re-run the
+  # failed jobs.
+  release:
+    name: Release the RC
     needs: [patch, cli-dry-run]
-    if: ${{ !cancelled() && needs.patch.result == 'success' }}
+    # cli-dry-run is skipped for a version older than the latest release; only
+    # its failure stops the RC.
+    if: ${{ !cancelled() && needs.patch.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The release actions are read from the workspace and check the branch
+      # out again themselves.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.patch.outputs.branch }}
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
+      - name: Release Charts
+        uses: ./.github/actions/release-chart
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          branch: ${{ needs.patch.outputs.branch }}
+
+      - name: Release Manifest
+        uses: ./.github/actions/release-manifest
+        with:
+          github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+          custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
+          branch: ${{ needs.patch.outputs.branch }}
+
+  # Installs the RC with the CLI the dry run built, so the installer code this
+  # RC carries is the one tested. When the dry run was skipped cli_artifact is
+  # empty and the latest released leap-cli is used.
+  install-server:
+    needs: [patch, cli-dry-run, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     uses: ./.github/workflows/_install_server.yml
     with:
       tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.patch.outputs.version) || needs.patch.outputs.version }}

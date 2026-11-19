@@ -16,14 +16,89 @@ on:
         default: ""
 
 jobs:
+  # Nothing is cut until these checks and the leap-cli dry run pass, as in
+  # Release Production. What fails here is fixed on master, not with a Patch on
+  # the version branches.
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.source.outputs.version }}
+      release_ref: ${{ steps.source.outputs.release_ref }}
+      check_cli: ${{ steps.cli.outputs.check_cli }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # From master, an RC of a version whose branch exists is cut from that
+      # branch. Any other RC is cut from the commit this run was dispatched on.
+      - name: Find what this RC is cut from
+        id: source
+        run: |
+          set -euo pipefail
+          version="$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}' | sed 's/-rc\.[0-9]*$//')"
+          if [ "$GITHUB_REF_NAME" = "master" ] && git rev-parse -q --verify "refs/remotes/origin/${version}" >/dev/null; then
+            release_ref="refs/heads/${version}"
+            git checkout -q --detach "origin/${version}"
+          else
+            release_ref="$GITHUB_SHA"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "release_ref=${release_ref}" >> "$GITHUB_OUTPUT"
+          echo "RC of ${version}, cut from ${release_ref}"
+        shell: bash
+
+      - name: Check web-ui's api-client against the shipped node-server
+        env:
+          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+        run: ./scripts/check-release-contracts.sh
+        shell: bash
+
+      # Only the newest version gets a leap-cli (Release Production releases none
+      # for an older line), so only that one has a CLI to check.
+      - name: Decide whether to check leap-cli
+        id: cli
+        env:
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          source scripts/lib/release-common.sh
+          latest="$(latest_production_version)"
+          if [ -n "$latest" ] && [ "$(version_cmp "$VERSION" "$latest")" = -1 ]; then
+            echo "check_cli=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::leap-cli is not checked: ${VERSION} is older than the latest release ${latest}, whose CLI stays latest"
+          else
+            echo "check_cli=true" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+  # Builds and tests the leap-cli Release Production would ship for this RC and
+  # pushes nothing: the API client regenerated from the RC's node-server, the
+  # RC's installer code, the current skills. A CLI that doesn't build stops the
+  # RC here, as it would stop the production release.
+  cli-dry-run:
+    name: Dry-run leap-cli
+    needs: preflight
+    if: needs.preflight.outputs.check_cli == 'true'
+    uses: ./.github/workflows/_release_cli.yml
+    with:
+      tensorleap_version: ${{ needs.preflight.outputs.version }}
+      release_ref: ${{ needs.preflight.outputs.release_ref }}
+      dry_run: true
+      cli_artifact: leap-cli-rc
+    secrets: inherit
+
   release:
+    needs: [preflight, cli-dry-run]
+    # cli-dry-run is skipped for a version older than the latest release; only
+    # its failure stops the RC.
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
-      branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
-      check_cli: ${{ steps.cli.outputs.check_cli }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,27 +111,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-        shell: bash
-
-      # Release Production's preflight check, run before anything is cut: a
-      # web-ui that expects an API the node-server doesn't ship is then fixed on
-      # master, not with a Patch on the version branches.
-      - name: Check web-ui's api-client against the shipped node-server
-        env:
-          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # From master, an RC of a version whose branch exists is cut from that
-          # branch, so those are the image tags to check.
-          version="$(grep -E '^version:' charts/tensorleap/Chart.yaml | awk '{print $2}' | sed 's/-rc\.[0-9]*$//')"
-          if [ "$GITHUB_REF_NAME" = "master" ] && git rev-parse -q --verify "refs/remotes/origin/${version}" >/dev/null; then
-            echo "Checking the image tags of the existing ${version} branch"
-            mkdir "$RUNNER_TEMP/rc-charts"
-            git archive "origin/${version}" charts/tensorleap/charts/node-server/values.yaml charts/tensorleap/charts/web-ui/values.yaml \
-              | tar -x -C "$RUNNER_TEMP/rc-charts"
-            cd "$RUNNER_TEMP/rc-charts"
-          fi
-          "$GITHUB_WORKSPACE/scripts/check-release-contracts.sh"
         shell: bash
 
       - name: Checkout RC branch
@@ -81,23 +135,6 @@ jobs:
           fi
           echo "rc_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "is_new_branch=$IS_NEW_BRANCH" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      # Only the newest version gets a leap-cli (Release Production releases none
-      # for an older line), so only that one has a CLI to check.
-      - name: Decide whether to check leap-cli
-        id: cli
-        env:
-          VERSION: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
-        run: |
-          source scripts/lib/release-common.sh
-          latest="$(latest_production_version)"
-          if [ -n "$latest" ] && [ "$(version_cmp "$VERSION" "$latest")" = -1 ]; then
-            echo "check_cli=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::leap-cli is not checked: ${VERSION} is older than the latest release ${latest}, whose CLI stays latest"
-          else
-            echo "check_cli=true" >> "$GITHUB_OUTPUT"
-          fi
         shell: bash
 
       - name: Create external RC branches
@@ -187,24 +224,9 @@ jobs:
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
           branch: ${{ steps.checkout_rc_branch.outputs.rc_branch }}
 
-  # Builds and tests the leap-cli Release Production would ship for this RC and
-  # pushes nothing: the API client regenerated from the RC's node-server, the
-  # RC branch's installer code, the current skills. What fails here would stop
-  # the production release, so it shows while the fix is still a cherry-pick.
-  cli-dry-run:
-    name: Dry-run leap-cli
-    needs: release
-    if: needs.release.outputs.check_cli == 'true'
-    uses: ./.github/workflows/_release_cli.yml
-    with:
-      tensorleap_version: ${{ needs.release.outputs.branch }}
-      dry_run: true
-      cli_artifact: leap-cli-rc
-    secrets: inherit
-
-  # Installs the RC with the CLI built above, so the installer code this RC
-  # carries is the one tested. Without one (dry run skipped or failed)
-  # cli_artifact is empty and the latest released leap-cli is used, as before.
+  # Installs the RC with the CLI the dry run built, so the installer code this
+  # RC carries is the one tested. When the dry run was skipped cli_artifact is
+  # empty and the latest released leap-cli is used.
   install-server:
     needs: [release, cli-dry-run]
     if: ${{ !cancelled() && needs.release.result == 'success' }}

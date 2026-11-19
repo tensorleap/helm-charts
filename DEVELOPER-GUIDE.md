@@ -155,27 +155,33 @@ branch no longer matches its tag.
 
 ### What a release candidate checks
 
-Release Candidate and Patch run the same checks as Release Production, so a
-problem that would stop the production release shows when the RC is cut:
+Release Candidate and Patch run the same checks as Release Production, and like
+it they stop when one fails. A problem that would stop the production release
+shows when the RC is cut:
 
 1. **api-client.** `scripts/check-release-contracts.sh` compares the api-client
    web-ui pins with the node-server the RC ships. A mismatch fails the run.
-   Release Candidate checks before it cuts any branch, so the fix goes to
-   `master`. Patch checks after it reads the branch images and before it tags
-   the RC.
 2. **leap-cli dry run.** `_release_cli.yml` runs as a dry run: it regenerates
-   the API client from the RC's node-server image, builds `leap-cli`'s version
-   branch against the installer code on the RC branch, runs the tests and checks
-   the skills on `tensorleap/skills` `main` against that CLI. Its summary table
-   shows the `leap-cli` version, installer tag, node-server API and skills tag
-   that a production release of this RC would ship. Nothing is pushed.
+   the API client from the RC's node-server image, builds `leap-cli` against
+   the RC's installer code, runs the tests and checks the skills on
+   `tensorleap/skills` `main` against that CLI. Its summary table shows the
+   `leap-cli` version, installer tag, node-server API and skills tag that a
+   production release of this RC would ship. Nothing is pushed.
 3. **Install test.** `_install_server.yml` installs the RC with the binary the
-   dry run built, so the installer code tested is the one on the RC branch.
+   dry run built, so the installer code tested is the one the RC carries.
 
-The dry run runs after the RC is published, so a failure doesn't hold the RC
-back: the run turns red and the install test uses the latest released
-`leap-cli` instead. Fix it on the `leap-cli` version branch (or `master`, for
-skills `main`) before Release Production, whose own dry run would stop there.
+Where a failed check stops the run:
+
+- **Release Candidate** runs both checks before it cuts anything: no branch, no
+  tag, no manifest. Fix the problem on `master` (in `leap-cli` or
+  `tensorleap/skills` for the dry run) and run it again.
+- **Patch** has to cut the branches first, because the checks read the images
+  and the `leap-cli` branch of the new version. The api-client check runs before
+  the bump is committed. The dry run runs after the commit and before the RC is
+  published: no chart release, no manifest. Fix the problem on the version
+  branch and re-run the failed jobs. For a branch that was only just cut the dry
+  run first waits for node-server's CI to publish the image (7-9 minutes), so
+  the RC is out that much later.
 
 A patch for an older line gets no dry run, because Release Production releases
 no CLI for it. Its install test uses the latest released `leap-cli`.

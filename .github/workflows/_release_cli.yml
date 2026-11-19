@@ -15,8 +15,8 @@ run-name: "Release CLI for Tensorleap ${{ inputs.tensorleap_version }}${{ inputs
 #
 # Release Production calls it twice: as a dry run before anything is published,
 # so a CLI that doesn't build blocks the release, then for real once the chart
-# and manifest are out. Release Candidate and Patch call the dry run too, right
-# after cutting an RC, and install the RC with the binary it built. Dispatch it
+# and manifest are out. Release Candidate and Patch call the dry run too, before
+# they publish an RC, and install the RC with the binary it built. Dispatch it
 # by hand to re-run a failed CLI release, or to ship a CLI-only fix
 # cherry-picked onto the newest leap-cli version branch.
 
@@ -34,6 +34,11 @@ on:
         type: boolean
       cli_artifact:
         description: "Upload the linux/amd64 leap binary this run built as an artifact of this name, for the caller's install test (empty = don't)"
+        required: false
+        default: ""
+        type: string
+      release_ref:
+        description: "Dry runs only: the helm-charts ref to read the release from when the version branch isn't cut yet, e.g. the master commit an RC will be cut from (empty = the version branch)"
         required: false
         default: ""
         type: string
@@ -106,7 +111,9 @@ jobs:
     steps:
       # Scripts come from the ref this workflow runs from, release data from the
       # version branch's current head - which on the real run already carries the
-      # release commit (version-pinned images, installer version).
+      # release commit (version-pinned images, installer version). Release
+      # Candidate's dry run runs before that branch is cut and names the commit
+      # it will be cut from.
       - name: Check out helm-charts tooling
         uses: actions/checkout@v4
         with:
@@ -115,7 +122,7 @@ jobs:
       - name: Check out the release branch
         uses: actions/checkout@v4
         with:
-          ref: refs/heads/${{ inputs.tensorleap_version }}
+          ref: ${{ inputs.dry_run && inputs.release_ref || format('refs/heads/{0}', inputs.tensorleap_version) }}
           path: release
           fetch-depth: 0
 
@@ -353,6 +360,8 @@ jobs:
           path: ${{ runner.temp }}/leap-linux-amd64
           if-no-files-found: error
           retention-days: 7
+          # A re-run of this job replaces the binary of the failed attempt.
+          overwrite: true
 
       - name: Wait for leap-cli's "Create release"
         if: ${{ !inputs.dry_run }}
