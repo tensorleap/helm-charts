@@ -13,6 +13,11 @@ on:
         required: false
         default: ''
         type: string
+      cli_artifact:
+        description: 'Artifact of this run holding a leap-linux-amd64 binary to install instead of a released leap-cli - Release CLI uploads one (omit or leave empty to install cli_tag or latest)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   install-server:
@@ -20,12 +25,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Download the leap-cli built by this run
+        if: ${{ inputs.cli_artifact != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.cli_artifact }}
+          path: ${{ runner.temp }}/leap-cli
+
       - name: Install leap-cli
         env:
           # install.sh reads $TAG from the environment to pin the release; empty = latest.
           # See leap-cli/install.sh checkTagProvided().
           TAG: ${{ inputs.cli_tag }}
+          BUILT_CLI: ${{ inputs.cli_artifact && format('{0}/leap-cli/leap-linux-amd64', runner.temp) || '' }}
         run: |
+          if [ -n "$BUILT_CLI" ]; then
+            sudo install -m 0755 "$BUILT_CLI" /usr/local/bin/leap
+            echo "✅ Installed the leap-cli built by this run: $(leap --version)"
+            exit 0
+          fi
           if [ -n "$TAG" ]; then
             echo "Installing leap-cli pinned to tag: $TAG"
           else

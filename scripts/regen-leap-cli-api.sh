@@ -16,6 +16,10 @@
 #   scripts/regen-leap-cli-api.sh <node-server image tag> <leap-cli checkout>
 #   e.g. scripts/regen-leap-cli-api.sh 1.6.85-bcfd4699 ../leap-cli
 #
+# node-server's CI publishes the image 7-9 minutes after the commit is pushed.
+# Patch pins a version branch it has just cut, so an image that isn't out yet is
+# waited for: IMAGE_WAIT_SECONDS (default 900; 0 = fail at once).
+#
 # Writes previous_api_version and api_version to $GITHUB_OUTPUT when set.
 
 set -euo pipefail
@@ -26,6 +30,8 @@ IMAGE_REPO="public.ecr.aws/tensorleap/node-server"
 # Same base and JRE as node-server's builder stage (its Dockerfile).
 GENERATOR_IMAGE="node:22-alpine"
 CLIENT_DIR="pkg/tensorleapapi"
+IMAGE_WAIT_SECONDS="${IMAGE_WAIT_SECONDS:-900}"
+IMAGE_POLL_SECONDS=30
 
 tag="${1:-}"
 leap_cli="${2:-}"
@@ -45,8 +51,18 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/generated" "$work/scripts"
 
 echo "Reading the OpenAPI spec from ${IMAGE_REPO}:${tag}"
-docker pull -q --platform linux/amd64 "${IMAGE_REPO}:${tag}" >/dev/null \
-  || die "cannot pull ${IMAGE_REPO}:${tag} - if node-server's CI for ${sha:0:8} is still running, wait for it and re-run"
+waited=0
+until docker pull -q --platform linux/amd64 "${IMAGE_REPO}:${tag}" >/dev/null 2>"$work/pull.err"; do
+  if [ "$waited" -ge "$IMAGE_WAIT_SECONDS" ]; then
+    cat "$work/pull.err" >&2
+    die "cannot pull ${IMAGE_REPO}:${tag} (waited ${waited}s) - if node-server's CI for ${sha:0:8} is still running, wait for it and re-run"
+  fi
+  if [ "$waited" -eq 0 ]; then
+    echo "${IMAGE_REPO}:${tag} is not published yet; waiting up to ${IMAGE_WAIT_SECONDS}s for node-server's CI"
+  fi
+  sleep "$IMAGE_POLL_SECONDS"
+  waited=$((waited + IMAGE_POLL_SECONDS))
+done
 cid="$(docker create --platform linux/amd64 "${IMAGE_REPO}:${tag}")"
 if ! docker cp "${cid}:/usr/app/generated/swagger.json" "$work/generated/swagger.json"; then
   docker rm "$cid" >/dev/null
