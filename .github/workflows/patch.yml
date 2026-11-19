@@ -20,6 +20,8 @@ jobs:
       contents: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
+      branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
+      check_cli: ${{ steps.cli.outputs.check_cli }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,6 +57,23 @@ jobs:
           echo "patch_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "is_new_branch=$IS_NEW_BRANCH" >> "$GITHUB_OUTPUT"
           echo "base_branch=$BASE_BRANCH" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      # Only the newest version gets a leap-cli (Release Production releases none
+      # for an older line), so only that one has a CLI to check.
+      - name: Decide whether to check leap-cli
+        id: cli
+        env:
+          VERSION: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
+        run: |
+          source scripts/lib/release-common.sh
+          latest="$(latest_production_version)"
+          if [ -n "$latest" ] && [ "$(version_cmp "$VERSION" "$latest")" = -1 ]; then
+            echo "check_cli=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::leap-cli is not checked: ${VERSION} is older than the latest release ${latest}, whose CLI stays latest"
+          else
+            echo "check_cli=true" >> "$GITHUB_OUTPUT"
+          fi
         shell: bash
 
       - name: Get new version
@@ -103,6 +122,16 @@ jobs:
           branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
+      # Release Production's preflight check, on the images this patch ships:
+      # a web-ui that expects an API the node-server doesn't ship stops here,
+      # before the RC is committed or published, instead of at the production
+      # release.
+      - name: Check web-ui's api-client against the shipped node-server
+        env:
+          GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+        run: ./scripts/check-release-contracts.sh
+        shell: bash
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
@@ -137,21 +166,63 @@ jobs:
           message: "Bump patch version to ${{ steps.get_version.outputs.version }} and update images.txt"
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
+  # Builds and tests the leap-cli Release Production would ship for this RC and
+  # pushes nothing: the API client regenerated from the RC's node-server, the
+  # RC branch's installer code, the current skills. It waits for the
+  # node-server image of a branch that was only just cut.
+  cli-dry-run:
+    name: Dry-run leap-cli
+    needs: patch
+    if: needs.patch.outputs.check_cli == 'true'
+    uses: ./.github/workflows/_release_cli.yml
+    with:
+      tensorleap_version: ${{ needs.patch.outputs.branch }}
+      dry_run: true
+      cli_artifact: leap-cli-rc
+    secrets: inherit
+
+  # The branches are cut and the bump is committed by now; the RC itself is
+  # published only when the dry run passed. A CLI that doesn't build stops the
+  # RC here, as it would stop the production release. Fix it and re-run the
+  # failed jobs.
+  release:
+    name: Release the RC
+    needs: [patch, cli-dry-run]
+    # cli-dry-run is skipped for a version older than the latest release; only
+    # its failure stops the RC.
+    if: ${{ !cancelled() && needs.patch.result == 'success' && (needs.cli-dry-run.result == 'success' || needs.cli-dry-run.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The release actions are read from the workspace and check the branch
+      # out again themselves.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.patch.outputs.branch }}
+          token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
+
       - name: Release Charts
         uses: ./.github/actions/release-chart
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
+          branch: ${{ needs.patch.outputs.branch }}
 
       - name: Release Manifest
         uses: ./.github/actions/release-manifest
         with:
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
           custom_tag_prefix: ${{ inputs.custom_tag_prefix }}
-          branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
+          branch: ${{ needs.patch.outputs.branch }}
 
+  # Installs the RC with the CLI the dry run built, so the installer code this
+  # RC carries is the one tested. When the dry run was skipped cli_artifact is
+  # empty and the latest released leap-cli is used.
   install-server:
-    needs: patch
+    needs: [patch, cli-dry-run, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     uses: ./.github/workflows/_install_server.yml
     with:
       tag: ${{ inputs.custom_tag_prefix && format('{0}-{1}', inputs.custom_tag_prefix, needs.patch.outputs.version) || needs.patch.outputs.version }}
+      cli_artifact: ${{ needs.cli-dry-run.outputs.cli_artifact }}

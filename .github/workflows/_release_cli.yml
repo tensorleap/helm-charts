@@ -15,8 +15,10 @@ run-name: "Release CLI for Tensorleap ${{ inputs.tensorleap_version }}${{ inputs
 #
 # Release Production calls it twice: as a dry run before anything is published,
 # so a CLI that doesn't build blocks the release, then for real once the chart
-# and manifest are out. Dispatch it by hand to re-run a failed CLI release, or to
-# ship a CLI-only fix cherry-picked onto the newest leap-cli version branch.
+# and manifest are out. Release Candidate and Patch call the dry run too, before
+# they publish an RC, and install the RC with the binary it built. Dispatch it
+# by hand to re-run a failed CLI release, or to ship a CLI-only fix
+# cherry-picked onto the newest leap-cli version branch.
 
 on:
   workflow_call:
@@ -30,6 +32,16 @@ on:
         required: false
         default: false
         type: boolean
+      cli_artifact:
+        description: "Upload the linux/amd64 leap binary this run built as an artifact of this name, for the caller's install test (empty = don't)"
+        required: false
+        default: ""
+        type: string
+      release_ref:
+        description: "Dry runs only: the helm-charts ref to read the release from when the version branch isn't cut yet, e.g. the master commit an RC will be cut from (empty = the version branch)"
+        required: false
+        default: ""
+        type: string
     outputs:
       cli_tag:
         description: "The leap-cli version released, e.g. v0.0.163 (on a dry run: the one a real run would release)"
@@ -46,6 +58,9 @@ on:
       skills_ref:
         description: "The tensorleap/skills tag the CLI ships with, e.g. skills-v4 (empty when the leap-cli branch predates pinned skills)"
         value: ${{ jobs.release-cli.outputs.skills_ref }}
+      cli_artifact:
+        description: "The artifact holding the leap binary this run built (empty when none was asked for or the build failed)"
+        value: ${{ jobs.release-cli.outputs.cli_artifact }}
   workflow_dispatch:
     inputs:
       tensorleap_version:
@@ -57,6 +72,11 @@ on:
         required: false
         default: true
         type: boolean
+      cli_artifact:
+        description: "Also upload the linux/amd64 leap binary this run built as an artifact of this name (empty = don't)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -80,6 +100,7 @@ jobs:
       installer_version: ${{ steps.installer.outputs.installer_version }}
       api_version: ${{ steps.regen.outputs.api_version }}
       skills_ref: ${{ steps.skills.outputs.skills_ref }}
+      cli_artifact: ${{ steps.upload.outputs.artifact-id && inputs.cli_artifact || '' }}
     env:
       VERSION: ${{ inputs.tensorleap_version }}
       DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
@@ -90,7 +111,9 @@ jobs:
     steps:
       # Scripts come from the ref this workflow runs from, release data from the
       # version branch's current head - which on the real run already carries the
-      # release commit (version-pinned images, installer version).
+      # release commit (version-pinned images, installer version). Release
+      # Candidate's dry run runs before that branch is cut and names the commit
+      # it will be cut from.
       - name: Check out helm-charts tooling
         uses: actions/checkout@v4
         with:
@@ -99,7 +122,7 @@ jobs:
       - name: Check out the release branch
         uses: actions/checkout@v4
         with:
-          ref: refs/heads/${{ inputs.tensorleap_version }}
+          ref: ${{ inputs.dry_run && inputs.release_ref || format('refs/heads/{0}', inputs.tensorleap_version) }}
           path: release
           fetch-depth: 0
 
@@ -310,6 +333,35 @@ jobs:
             echo "| node-server API | \`${PREVIOUS_API}\` → \`${API}\` |"
             echo "| Skills | ${skills} |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The CLI exactly as checked above, for the caller's install test. On a dry
+      # run no released CLI holds this yet: the release branch's installer code
+      # (go.mod points at the checkout), the regenerated client, the new skills pin.
+      - name: Build the leap binary
+        if: ${{ inputs.cli_artifact != '' }}
+        working-directory: leap-cli
+        env:
+          CLI_TAG: ${{ steps.tag.outputs.cli_tag }}
+        run: |
+          # The version flag leap-cli's Makefile sets (LDFLAGS). A dry run's
+          # binary is not that release, so it says so in `leap --version`.
+          build_version="${CLI_TAG}${DRY_RUN:+-dry-run}"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags "-w -s -X 'github.com/tensorleap/leap-cli/pkg/version.CliVersion=${build_version}'" \
+            -o "${RUNNER_TEMP}/leap-linux-amd64" .
+          echo "Built leap ${build_version} (linux/amd64)"
+
+      - name: Upload the leap binary
+        id: upload
+        if: ${{ inputs.cli_artifact != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.cli_artifact }}
+          path: ${{ runner.temp }}/leap-linux-amd64
+          if-no-files-found: error
+          retention-days: 7
+          # A re-run of this job replaces the binary of the failed attempt.
+          overwrite: true
 
       - name: Wait for leap-cli's "Create release"
         if: ${{ !inputs.dry_run }}

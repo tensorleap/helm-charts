@@ -153,6 +153,39 @@ A fix to the installer code itself ships as a product patch: run Patch, then
 Release Production. Release CLI refuses to run when the installer code on the
 branch no longer matches its tag.
 
+### What a release candidate checks
+
+Release Candidate and Patch run the same checks as Release Production, and like
+it they stop when one fails. A problem that would stop the production release
+shows when the RC is cut:
+
+1. **api-client.** `scripts/check-release-contracts.sh` compares the api-client
+   web-ui pins with the node-server the RC ships. A mismatch fails the run.
+2. **leap-cli dry run.** `_release_cli.yml` runs as a dry run: it regenerates
+   the API client from the RC's node-server image, builds `leap-cli` against
+   the RC's installer code, runs the tests and checks the skills on
+   `tensorleap/skills` `main` against that CLI. Its summary table shows the
+   `leap-cli` version, installer tag, node-server API and skills tag that a
+   production release of this RC would ship. Nothing is pushed.
+3. **Install test.** `_install_server.yml` installs the RC with the binary the
+   dry run built, so the installer code tested is the one the RC carries.
+
+Where a failed check stops the run:
+
+- **Release Candidate** runs both checks before it cuts anything: no branch, no
+  tag, no manifest. Fix the problem on `master` (in `leap-cli` or
+  `tensorleap/skills` for the dry run) and run it again.
+- **Patch** has to cut the branches first, because the checks read the images
+  and the `leap-cli` branch of the new version. The api-client check runs before
+  the bump is committed. The dry run runs after the commit and before the RC is
+  published: no chart release, no manifest. Fix the problem on the version
+  branch and re-run the failed jobs. For a branch that was only just cut the dry
+  run first waits for node-server's CI to publish the image (7-9 minutes), so
+  the RC is out that much later.
+
+A patch for an older line gets no dry run, because Release Production releases
+no CLI for it. Its install test uses the latest released `leap-cli`.
+
 # Installer Upgrade Mechanism
 Upgrades can involve:
 
