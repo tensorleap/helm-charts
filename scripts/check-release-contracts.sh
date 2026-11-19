@@ -18,6 +18,10 @@
 #
 # Usage (from the repo root; GH_TOKEN must be able to read the service repos):
 #   scripts/check-release-contracts.sh
+#   WARN_ONLY=1 scripts/check-release-contracts.sh   # report a FAIL as a warning, exit 0
+#
+# Release Production stops on a FAIL. Release Candidate and Patch set WARN_ONLY:
+# an RC is still cut, with a warning that the release would be refused.
 #
 # Writes a one-line `contracts` summary to $GITHUB_OUTPUT and a table to
 # $GITHUB_STEP_SUMMARY when those are set.
@@ -87,7 +91,15 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
 fi
 
 if [ -n "$failed" ]; then
-  die "web-ui and node-server disagree on @tensorleap/api-client (${note}) - fix the pins on the version branches (or run Patch) before releasing"
+  problem="web-ui and node-server disagree on @tensorleap/api-client (${note})"
+  if [ -n "${WARN_ONLY:-}" ]; then
+    echo "::warning title=api-client mismatch::${problem}. This run continues, but Release Production will refuse to release it: fix the pins on the version branches and run Patch"
+    if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+      echo "⚠️ Not blocking this run. Release Production will refuse to release it until the pins are fixed." >> "$GITHUB_STEP_SUMMARY"
+    fi
+    exit 0
+  fi
+  die "${problem} - fix the pins on the version branches (or run Patch) before releasing"
 fi
 if [ "$status" = "⚠️" ]; then
   echo "::warning::@tensorleap/api-client: web-ui ${web_ui_api_client} vs node-server ${node_server_version} - ${note}"

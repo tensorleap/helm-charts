@@ -122,13 +122,15 @@ jobs:
           branch: ${{ steps.checkout_patch_branch.outputs.patch_branch }}
           github_token: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
 
-      # Release Production's preflight check, on the images this patch ships:
-      # a web-ui that expects an API the node-server doesn't ship stops here,
-      # before the RC is tagged, instead of at the production release.
+      # Release Production's preflight check, as a warning: the RC is cut either
+      # way, and a mismatch that would stop the production release is known now.
       - name: Check web-ui's api-client against the shipped node-server
         env:
           GH_TOKEN: ${{ secrets.TENSORLEAP_OPS_GITHUB_TOKEN }}
-        run: ./scripts/check-release-contracts.sh
+          WARN_ONLY: "1"
+        run: |
+          ./scripts/check-release-contracts.sh \
+            || echo "::warning title=api-client check did not run::could not compare web-ui's api-client with the shipped node-server - see this step's log. Release Production runs the same check and stops when it fails"
         shell: bash
 
       - name: Set up Helm
