@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-11-19 — manual refresh (no drift detected — zero source commits since prior run)
+Reviewed: helm-charts `d09e02b5..ce8fba9a` (1 commit, **#533**, the prior KB run's own "no drift detected" PR — touches only `qa-knowledge/maintenance/**`, not in `manifest.json`); engine `62367bbb..62367bbb` (no change); node-server `29fba4db..29fba4db` (no change); web-ui `34f9521c..34f9521c` (no change); leap-cli `19ecffdb..19ecffdb` (no change); code-loader `9627b9c3..9627b9c3` (no change). All five source repos are at the exact SHA already recorded as baseline; no new product/architecture changes to assess.
+Changed: none
+Open gaps: none
+
 ## 2026-11-19 — manual refresh (no drift detected — web-ui dashboard/number-format UI fixes, node-server/leap-cli MCP-tooling tweaks, no documented facts affected)
 Reviewed: helm-charts `f0a0ec51..d09e02b5` (1 commit, **#532** "Check release candidates with the leap-cli they would ship" — touches only `.github/workflows/**`/`DEVELOPER-GUIDE.md`/`scripts/regen-leap-cli-api.sh`, none of which are in `manifest.json`; the other "changed" files were this run's own prior `qa-knowledge/**` edits, not new source drift); engine `62367bbb..62367bbb` (no change); node-server `0fec1f60..29fba4db` (1 commit — `src/mcp/tools/query.ts` fixes a table-chart distinct-count field from `model.extId.keyword` to `model._id.keyword`; not in `manifest.json`, and 02-components.md:177 already documents `model._id.keyword` as the filter field, so no edit needed); web-ui `e935d763..34f9521c` (4 commits, all cosmetic/internal UI fixes: EN-2619 merges two "Color By" buttons into one menu in `ResplittingTopPanel.tsx`/`topPanelLayout.tsx`, EN-2652 tightens `floorCompactNumberFormatter` precision, EN-2647 fixes a pointer-events band stealing hover/drag in `ScatterMap.tsx`, EN-2649 reworks `fetchSimilarPlaceholders.ts` polling/matching — checked all four against 02-components.md, 03-data-flows.md, 06-ui-inspection.md, 09-job-catalog.md for button labels/selectors/ids/"Filters used" text; none are referenced, no factual claims broken); leap-cli `3875fef8..19ecffdb` (1 commit adds a 5th `tensorleap-troubleshoot` skill/plugin to `leap mcp config`; no KB doc enumerates the skill list, so not impacted); code-loader `9627b9c3..9627b9c3` (no change)
 Changed: none
