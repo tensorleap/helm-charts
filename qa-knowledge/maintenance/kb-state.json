@@ -6,7 +6,7 @@
       "remote": "git@github.com:tensorleap/helm-charts.git",
       "track_branch": "master",
       "built_from_branch": "master",
-      "built_from_sha": "d09e02b5fd7aa9a4bd9a028ac89b07267cd48878"
+      "built_from_sha": "ce8fba9ac8d21290c1398422ddf75f2cb1d6341e"
     },
     "engine": {
       "remote": "git@github.com:tensorleap/engine.git",
