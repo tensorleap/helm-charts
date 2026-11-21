@@ -14,6 +14,11 @@ Open gaps: <doc/topic — what's uncertain and why> ("none" if clean)
 
 ---
 
+## 2026-11-20 — manual refresh (no drift detected — zero source commits since prior run)
+Reviewed: helm-charts `ce8fba9a..0c95a08a` (1 commit, **#535**, the prior KB run's own "no drift detected" PR — touches only `qa-knowledge/maintenance/**`, not in `manifest.json`); engine `62367bbb..62367bbb` (no change); node-server `29fba4db..29fba4db` (no change); web-ui `34f9521c..34f9521c` (no change); leap-cli `19ecffdb..19ecffdb` (no change); code-loader `9627b9c3..9627b9c3` (no change). All five source repos are at the exact SHA already recorded as baseline; no new product/architecture changes to assess.
+Changed: none
+Open gaps: none
+
 ## 2026-11-19 — manual refresh (no drift detected — zero source commits since prior run)
 Reviewed: helm-charts `d09e02b5..ce8fba9a` (1 commit, **#533**, the prior KB run's own "no drift detected" PR — touches only `qa-knowledge/maintenance/**`, not in `manifest.json`); engine `62367bbb..62367bbb` (no change); node-server `29fba4db..29fba4db` (no change); web-ui `34f9521c..34f9521c` (no change); leap-cli `19ecffdb..19ecffdb` (no change); code-loader `9627b9c3..9627b9c3` (no change). All five source repos are at the exact SHA already recorded as baseline; no new product/architecture changes to assess.
 Changed: none
