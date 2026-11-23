@@ -78,6 +78,10 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 			return nil, err
 		}
 	}
+	_, err = docker.CreateVolumeIfNotExists(ctx, STORAGE_VOLUME_NAME, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	cluster, err = GetCluster(ctx)
 	if cluster != nil {
@@ -87,6 +91,15 @@ func CreateCluster(ctx context.Context, manifest *manifest.InstallationManifest,
 	} else if err != nil {
 		log.SendCloudReport("error", "Failed getting cluster", "Failed", &map[string]interface{}{"error": err.Error()})
 		return
+	}
+
+	// App data moves into the volume before any container binds the data dir:
+	// touching a bind-mounted host tree (renaming the old copy aside) goes
+	// through Docker Desktop's change notifier, whose stall is what kills the
+	// VM, and a cluster that came up on an empty volume would have no data.
+	if err := setupStorageVolume(ctx, k3sImage(manifest, params)); err != nil {
+		log.SendCloudReport("error", "Failed preparing storage volume", "Failed", &map[string]interface{}{"error": err.Error()})
+		return nil, err
 	}
 
 	log.Infof("Starting k3d cluster creation ...")
@@ -470,10 +483,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 		log.Fatalln(err)
 	}
 
-	image := manifest.Images.K3s
-	if params.WithGpu {
-		image = manifest.Images.K3sGpu
-	}
+	image := k3sImage(manifest, params)
 
 	registryPort := params.RegistryPort
 	if registryPort == 0 {
@@ -496,6 +506,7 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	if containerdDir != "" {
 		volumes = append(volumes, fmt.Sprintf("%v:%v", containerdDir, "/var/lib/rancher/k3s/agent/containerd"))
 	}
+	volumes = append(volumes, StorageVolumeSpec())
 
 	simpleK3dConfig := conf.SimpleConfig{
 		TypeMeta: k3dConfTypes.TypeMeta{
@@ -586,6 +597,13 @@ func createClusterConfig(ctx context.Context, manifest *manifest.InstallationMan
 	}
 
 	return k3dClusterConfig
+}
+
+func k3sImage(manifest *manifest.InstallationManifest, params *CreateK3sClusterParams) string {
+	if params.WithGpu {
+		return manifest.Images.K3sGpu
+	}
+	return manifest.Images.K3s
 }
 
 func getCPUsLimit(paramsCpuLimit string) int {

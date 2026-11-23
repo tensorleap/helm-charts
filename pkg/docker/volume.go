@@ -77,3 +77,18 @@ func RemoveVolume(ctx context.Context, name string, force bool) error {
 	}
 	return nil
 }
+
+// VolumeMountpoint is where the daemon keeps the volume's data. The path is
+// on the daemon's host: this machine for a native Linux engine, a VM for
+// Docker Desktop.
+func VolumeMountpoint(ctx context.Context, name string) (string, error) {
+	cli, err := NewClient()
+	if err != nil {
+		return "", fmt.Errorf("docker client: %w", err)
+	}
+	v, err := cli.VolumeInspect(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("inspect volume %s: %w", name, err)
+	}
+	return v.Mountpoint, nil
+}

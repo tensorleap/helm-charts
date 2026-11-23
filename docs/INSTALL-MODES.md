@@ -19,7 +19,7 @@ The Go installer (`helm-charts` binary, commands `install`/`upgrade`/`uninstall`
 1. Creates a k3d Docker cluster named `tensorleap` with port mappings, TLS forwarding, GPU support, registry mirrors, and host-path volume mounts
 2. Installs `tensorleap-infra` and `tensorleap` Helm charts into the `tensorleap` namespace via the Helm v3 Go SDK
 3. For air-gap installs, bootstraps a Zot registry and preloads container images
-4. Manages persistent data under `/var/lib/tensorleap/standalone/storage/{elasticsearch,keycloak,mongodb,minio}` mounted from host into the k3d node
+4. Manages persistent data under `/var/lib/tensorleap/standalone/storage/{elasticsearch,keycloak,mongodb,minio}` inside the k3d node, backed by the `tensorleap-storage-volume` Docker volume
 5. Computes Keycloak environment variables (`KC_HOSTNAME`, `KC_PROXY_HEADERS`, etc.) from TLS/domain/URL/proxy flags
 6. Supports `--cert`/`--key` for TLS or runs on `http://localhost` by default
 7. On uninstall: deletes the k3d cluster and optionally purges on-disk data
