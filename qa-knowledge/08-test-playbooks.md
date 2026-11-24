@@ -192,6 +192,34 @@ Terminate — it is idempotent-safe, not a bug.
 
 ---
 
+## Playbook 7 — MCP write tools + keep/delete regenerate (BF-1419)
+
+**Setup:** an evaluated version with failure modes, at least one **Approved**.
+Connect an assistant through `leap mcp` (relays `POST /api/v2/mcp`); call `tl_status`
+first to confirm which server answered.
+
+| Step | Back-end | Front-end |
+|---|---|---|
+| `tl_run_insights` on a filter (+ `name`) | new Generate Insights job; existing `insights` docs untouched; new ones carry `runName` | new section named after the run in the Insights panel |
+| `tl_regenerate_insights` `mode: add` | job params get the all-data `dataset_state.keyword` filter; runName `Regenerated <date time> UTC` | old failure modes stay; new section "Regenerated …" |
+| `tl_regenerate_insights` `mode: replace`, no `confirm` | **no job**; returns `needs-confirmation` + `wouldDelete` = `replaceInsightsPreview` counts | nothing changes |
+| same with `confirm: true` | `insights` docs on the `inference_artifact_id` deleted (approved/archived too, sibling versions too), then a new job | only the new failure modes remain |
+| `tl_label_next` (`count`) → `tl_wait_for_job` → `tl_get_label_next` | `generatedLabels` doc + Labeling Recommendation job | row in DS Curation → LABEL NEXT |
+| `tl_create_test` (from an insight or manual), twice | one `tests` doc (second call returns the existing one) | test in the Tests drawer |
+| Repeat any job tool while its job runs | `reason: 'already-running'`, same `jobId`, no second job | — |
+
+**UI dialog:** Insights drawer → regenerate icon (or Failure Mode Settings → **Save &
+regenerate…**) opens "Regenerate failure modes?" (`RegenerateFailureModesDialog.tsx`).
+The text must match `replaceInsightsPreview` ("Deletes N failure modes, including A
+approved…" + any version sharing the evaluation). **Keep & regenerate** → old cards
+stay plus a "Regenerated …" section; **Delete & regenerate** → old cards (approved
+included) gone.
+
+**Pass:** counts shown by the dialog / `wouldDelete` equal the docs actually deleted
+in Mongo `insights`; `add` never deletes; `replace` never runs without `confirm`.
+
+---
+
 ## Reporting a result (template)
 
 ```
