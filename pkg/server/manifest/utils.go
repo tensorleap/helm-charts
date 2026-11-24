@@ -1,14 +1,19 @@
 package manifest
 
 import (
+	"cmp"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/tensorleap/helm-charts/pkg/github"
 	"github.com/tensorleap/helm-charts/pkg/helm/chart"
+	"github.com/tensorleap/helm-charts/pkg/log"
 	"github.com/tensorleap/helm-charts/pkg/version"
 	"gopkg.in/yaml.v3"
 )
@@ -66,20 +71,102 @@ func getImagesFromBytes(imagesFile []byte) ([]string, error) {
 
 var ErrNoTags = fmt.Errorf("no tag found")
 
-var manifestTagReg = regexp.MustCompile(`manifest-\d+\.\d+\.\d+`)
+// manifestTagReg matches released manifests only; rc and feature manifests such
+// as manifest-1.4.36-rc.5 or manifest-1.1.602-fast-pca.2 are never "latest".
+var manifestTagReg = regexp.MustCompile(`^manifest-(\d+)\.(\d+)\.(\d+)$`)
 
+// maxManifestCandidates is how many of the highest tags are checked for a
+// published manifest.yaml before giving up.
+const maxManifestCandidates = 5
+
+// GetLatestManifestTag returns the highest manifest-X.Y.Z tag whose release has
+// a manifest.yaml. Tags are read over git first, because the REST API's
+// anonymous limit of 60 requests/hour per IP blocked installs (BF-1416). The API
+// is only the backup for when git's tag listing fails.
 func GetLatestManifestTag() (string, error) {
+	tags, err := github.ListTags(tlOwner, tlRepo)
+	if err != nil {
+		log.Warnf("Listing helm-charts tags over git failed, falling back to the GitHub API: %v", err)
+		var apiErr error
+		tags, apiErr = releaseTagsFromApi()
+		if apiErr != nil {
+			return "", errors.Join(err, apiErr)
+		}
+	}
+	return latestPublishedManifestTag(tags)
+}
 
+func releaseTagsFromApi() ([]string, error) {
 	releases, err := github.GetReleasesPage(tlOwner, tlRepo, 1, 100)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	tags := make([]string, len(releases))
+	for i, release := range releases {
+		tags[i] = release.TagName
+	}
+	return tags, nil
+}
+
+func latestPublishedManifestTag(tags []string) (string, error) {
+	candidates := sortManifestTagsDesc(tags)
+	if len(candidates) > maxManifestCandidates {
+		candidates = candidates[:maxManifestCandidates]
+	}
+	for _, tag := range candidates {
+		published, err := github.ReleaseAssetExists(tlOwner, tlRepo, tag, "manifest.yaml")
+		if err != nil {
+			return "", err
+		}
+		if published {
+			return tag, nil
+		}
+	}
+	return "", ErrNoTags
+}
+
+// sortManifestTagsDesc keeps the tags manifestTagReg matches, highest version
+// first, comparing numbers rather than strings (1.6.10 > 1.6.9).
+func sortManifestTagsDesc(tags []string) []string {
+	type versionedTag struct {
+		tag     string
+		version [3]int
+	}
+	var versioned []versionedTag
+	for _, tag := range tags {
+		match := manifestTagReg.FindStringSubmatch(tag)
+		if match == nil {
+			continue
+		}
+		vt := versionedTag{tag: tag}
+		valid := true
+		for i := range vt.version {
+			n, err := strconv.Atoi(match[i+1])
+			if err != nil {
+				valid = false
+				break
+			}
+			vt.version[i] = n
+		}
+		if valid {
+			versioned = append(versioned, vt)
+		}
 	}
 
-	latest, err := findLatestTensorleapTag(releases, manifestTagReg)
-	if err != nil {
-		return "", err
+	slices.SortFunc(versioned, func(a, b versionedTag) int {
+		for i := range a.version {
+			if c := cmp.Compare(b.version[i], a.version[i]); c != 0 {
+				return c
+			}
+		}
+		return 0
+	})
+
+	sorted := make([]string, len(versioned))
+	for i, vt := range versioned {
+		sorted[i] = vt.tag
 	}
-	return latest, nil
+	return sorted
 }
 
 var serverHelmTagReg = regexp.MustCompile(`tensorleap-\d+\.\d+\.\d+`)
