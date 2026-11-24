@@ -144,10 +144,27 @@ downed dependency marks the pod unready without restart-looping it.
   that relays this endpoint's tools/resources/prompts over stdio to an AI
   assistant, adding only a local `tl_export_analysis` tool
   (`leap-cli/pkg/mcp/server.go`); node-server itself owns the tool
-  implementations (`src/mcp/tools/{annotations,code,insights,jobs,query,
-  samples,targets}.ts`). Still agent-tooling by intent, not a product feature
-  — but unlike `/analysis-export`, it is now a directly-callable authenticated
-  HTTP surface, not merely a CLI-internal bridge.
+  implementations (`src/mcp/tools/{annotations,code,insights,insightSettings,
+  jobs,labeling,query,samples,targets,tests}.ts`). Still agent-tooling by
+  intent, not a product feature — but unlike `/analysis-export`, it is now a
+  directly-callable authenticated HTTP surface, not merely a CLI-internal
+  bridge. **No longer read-only (BF-1419):** some tools change team data,
+  acting as the calling user (tool annotations `startsJob` / `safeWrite` /
+  `mayDelete` in `tools/annotations.ts`): `tl_label_next` starts a Label Next
+  (Labeling Recommendation) job, read back with `tl_get_label_next`;
+  `tl_run_insights` runs Generate Insights on filters (always adds, never
+  deletes); `tl_update_insight_settings` edits the shared Failure Mode
+  Settings (`tl_get_insight_settings` reads them); `tl_regenerate_insights`
+  re-runs failure modes over all data with `mode` `add` (keeps the current
+  ones) or `replace` (deletes them) — `replace` without `confirm: true` starts
+  nothing and returns `reason: 'needs-confirmation'` + `wouldDelete` (the
+  `replaceInsightsPreview` counts); `tl_create_test` creates a project test
+  (from a Failure Mode's suggested tests or manual), deduped against an
+  identical existing test, and `tl_list_tests` reads tests with per-version
+  results. Job-starting tools return an already-running identical job
+  (`reason: 'already-running'`, `runningJob` in `tools/jobs.ts`) instead of
+  starting a second one. Approving insights and running evaluations are still
+  not MCP actions.
 
 **Mongo collections** (`db: tensorleap`): `jobs`, `versions`, `projects`, `users`,
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
