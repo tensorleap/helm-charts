@@ -106,7 +106,8 @@
       "web-ui/vite.config.ts",
       "web-ui/src/keycloak.ts",
       "web-ui/package.json",
-      "node-server/src/tracer.ts"
+      "node-server/src/tracer.ts",
+      "node-server/src/metadata/logic.ts"
     ]
   }
 }

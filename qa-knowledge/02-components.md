@@ -142,10 +142,15 @@ downed dependency marks the pod unready without restart-looping it.
   route (`expressAuthentication(req, 'jwt', ['not-demo'])` — demo accounts
   excluded, nothing else special). `leap mcp` (leap-cli) is now a thin bridge
   that relays this endpoint's tools/resources/prompts over stdio to an AI
-  assistant, adding only a local `tl_export_analysis` tool
-  (`leap-cli/pkg/mcp/server.go`); node-server itself owns the tool
-  implementations (`src/mcp/tools/{annotations,code,insights,insightSettings,
-  jobs,labeling,query,samples,targets,tests}.ts`). Still agent-tooling by
+  assistant, adding two local tools: `tl_export_analysis` (writes the
+  analysis to disk) and `tl_publish_report` (uploads a finished report;
+  posts `report.json` as structured `content` to node-server's
+  `analysis-reports/publish` — the older `html`/`markdown`/`json` fields are
+  deprecated/refused; `SKILLS_LEVEL` bumped to 2 for this, `src/metadata/logic.ts`)
+  (`leap-cli/pkg/mcp/server.go`, `tools_export.go`, `tools_publish.go`);
+  node-server itself owns the tool implementations
+  (`src/mcp/tools/{annotations,code,insights,insightSettings,jobs,labeling,
+  query,samples,synthetic,targets,tests}.ts`). Still agent-tooling by
   intent, not a product feature — but unlike `/analysis-export`, it is now a
   directly-callable authenticated HTTP surface, not merely a CLI-internal
   bridge. **No longer read-only (BF-1419):** some tools change team data,
@@ -164,7 +169,9 @@ downed dependency marks the pod unready without restart-looping it.
   results. Job-starting tools return an already-running identical job
   (`reason: 'already-running'`, `runningJob` in `tools/jobs.ts`) instead of
   starting a second one. Approving insights and running evaluations are still
-  not MCP actions.
+  not MCP actions. (Also newly registered in this merge but not detailed
+  here: `tools/synthetic.ts`'s `tl_start_synthetic`/`tl_get_synthetic` —
+  see open gaps.)
 
 **Mongo collections** (`db: tensorleap`): `jobs`, `versions`, `projects`, `users`,
 `teams`, `notifications`, `dashboards`, `visualizations`, `insights`,
