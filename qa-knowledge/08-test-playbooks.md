@@ -213,10 +213,16 @@ regenerate…**) opens "Regenerate failure modes?" (`RegenerateFailureModesDialo
 The text must match `replaceInsightsPreview` ("Deletes N failure modes, including A
 approved…" + any version sharing the evaluation). **Keep & regenerate** → old cards
 stay plus a "Regenerated …" section; **Delete & regenerate** → old cards (approved
-included) gone.
+included) gone. **With zero existing failure modes (EN-2629)** the dialog has no
+choice to offer: title reads "Generate failure modes?", one **Generate** button
+(sends `mode: replace`), and the settings dialog's button reads **Save & generate**
+and skips the dialog, starting the run directly. When the run then finds nothing,
+the drawer shows an empty state ("The last run found no failure modes") with a
+button back to Failure Mode Settings.
 
 **Pass:** counts shown by the dialog / `wouldDelete` equal the docs actually deleted
-in Mongo `insights`; `add` never deletes; `replace` never runs without `confirm`.
+in Mongo `insights`; `add` never deletes; `replace` never runs without `confirm`; the
+zero-failure-mode case shows the single-button dialog, not the two-choice one.
 
 ---
 
