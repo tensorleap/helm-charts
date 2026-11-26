@@ -31,7 +31,7 @@ const (
 	// one there before changing it here.
 	k3dUtilsImage          = MirrorRegistry + "/ghcr.io/k3d-io/k3d-tools:5.5.2"
 	registerImage          = MirrorRegistry + "/docker.io/library/registry:2"
-	zotImage               = MirrorRegistry + "/ghcr.io/project-zot/zot-linux-amd64:v2.1.15"
+	zotImage               = MirrorRegistry + "/ghcr.io/project-zot/zot:v2.1.15"
 	checkDockerRequirement = MirrorRegistry + "/docker.io/library/alpine:3.18.3"
 )
 
