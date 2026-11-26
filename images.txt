@@ -12,7 +12,7 @@ public.ecr.aws/tensorleap/mirror/docker.io/library/redis:8.6-alpine
 public.ecr.aws/tensorleap/mirror/docker.io/moby/buildkit:buildx-stable-1
 public.ecr.aws/tensorleap/mirror/gcr.io/datadoghq/agent:7.52.0
 public.ecr.aws/tensorleap/mirror/ghcr.io/project-zot/zot:v2.1.15
-public.ecr.aws/tensorleap/mirror/nvcr.io/nvidia/k8s-device-plugin:v0.17.0-ubi9
+public.ecr.aws/tensorleap/mirror/nvcr.io/nvidia/k8s-device-plugin:v0.17.4
 public.ecr.aws/tensorleap/mirror/quay.io/keycloak/keycloak:26.3.2
 public.ecr.aws/tensorleap/mirror/quay.io/minio/minio:RELEASE.2021-12-20T22-07-16Z
 public.ecr.aws/tensorleap/mirror/registry.k8s.io/ingress-nginx/controller:v1.10.0
