@@ -7,7 +7,7 @@ data:
   theme.properties: |
     parent=keycloak.v2
     import=common/keycloak
-    scripts=js/reset-password-link-v1.js js/register-prefill-v1.js
+    scripts=js/reset-password-link-v1.js js/register-prefill-v1.js js/remember-username-v1.js
   reset-password-link-v1.js: |
     // Keep identical in helm-charts/charts/tensorleap/templates/keycloak-theme-cm.yaml; rename file on change (browser cache).
     // ponytail: cloud maps api.<env>.tensorleap.ai -> <env>.tensorleap.ai (mirrors web-ui getApiHost); on-prem basePath = prefix before /auth/.
@@ -36,5 +36,28 @@ data:
       var email = set('email', p.email);
       if (email) { email.readOnly = true; email.style.opacity = '0.6'; }
       form.addEventListener('submit', function () { try { localStorage.removeItem('tl_register_prefill'); } catch (e) {} });
+    });
+  remember-username-v1.js: |
+    // Keycloak deletes KEYCLOAK_REMEMBER_ME on logout, so "Remember me" alone never refills the username after signing out.
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.getElementById('kc-form-login');
+      if (!form) return;
+      var user = form.querySelector('input[name="username"]');
+      var remember = form.querySelector('input[name="rememberMe"]');
+      if (!user || !remember) return;
+      var saved;
+      try { saved = localStorage.getItem('tl_remembered_username'); } catch (e) {}
+      if (saved && !user.value) {
+        user.value = saved;
+        remember.checked = true;
+        var password = form.querySelector('input[name="password"]');
+        if (password) password.focus();
+      }
+      form.addEventListener('submit', function () {
+        try {
+          if (remember.checked && user.value) localStorage.setItem('tl_remembered_username', user.value);
+          else localStorage.removeItem('tl_remembered_username');
+        } catch (e) {}
+      });
     });
 {{- end }}
